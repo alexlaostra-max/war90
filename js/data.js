@@ -214,5 +214,42 @@
     { id: 'mall', kind: 'w', name: 'Торговые центры', from: 1998, rep: 50, where: 'Стамбул', who: 'турецкий застройщик', trip: 50, buyLabel: 'Уставной капитал', buy: 550, inc: 70, heat: 0 }
   ];
 
-  G.DATA = { FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS };
+  // Арсенал: q — сколько боец с этим стволом добавляет к силе (голый боец = 1), price — за штуку, pack — сколько в партии
+  const ARMS = {
+    obrez: { name: 'Обрез', alt: 'двустволка без приклада', q: 0.6, price: 1.2, pack: 5, from: 1991, desc: 'Дёшево и громко. Для первой разборки сойдёт' },
+    pm: { name: 'ПМ «Макаров»', alt: 'пистолет', q: 1, price: 3, pack: 5, from: 1991, desc: 'Табельный, списанный, ворованный. Рабочая лошадка' },
+    aks: { name: 'АКС-74У «Ксюха»', alt: 'укороченный автомат', q: 1.6, price: 7, pack: 5, from: 1992, desc: 'Помещается под куртку. Из армейских складов' },
+    svd: { name: 'СВД', alt: 'снайперская винтовка', q: 2.2, price: 18, pack: 1, from: 1994, desc: 'Работает с чердака. Главное — уйти с позиции' },
+    rpg: { name: 'РПГ-7', alt: 'гранатомёт', q: 3, price: 32, pack: 1, from: 1995, desc: 'Против бронированного «Мерседеса» и запертых ворот' }
+  };
+  const VEST = { name: 'Бронежилет', alt: 'армейский, второй класс', price: 6, pack: 5, from: 1993, desc: 'Потери в бою ниже до 35%, если броники есть у всех, кто едет' };
+  // Гараж: seats — мест на разборку, q — сколько добавляет к силе каждый боец на колёсах
+  const CARS = {
+    nine: { name: 'Девятка', alt: 'ВАЗ-2109', seats: 4, q: 0.5, price: 8, from: 1991, col: '#7a2430', desc: 'Тонировка в круг. Классика района' },
+    uaz: { name: 'Буханка', alt: 'УАЗ-452', seats: 8, q: 0.4, price: 14, from: 1991, col: '#4c5b3c', desc: 'Восемь мест. Пройдёт там, где «Мерседес» застрянет' },
+    audi: { name: 'Ауди-бочка', alt: 'Audi 100 из Германии', seats: 4, q: 0.6, price: 14, from: 1991, col: '#5b6470', desc: 'Пригнали через Брест. Чуть быстрее «девятки»' },
+    bmw: { name: 'Бэха', alt: 'BMW 525', seats: 4, q: 0.8, price: 26, from: 1992, rep: 1, col: '#1f2b3d', desc: 'Быстрая, злая, все знают, чья' },
+    jeep: { name: 'Чероки', alt: 'Jeep Grand Cherokee', seats: 5, q: 0.9, price: 42, from: 1994, rep: 2, col: '#20262b', desc: 'Пять мест и бампер, который пробьёт шлагбаум' },
+    merc: { name: 'Шестисотый', alt: 'Mercedes S600', seats: 4, q: 0.7, price: 85, from: 1993, rep: 4, talk: 3, col: '#141418', desc: 'Знак статуса. Переговоры +3% за машину, до +15%' },
+    gelik: { name: 'Бронированный гелик', alt: 'Mercedes G, броня B6', seats: 5, q: 1, price: 150, from: 1997, rep: 3, armor: true, col: '#2b2e26', desc: 'Глава и бригадиры в бою ранятся и гибнут вдвое реже' }
+  };
+
+  // Легенды эпохи: отсылки к настоящим людям девяностых, имена изменены, клички свои.
+  // join — может прийти в семью через событие; look — внешность для портрета
+  const LEGENDS = {
+    yap: { name: 'Вячеслав Иванцов', nick: 'Япончик', age: 51, bio: 'Вор старой формации. Вышел по ходатайству академиков и уехал «на гастроли» в Нью-Йорк', str: 6, wit: 8, loy: 6, look: { hair: 'short', grey: 1, beard: 'mustache', brows: 'heavy' } },
+    otar: { name: 'Отари Кавтарадзе', nick: 'Отарик', age: 45, bio: 'Борец, тренер, «меценат». Фонд помощи спортсменам, а за фондом — полгорода', str: 7, wit: 7, loy: 5, look: { hair: 'short', beard: 'mustache', cloth: 'suit' } },
+    silv: { name: 'Семён Тимохин', nick: 'Сильвестр', age: 39, bio: 'Бывший слесарь, которого слушается весь юг Москвы. Взрывает тех, с кем не договорился', str: 7, wit: 7, loy: 4, look: { hair: 'buzz', cloth: 'leather', chain: 1 } },
+    glob: { name: 'Григорий Гуляев', nick: 'Глобус', age: 28, bio: 'Правая рука Сильвестра. Широкий, круглый, улыбчивый, страшный', str: 8, wit: 5, loy: 4, look: { hair: 'buzz', wide: 1, cloth: 'tracksuit', chain: 1 } },
+    mak: { name: 'Александр Соломин', nick: 'Македонский', age: 33, join: true, bio: 'Бывший милиционер, стреляет с двух рук. Ушёл из «Матросской тишины» по верёвке', str: 10, wit: 6, loy: 3, look: { hair: 'short', cloth: 'leather', scar: 1 } },
+    tai: { name: 'Алим Тахиров', nick: 'Тайванчик', age: 46, bio: 'Знает всех тренеров, судей и букмекеров от Парижа до Ташкента', str: 3, wit: 9, loy: 5, look: { hair: 'side', cloth: 'suit', glasses: 1 } },
+    osya: { name: 'Сергей Бутурлин', nick: 'Ося', age: 33, join: true, bio: 'Принял ореховских после Сильвестра. Держит чистильщиков и паспорта на три страны', str: 6, wit: 8, loy: 5, look: { hair: 'side', cloth: 'suit', brows: 'heavy' } },
+    hasan: { name: 'Аслан Усманов', nick: 'Дед Хасан', age: 63, bio: 'Старейший вор. Его слово решает споры от Сочи до Владивостока', str: 4, wit: 9, loy: 7, look: { hair: 'bald', grey: 1, cloth: 'sweater', brows: 'heavy' } },
+    bab: { name: 'Борис Брезгин', nick: 'БАБ', age: 48, bio: 'Математик, торговец машинами, серый кардинал Кремля. Продаёт воздух дороже нефти', str: 2, wit: 10, loy: 2, look: { hair: 'bald', fringe: 1, cloth: 'suit', glasses: 0 } },
+    cap: { name: 'Юрий Лужин', nick: 'Кепка', age: 58, bio: 'Хозяин Москвы в кепке. Стройки, рынки и подряды идут через его кабинет', str: 5, wit: 8, loy: 4, look: { hair: 'bald', cap: 1, cloth: 'suit' } },
+    gen: { name: 'Александр Коржин', nick: 'Генерал', age: 46, bio: 'Начальник охраны президента. Ходит в теннис с первым лицом и решает, кого пустить', str: 7, wit: 6, loy: 3, look: { hair: 'short', cloth: 'general', wide: 1 } },
+    mavr: { name: 'Сергей Мавриди', nick: 'Мавр', age: 38, bio: 'Отец всех пирамид. Очки, свитер и миллионы обманутых вкладчиков', str: 2, wit: 9, loy: 3, look: { hair: 'side', glasses: 1, cloth: 'sweater', beard: 'none' } }
+  };
+
+  G.DATA = { FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));

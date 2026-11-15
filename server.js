@@ -17,7 +17,7 @@ const clean = (s, n) => String(s || '').replace(/[\u0000-\u001f<>]/g, '').trim()
 
 // ---------- хранение ----------
 function load() {
-  try { JSON.parse(fs.readFileSync(STORE, 'utf8')).forEach(r => { if (Date.now() - r.touched < ROOM_TTL && !(r.started && (!r.S || r.S.v !== 4))) rooms.set(r.id, r); }); console.log('комнат загружено: ' + rooms.size); } catch (e) { /* первый запуск */ }
+  try { JSON.parse(fs.readFileSync(STORE, 'utf8')).forEach(r => { if (Date.now() - r.touched < ROOM_TTL && !(r.started && (!r.S || r.S.v !== 4))) { if (r.S) E.migrate(r.S); rooms.set(r.id, r); } }); console.log('комнат загружено: ' + rooms.size); } catch (e) { /* первый запуск */ }
 }
 let saveT = null;
 function save() {

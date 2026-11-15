@@ -35,12 +35,52 @@
       if (f.id === 'cher') x.money = 30;
       if (f.id === 'tag') x.off.uch = 1;
     });
+    migrate(S);
     humans.forEach(h => { for (let k = 0; k < 3; k++) genPerson(S, h); S.f[h].pool = inflow(S, h).total; S.f[h].ap = apMax(S, h); pickEvent(S, h); log(S, 'Декабрь 1991-го. Ты глава бригады, у тебя один район и горстка пацанов.', 'big', h); });
     return S;
   }
 
+  // Старые сохранения и новые бригады: склад по моделям, броники, легенды
+  function kitInit(f) { f.arms = { pm: f.guns || 0 }; f.garage = { nine: f.cars || 0 }; if (f.vests == null) f.vests = 0; }
+  function migrate(S) {
+    (S.humans || []).forEach(h => { const x = S.f[h]; if (!x) return; if (!x.arms) kitInit(x); if (x.vests == null) x.vests = 0; if (!x.once) x.once = []; });
+    return S;
+  }
+
+  // ---------- арсенал и гараж ----------
+  // Склад ведётся по моделям, а guns/cars остаются общим числом: события и потери в бою меняют их напрямую,
+  // а syncKit сводит склад с итогом (лишнее добавляет базовой моделью, недостачу списывает с самого дешёвого).
+  const ARM_ORDER = Object.keys(D.ARMS).sort((a, b) => D.ARMS[b].q - D.ARMS[a].q);
+  const CAR_ORDER = Object.keys(D.CARS).sort((a, b) => D.CARS[b].q - D.CARS[a].q);
+  function syncInv(f, inv, tot, base, order) {
+    const m = f[inv]; f[tot] = Math.max(0, Math.round(f[tot] || 0));
+    let s = 0; Object.keys(m).forEach(k => { s += m[k] || 0; });
+    if (f[tot] > s) m[base] = (m[base] || 0) + f[tot] - s;
+    else if (f[tot] < s) { let left = s - f[tot]; order.slice().reverse().forEach(k => { const n = Math.min(left, m[k] || 0); m[k] = (m[k] || 0) - n; left -= n; }); }
+  }
+  function syncKit(f) { if (!f.arms) return; syncInv(f, 'arms', 'guns', 'pm', ARM_ORDER); syncInv(f, 'garage', 'cars', 'nine', CAR_ORDER); }
+  // боевая ценность стволов: лучшие достаются бойцам первыми
+  function armedValue(f) {
+    if (!f.arms) return Math.min(f.men, f.guns);
+    syncKit(f); let left = f.men, v = 0;
+    ARM_ORDER.forEach(k => { const n = Math.min(left, f.arms[k] || 0); v += n * D.ARMS[k].q; left -= n; });
+    return v;
+  }
+  const seatsOf = f => f.garage ? Object.keys(f.garage).reduce((s, k) => s + (f.garage[k] || 0) * D.CARS[k].seats, 0) : f.cars * 4;
+  function mobility(f) {
+    if (!f.garage) return 0.5 * Math.min(f.men, f.cars * 4);
+    syncKit(f); let left = f.men, v = 0;
+    CAR_ORDER.forEach(k => { const n = Math.min(left, (f.garage[k] || 0) * D.CARS[k].seats); v += n * D.CARS[k].q; left -= n; });
+    return v;
+  }
+  const hasCar = (f, k) => !!(f.garage && f.garage[k] > 0);
+  const armorK = f => hasCar(f, 'gelik') ? 0.5 : 1;
+  const carTalk = (S, fid) => { const f = S.f[fid]; return f.garage ? Math.min(15, (f.garage.merc || 0) * D.CARS.merc.talk) : 0; };
+  function addArms(p, k, n) { if (!p.arms) kitInit(p); syncKit(p); p.arms[k] = (p.arms[k] || 0) + n; p.guns += n; }
+  function addCar(p, k, n) { if (!p.garage) kitInit(p); syncKit(p); p.garage[k] = (p.garage[k] || 0) + n; p.cars += n; }
+
   // ---------- показатели ----------
-  const power = f => f.men + Math.min(f.men, f.guns) + 0.5 * Math.min(f.men, f.cars * 4);
+  const power = f => f.men + armedValue(f) + mobility(f);
   const owned = (S, fid) => S.d.reduce((a, d, i) => (d.o === fid && a.push(i), a), []);
   const count = (S, fid) => S.d.reduce((n, d) => n + (d.o === fid ? 1 : 0), 0);
   const defFactor = n => clamp(1.4 / Math.sqrt(n + 1), 0.2, 1);
@@ -77,9 +117,12 @@
   const buildCost = (S, k) => D.BUILDS[k].cost;
   const officialCost = (S, fid, k) => Math.round(D.OFFICIALS[k].cost * (fid === 'solnc' ? 0.75 : 1));
   const gunPrice = (S, fid) => fid === 'kopt' ? 2 : 3;
-  const gunPack = (S, fid) => Math.max(3, Math.round(gunPrice(S, fid) * 5 * (1 - fxp(S, fid, 'gun'))));
-  const CAR_PRICE = 12;
-  const carPrice = (S, fid) => Math.max(3, Math.round(CAR_PRICE * (1 - fxp(S, fid, 'car'))));
+  const armCost = (S, fid, k, n) => Math.max(1, Math.round(D.ARMS[k].price * n * (fid === 'kopt' ? 0.7 : 1) * (1 - fxp(S, fid, 'gun'))));
+  const gunPack = (S, fid) => armCost(S, fid, 'pm', 5);
+  const vestCost = (S, fid, n) => Math.max(1, Math.round(D.VEST.price * n * (1 - fxp(S, fid, 'gun'))));
+  const CAR_PRICE = D.CARS.nine.price;
+  const carCost = (S, fid, k) => Math.max(3, Math.round(D.CARS[k].price * (1 - fxp(S, fid, 'car'))));
+  const carPrice = (S, fid) => carCost(S, fid, 'nine');
   const pointInc = (fid, k) => D.BUILDS[k].inc + (fid === 'tush' ? 1 : 0);
   // точки улучшаются до третьего уровня: доход и оборона умножаются на уровень
   const MAX_LVL = 3;
@@ -210,25 +253,44 @@
     p.men += n; p.money -= n * price; p.pool = have - n;
     return { ok: true, msg: 'В бригаду пришли ' + n + ' чел. за ' + n * price + ' тыс.' };
   }
-  function buyGuns(S, fid) {
+  // Стволы, броники и тачки стоят только денег и не тратят ход
+  function buyGuns(S, fid, k, n) {
     const e = spend(S, fid, 0); if (e) return fail(e);
-    const p = S.f[fid], c = gunPack(S, fid);
+    k = k || 'pm'; const A = D.ARMS[k], p = S.f[fid];
+    if (!A) return fail('Нет такого ствола');
+    if (date(S.turn).year < A.from) return fail('Появится в ' + A.from + ' году');
+    n = Math.max(1, Math.min(50, Math.floor(+n) || A.pack));
+    const c = armCost(S, fid, k, n);
     if (p.money < c) return fail('Не хватает денег: нужно ' + c);
-    p.money -= c; p.guns += 5; addRep(S, fid, 0.4);
-    return { ok: true, msg: 'Куплено 5 стволов' };
+    p.money -= c; addArms(p, k, n); addRep(S, fid, 0.4);
+    return { ok: true, msg: 'В арсенале: ' + A.name + ' ×' + n };
   }
-  function buyCar(S, fid) {
+  function buyVests(S, fid, n) {
     const e = spend(S, fid, 0); if (e) return fail(e);
     const p = S.f[fid];
-    const c = carPrice(S, fid);
+    if (date(S.turn).year < D.VEST.from) return fail('Появятся в ' + D.VEST.from + ' году');
+    n = Math.max(1, Math.min(50, Math.floor(+n) || D.VEST.pack));
+    const c = vestCost(S, fid, n);
     if (p.money < c) return fail('Не хватает денег: нужно ' + c);
-    p.money -= c; p.cars += 1; addRep(S, fid, 0.4);
-    return { ok: true, msg: 'В гараже новая тачка' };
+    p.money -= c; p.vests = (p.vests || 0) + n;
+    return { ok: true, msg: 'Бронежилетов на складе: ' + p.vests };
+  }
+  function buyCar(S, fid, k) {
+    const e = spend(S, fid, 0); if (e) return fail(e);
+    k = k || 'nine'; const C = D.CARS[k], p = S.f[fid];
+    if (!C) return fail('Нет такой машины');
+    if (date(S.turn).year < C.from) return fail('Появится в ' + C.from + ' году');
+    const c = carCost(S, fid, k);
+    if (p.money < c) return fail('Не хватает денег: нужно ' + c);
+    p.money -= c; addCar(p, k, 1); addRep(S, fid, C.rep || 0.4);
+    return { ok: true, msg: 'В гараже: ' + C.name + (C.rep ? '. Авторитет +' + C.rep : '') };
   }
 
   const SHARES = [0.35, 0.65, 1], HEATS = [4, 7, 11], KINDS = ['Наезд', 'Разборка', 'Война'];
   // на разборку едут на тачках: 4 бойца на машину, ещё 10 доберутся сами
-  const strike = (f, share) => Math.max(1, Math.min(Math.round(f.men * share), 10 + f.cars * 4));
+  const strike = (f, share) => Math.max(1, Math.min(Math.round(f.men * share), 10 + seatsOf(f)));
+  // бронежилеты: доля потерь, которую они снимают, если хватает на всех
+  const vestK = (f, n) => f.vests ? 1 - 0.35 * Math.min(1, f.vests / Math.max(1, n)) : 1;
   function eliminate(S, fid, over) {
     const f = S.f[fid]; f.alive = false; f.men = 0;
     if (f.human && !f.over) f.over = over || { type: 'lost', title: 'Вынесли из Москвы', text: 'У тебя не осталось ни одного района. Бригада разбежалась по чужим. Тебе советуют уехать, пока дают.' };
@@ -242,16 +304,17 @@
     const Dv = defBase * rr(S, 0.85, 1.15), ratio = A / Dv, win = A > Dv;
     let la = Math.round(committed * clamp(0.22 / ratio, 0.06, 0.45) * (win ? 1 : 1.5));
     if (A0.human && att === 'medv') la = Math.round(la * 0.7);
-    if (A0.human) la = Math.round(la * (1 - fxp(S, att, 'med')));
+    if (A0.human) la = Math.round(la * (1 - fxp(S, att, 'med')) * vestK(A0, committed));
     la = Math.min(la, A0.men); A0.men -= la; A0.guns = Math.max(0, A0.guns - Math.floor(la / 2));
+    if (A0.vests) A0.vests = Math.max(0, A0.vests - Math.floor(la / 3));
     let ld = 0;
-    if (defender) { const dm = Math.round(defender.men * defFactor(count(S, d.o))); ld = Math.min(defender.men, Math.round(dm * clamp(0.18 * ratio, 0.05, 0.5) * (defender.human ? 1 - fxp(S, d.o, 'med') : 1))); defender.men -= ld; defender.guns = Math.max(0, defender.guns - Math.floor(ld / 2)); }
+    if (defender) { const dm = Math.round(defender.men * defFactor(count(S, d.o))); ld = Math.min(defender.men, Math.round(dm * clamp(0.18 * ratio, 0.05, 0.5) * (defender.human ? (1 - fxp(S, d.o, 'med')) * vestK(defender, dm) : 1))); defender.men -= ld; defender.guns = Math.max(0, defender.guns - Math.floor(ld / 2)); if (defender.vests) defender.vests = Math.max(0, defender.vests - Math.floor(ld / 3)); }
     const prev = d.o;
     const dok = D.DISTRICTS[i].ok, defCapo = defender && defender.human ? capoOf(S, prevOwner(d), dok) : null;
     if (win) { d.o = att; d.ent = false; }
     // судьба людей из семьи: кто вёл бой и кто держал округ
-    if (A0.human) { const l = leader(S, att, i), x = rnd(S); if (l) { if (!win && x < 0.04) fate(S, att, l, 'dead', 'в неудачной разборке за ' + D.DISTRICTS[i].name); else if (x < (win ? 0.04 : 0.14)) fate(S, att, l, 'hurt', 'в разборке за ' + D.DISTRICTS[i].name); } }
-    if (defCapo && win) { const x = rnd(S); if (x < 0.07) fate(S, prev, defCapo, 'dead', 'защищая ' + D.DISTRICTS[i].name); else if (x < 0.25) fate(S, prev, defCapo, 'hurt', 'защищая ' + D.DISTRICTS[i].name); }
+    if (A0.human) { const l = leader(S, att, i), x = rnd(S) / armorK(A0); if (l) { if (!win && x < 0.04) fate(S, att, l, 'dead', 'в неудачной разборке за ' + D.DISTRICTS[i].name); else if (x < (win ? 0.04 : 0.14)) fate(S, att, l, 'hurt', 'в разборке за ' + D.DISTRICTS[i].name); } }
+    if (defCapo && win) { const x = rnd(S) / armorK(defender); if (x < 0.07) fate(S, prev, defCapo, 'dead', 'защищая ' + D.DISTRICTS[i].name); else if (x < 0.25) fate(S, prev, defCapo, 'hurt', 'защищая ' + D.DISTRICTS[i].name); }
     // живому защитнику — личное сообщение
     if (defender && defender.human) {
       const nm = D.DISTRICTS[i].name, who = fdef(att).name;
@@ -412,7 +475,7 @@
     return { ok: true, msg: 'Конверт дошёл. Розыск −12' };
   }
   const truceCost = (S, other) => Math.round(15 + power(S.f[other]) / 3);
-  const truceOdds = (S, fid, other) => clamp(45 + S.f[fid].rep / 2 + (power(S.f[fid]) > power(S.f[other]) ? 15 : -10) + fx(S, fid, 'talk') + consBonus(S, fid), 10, 95);
+  const truceOdds = (S, fid, other) => clamp(45 + S.f[fid].rep / 2 + (power(S.f[fid]) > power(S.f[other]) ? 15 : -10) + fx(S, fid, 'talk') + consBonus(S, fid) + carTalk(S, fid), 10, 95);
   function truce(S, fid, other) {
     const e = spend(S, fid, 1); if (e) return fail(e);
     const p = S.f[fid], f = S.f[other];
@@ -439,7 +502,7 @@
   }
   function negChances(S, fid) {
     const p = S.f[fid];
-    const t = fx(S, fid, 'talk') + consBonus(S, fid);
+    const t = fx(S, fid, 'talk') + consBonus(S, fid) + carTalk(S, fid);
     return { share: clamp(55 + p.rep * 0.4 + t, 0, 95), bribe: clamp(65 + conn(S, fid) * 4 + t, 0, 97), force: clamp(25 + power(p) / 4, 0, 75) };
   }
   function projStep(S, fid, id, how) {
@@ -483,22 +546,39 @@
   }
 
   // ---------- события ----------
+  // Событие месяца. who — в событии участвует человек из семьи ({who} в тексте), once — бывает один раз,
+  // legend — легенда, которая может прийти в семью (не выпадает, если уже пришла), needCars — нужна тачка
   function pickEvent(S, fid) {
-    const p = S.f[fid], dt = date(S.turn);
+    const p = S.f[fid], dt = date(S.turn), live = crew(S, fid).filter(c => c.st === 'ok');
+    p.evWho = null; if (!p.once) p.once = [];
     let ev = EVENTS.find(e => e.date && e.date[0] === dt.year && e.date[1] === dt.month);
     if (!ev) {
-      const pool = EVENTS.filter(e => !e.date && (!e.from || dt.year >= e.from) && !p.recent.includes(e.id));
+      const fits = e => !e.date && (!e.from || dt.year >= e.from) && (!e.to || dt.year <= e.to) && (!e.who || live.length) && (!e.needCars || p.cars > 0) && !(e.once && p.once.includes(e.id)) && !(e.legend && crew(S, fid).some(c => c.leg === e.legend));
+      let pool = EVENTS.filter(e => fits(e) && !p.recent.includes(e.id));
+      if (!pool.length) pool = EVENTS.filter(fits);
       ev = pool[Math.floor(rnd(S) * pool.length)];
-      p.recent.push(ev.id); if (p.recent.length > 16) p.recent.shift();
+      p.recent.push(ev.id); if (p.recent.length > 24) p.recent.shift();
     }
+    if (ev.who && live.length) p.evWho = live[Math.floor(rnd(S) * live.length)].id;
     p.event = ev.id;
   }
   const currentEvent = (S, fid) => S.f[fid].event ? EVENTS.find(e => e.id === S.f[fid].event) : null;
+  const evWho = (S, fid) => S.f[fid].evWho != null ? crew(S, fid).find(c => c.id === S.f[fid].evWho) || null : null;
+  function evText(S, fid, s) { if (!s || s.indexOf('{who}') < 0) return s; const w = evWho(S, fid); return s.split('{who}').join(w ? cname(w) : 'твой человек'); }
   function optState(S, fid, o) {
     const p = S.f[fid], m = era(S), cost = o.$ < 0 ? Math.round(-o.$ * m) : 0;
     if (cost > Math.max(0, p.money)) return { cost, lock: 'Нужно ' + cost + ' тыс. $' };
     if (o.needConn && conn(S, fid) < o.needConn) return { cost, lock: 'Нужны связи: ' + o.needConn };
+    if (o.needMen && p.men < o.needMen) return { cost, lock: 'Нужно бойцов: ' + o.needMen };
+    if (o.needCars && p.cars < o.needCars) return { cost, lock: 'Нужна тачка' };
     return { cost, lock: null };
+  }
+  // легенда эпохи приходит в семью
+  function addLegend(S, fid, key) {
+    const L = D.LEGENDS[key], p = S.f[fid];
+    if (!L || !p.crew || p.crew.some(c => c.leg === key)) return null;
+    const c = { id: p.nid++, name: L.name, nick: L.nick, age: L.age, bio: L.bio, str: L.str, wit: L.wit, loy: L.loy, pos: null, ok: null, st: 'ok', until: 0, since: S.turn, leg: key };
+    p.crew.push(c); return c;
   }
   function choose(S, fid, k) {
     const p = S.f[fid]; if (!p || !p.human || p.over || S.done) return fail('Игра окончена');
@@ -514,12 +594,25 @@
     if (res.rep) { addRep(S, fid, res.rep); dl.rep = res.rep; }
     if (res.heat) { addHeat(S, fid, res.heat); dl.heat = res.heat; }
     if (res.men) { const v = Math.max(-p.men, res.men); p.men += v; dl.men = v; }
-    if (res.guns) { p.guns += res.guns; dl.guns = res.guns; }
-    if (res.cars) { p.cars += res.cars; dl.cars = res.cars; }
+    if (res.guns) { p.guns = Math.max(0, p.guns + res.guns); dl.guns = res.guns; }
+    if (res.cars) { const v = Math.max(-p.cars, res.cars); p.cars += v; dl.cars = v; }
+    if (res.arm) { addArms(p, res.arm[0], res.arm[1]); dl.guns = (dl.guns || 0) + res.arm[1]; dl.arm = D.ARMS[res.arm[0]].name + ' ×' + res.arm[1]; }
+    if (res.car) { addCar(p, res.car, 1); dl.cars = (dl.cars || 0) + 1; dl.car = D.CARS[res.car].name; }
+    if (res.vests) { const v = Math.max(-(p.vests || 0), res.vests); p.vests = (p.vests || 0) + v; dl.vests = v; }
     if (res.later) { const amt = Math.round(res.later * m); p.later.push({ t: S.turn + ri(S, 5, 9), amt, why: ev.title }); dl.later = amt; }
-    p.event = null;
-    log(S, ev.title + ': ' + res.r, '', fid);
-    return { ok: true, msg: res.r, delta: dl, title: ev.title, event: true };
+    const title = evText(S, fid, ev.title), r = evText(S, fid, res.r), w = evWho(S, fid);
+    if (w) {
+      if (res.wloy) { w.loy = clamp(w.loy + res.wloy, 1, 10); dl.loy = res.wloy; }
+      if (res.wstr) { w.str = clamp(w.str + res.wstr, 1, 10); dl.str = res.wstr; }
+      if (res.wwit) { w.wit = clamp(w.wit + res.wwit, 1, 10); dl.wit = res.wwit; }
+      if (res.wfate === 'leave') { p.crew = p.crew.filter(x => x !== w); dl.gone = cname(w); }
+      else if (res.wfate) fate(S, fid, w, res.wfate, title.charAt(0).toLowerCase() + title.slice(1));
+    }
+    if (res.join) { const c = addLegend(S, fid, res.join); if (c) { dl.join = cname(c); log(S, 'В семье новый человек: ' + cname(c) + '. ' + c.bio + '.', 'big', fid); } }
+    if (ev.once) p.once.push(ev.id);
+    p.event = null; p.evWho = null;
+    log(S, title + ': ' + r, '', fid);
+    return { ok: true, msg: r, delta: dl, title, event: true, who: w ? w.id : null };
   }
 
   // ---------- конец месяца ----------
@@ -553,18 +646,18 @@
     log(S, s, 'law', fid); p.report.law = s;
     // под облаву может попасть и кто-то из семьи
     const live = p.crew.filter(c => c.st === 'ok');
-    if (L >= 2 && live.length && rnd(S) < 0.08 * L) { const c = live[Math.floor(rnd(S) * live.length)]; if (L >= 3 && rnd(S) < 0.15) fate(S, fid, c, 'dead', 'застрелен при задержании'); else fate(S, fid, c, 'jail', D.LAW[L].name); }
+    if (L >= 2 && live.length && rnd(S) < 0.08 * L) { const c = live[Math.floor(rnd(S) * live.length)]; if (L >= 3 && rnd(S) < 0.15 * armorK(p)) fate(S, fid, c, 'dead', 'застрелен при задержании'); else fate(S, fid, c, 'jail', D.LAW[L].name); }
   }
 
   function humanPhase(S, fid) {
     const p = S.f[fid], before = p.money;
     p.report = { money: 0, law: null, lost: [] };
     p.money += income(S, fid).total;
-    p.later = p.later.filter(l => { if (l.t <= S.turn) { p.money += l.amt; log(S, 'Вернулись вложения («' + l.why + '»): +' + l.amt, 'good', fid); return false; } return true; });
+    p.later = p.later.filter(l => { if (l.t <= S.turn) { p.money += l.amt; if (l.amt >= 0) log(S, 'Вернулись вложения («' + l.why + '»): +' + l.amt, 'good', fid); else log(S, 'Пришли за долгом («' + l.why + '»): ' + l.amt, 'bad', fid); return false; } return true; });
     if (p.money < 0) { const l = Math.max(1, Math.round(p.men * 0.1)); p.men = Math.max(0, p.men - l); addRep(S, fid, -2); log(S, 'Общак пуст, платить нечем. Ушли бойцы: ' + l, 'bad', fid); }
     D.PROJECTS.forEach(pr => {
       const st = p.proj[pr.id]; if (!st || st.stage !== 3) return;
-      st.age++; if (pr.guns) p.guns += pr.guns; if (pr.cars) p.cars += pr.cars; if (pr.repTurn) addRep(S, fid, pr.repTurn);
+      st.age++; if (pr.guns) addArms(p, 'aks', pr.guns); if (pr.cars) addCar(p, 'audi', pr.cars); if (pr.repTurn) addRep(S, fid, pr.repTurn);
       if (pr.pyramid && st.age >= 8 && rnd(S) < 0.05 + 0.02 * (st.age - 8)) { p.proj[pr.id] = { stage: 0, dead: true }; addHeat(S, fid, 25); addRep(S, fid, -15); log(S, 'Пирамида рухнула. Толпа вкладчиков громит офис, прокуратура возбудила дело.', 'bad', fid); }
     });
     if (p.rep > 15) p.rep -= p.rep * 0.015;
@@ -649,11 +742,11 @@
   // Что сервер показывает игроку: без сида и без чужих секретов
   function viewFor(S, fid) {
     const V = JSON.parse(JSON.stringify(S)); delete V.seed; V.me = fid;
-    S.humans.forEach(h => { if (h !== fid) { const x = S.f[h]; V.f[h] = { id: h, men: x.men, guns: x.guns, cars: x.cars, rep: x.rep, alive: x.alive, human: true, ready: x.ready, nick: x.nick, over: x.over ? { title: x.over.title, score: x.over.score } : null }; } });
+    S.humans.forEach(h => { if (h !== fid) { const x = S.f[h]; V.f[h] = { id: h, men: x.men, guns: x.guns, cars: x.cars, arms: x.arms, garage: x.garage, vests: x.vests, rep: x.rep, alive: x.alive, human: true, ready: x.ready, nick: x.nick, over: x.over ? { title: x.over.title, score: x.over.score } : null }; } });
     V.log = S.log.filter(l => !l.to || l.to === fid).slice(0, 80);
     return V;
   }
 
-  const ACTIONS = { assign, unassign, dismiss, recruit, buyGuns, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
-  G.Engine = { fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  const ACTIONS = { assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
+  G.Engine = { migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);

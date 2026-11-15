@@ -1,6 +1,6 @@
 /* Интерфейс: карта, панели, модальные окна, лобби онлайна */
 (function () {
-  const G = window.W90, E = G.Engine, D = G.DATA, GEO = G.GEO, Net = G.Net;
+  const G = window.W90, E = G.Engine, D = G.DATA, GEO = G.GEO, Net = G.Net, A = G.ART;
   const SAVE = 'war90.save.v4';
   let S = null, me = null, sel = null, section = 'gang', confirmNew = false;
   let net = null;          // онлайн: { room, token, lobby }
@@ -14,7 +14,7 @@
   const P = () => S.f[me];
 
   function save() { if (net) return; try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) { /* без сохранения */ } }
-  function load() { try { const s = JSON.parse(localStorage.getItem(SAVE)); return s && s.v === 4 && !s.done ? s : null; } catch (e) { return null; } }
+  function load() { try { const s = JSON.parse(localStorage.getItem(SAVE)); return s && s.v === 4 && !s.done ? E.migrate(s) : null; } catch (e) { return null; } }
   function wipe() { try { localStorage.removeItem(SAVE); } catch (e) { /* ignore */ } }
 
   // ---------- карта ----------
@@ -100,16 +100,17 @@
   function pointsHTML(i) {
     const d = S.d[i], dd = D.DISTRICTS[i], p = P();
     let h = '<h3>Точки <span class="muted">' + d.b.length + ' из ' + dd.slots + '</span></h3>';
-    if (d.b.length) h += '<table class="tbl pts">' + d.b.map((b, x) => {
+    if (d.b.length) h += '<div class="ptiles">' + d.b.map((b, x) => {
       const B = D.BUILDS[b], lv = E.pointLvl(d, x), c = E.upgradeCost(S, i, x), inc = E.pointInc(me, b);
-      return '<tr><td>' + B.name + ' <b class="lv">' + ROMAN[lv] + '</b>' + (B.perk ? '<small class="perk">' + esc(B.perk) + (lv > 1 && (B.fx || B.rec || B.def) ? ', ×' + lv : '') + '</small>' : '') + '</td><td class="good">+' + inc * lv + '</td><td>' + (lv >= E.MAX_LVL ? '<span class="muted">макс.</span>' : '<button class="btn sm" data-a="upgrade" data-i="' + i + '" data-x="' + x + '"' + (p.money < c ? ' disabled' : '') + '>Улучшить · ' + c + ' → +' + inc * (lv + 1) + '</button>') + '</td></tr>';
-    }).join('') + '</table>';
+      return '<div class="ptile"><div class="pimg">' + A.build(b, lv) + '<b class="lvb">' + ROMAN[lv] + '</b></div><div class="pinfo"><b>' + B.name + '</b><span class="good">+' + inc * lv + ' в мес.</span>' + (B.perk ? '<small class="perk">' + esc(B.perk) + (lv > 1 && (B.fx || B.rec || B.def) ? ', ×' + lv : '') + '</small>' : '') + '</div>' +
+        (lv >= E.MAX_LVL ? '<p class="muted pmax">Высший уровень</p>' : '<button class="btn sm pup" data-a="upgrade" data-i="' + i + '" data-x="' + x + '"' + (p.money < c ? ' disabled' : '') + '><span class="pnext">' + A.build(b, lv + 1) + '</span><span>До ' + ROMAN[lv + 1] + ' · ' + c + ' тыс. → +' + inc * (lv + 1) + '</span></button>') + '</div>';
+    }).join('') + '</div>';
     if (d.b.length >= dd.slots) return h + '<p class="muted">Свободных мест нет. Улучшай то, что стоит.</p>';
     h += '<div class="grid">';
     Object.keys(D.BUILDS).forEach(k => {
       const B = D.BUILDS[k], lock = E.canBuild(S, me, i, k);
       if (B.onlyMarket && !dd.m) return;
-      h += '<button class="card" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? ' disabled' : '') + ' title="' + esc(B.desc) + '"><b>' + B.name + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? B.cost + ' тыс.' : 'бесплатно') + ' → +' + E.pointInc(me, k) + '/мес.</span>' + (B.perk ? '<i class="perk">' + esc(B.perk) + '</i>' : '') + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
+      h += '<button class="card bcard" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? ' disabled' : '') + ' title="' + esc(B.desc) + '">' + A.build(k, 1) + '<b>' + B.name + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? B.cost + ' тыс.' : 'бесплатно') + ' → +' + E.pointInc(me, k) + '/мес.</span>' + (B.perk ? '<i class="perk">' + esc(B.perk) + '</i>' : '') + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
     });
     return h + '</div>';
   }
@@ -156,16 +157,35 @@
       [1, 5, can].map((n, x) => { const m = x === 2 ? Math.max(can, 1) : n; return '<button class="card" data-a="recruit" data-n="' + m + '"' + (can < m || (x === 2 && can < 1) ? ' disabled' : '') + '><b>' + (x === 2 ? 'Всех: ' + can : 'Нанять ' + n) + '</b><span>' + m * price + ' тыс.</span>' + (x === 0 && why ? '<small>' + why + '</small>' : '') + '</button>'; }).join('') + '</div>';
     h += '<table class="tbl">' + inf.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td>+' + r[1] + '</td></tr>').join('') + '<tr class="sum"><td>Приходит каждый месяц</td><td>+' + inf.total + '</td></tr></table>';
     h += '<p class="muted">Вербовка не тратит ход. Кого не нанял, подождут, но не больше трёх месячных притоков. Больше людей дают спортзалы на районах: строй и улучшай их во вкладке «Бизнес».</p>';
-    h += '<h3>Снаряжение</h3><div class="grid">' +
-      '<button class="card" data-a="guns"' + (p.money < E.gunPack(S, me) ? ' disabled' : '') + '><b>5 стволов</b><span>' + E.gunPack(S, me) + ' тыс., без хода</span>' + (E.fx(S, me, 'gun') ? '<small>скидка ' + E.fx(S, me, 'gun') + '% от охотничьих магазинов</small>' : '') + '</button>' +
-      '<button class="card" data-a="car"' + (p.money < E.carPrice(S, me) ? ' disabled' : '') + '><b>Тачка</b><span>' + E.carPrice(S, me) + ' тыс., без хода</span>' + (E.fx(S, me, 'car') ? '<small>скидка ' + E.fx(S, me, 'car') + '% от автосервисов</small>' : '') + '</button></div>';
-    h += '<p class="muted">Боец со стволом дерётся за двоих. Тачка возит четверых на разборку. Стволы и тачки поднимают авторитет.</p>';
+    h += shopHTML();
     h += '<h3>Касса за месяц</h3><table class="tbl">' + inc.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="' + (r[1] < 0 ? 'bad' : 'good') + '">' + sign(r[1]) + '</td></tr>').join('') + '<tr class="sum"><td>Итого</td><td>' + sign(inc.total) + '</td></tr></table>';
     const tot = inc.white + inc.black;
     if (tot) h += '<p class="muted">Белый доход: ' + R(inc.white / tot * 100) + '%. К 2007 году выживут те, кто успел легализоваться.</p>';
-    if (p.later.length) h += '<h3>Вложения в пути</h3><table class="tbl">' + p.later.map(l => '<tr><td>' + esc(l.why) + '</td><td class="good">+' + l.amt + '</td></tr>').join('') + '</table>';
+    if (p.later.length) h += '<h3>Вложения и долги</h3><table class="tbl">' + p.later.map(l => '<tr><td>' + esc(l.why) + '<br><span class="muted">' + E.date(l.t).label + '</span></td><td class="' + (l.amt < 0 ? 'bad' : 'good') + '">' + sign(l.amt) + '</td></tr>').join('') + '</table>';
     if (p.jail.length) h += '<h3>На зоне</h3><table class="tbl">' + p.jail.map(j => '<tr><td>' + j.n + ' чел.</td><td>выйдут: ' + E.date(j.t + 1).label + '</td></tr>').join('') + '</table>';
     return h;
+  }
+
+  // ---------- арсенал и гараж ----------
+  function shopHTML() {
+    const p = P(), y = E.date(S.turn).year, arms = p.arms || {}, gar = p.garage || {};
+    const disc = (key, what) => E.fx(S, me, key) ? '<p class="muted">Скидка ' + E.fx(S, me, key) + '% ' + what + '.</p>' : '';
+    const buy = (a, k, n, cost, label, lock) => '<button class="btn sm" data-a="' + a + '" data-k="' + k + '" data-n="' + n + '"' + (lock || p.money < cost ? ' disabled' : '') + '>' + label + ' · ' + cost + ' тыс.</button>';
+    const armed = Math.min(p.men, p.guns), seats = E.seatsOf(p);
+    let h = '<h3>Арсенал <span class="muted">со стволом ' + armed + ' из ' + p.men + ', сила стволов +' + R(E.armedValue(p)) + '</span></h3>' + disc('gun', 'от охотничьих магазинов' + (me === 'kopt' ? ' и ещё 30% от армейских складов' : '')) + '<div class="shop">';
+    Object.keys(D.ARMS).forEach(k => {
+      const W = D.ARMS[k], lock = y < W.from ? 'появится в ' + W.from + ' году' : '', n2 = W.pack === 1 ? 5 : 20;
+      h += '<div class="item' + (lock ? ' locked' : '') + '">' + A.arm(k) + '<div class="ii"><b>' + W.name + '</b><small>' + W.alt + ' · боец с ним +' + W.q + ' к силе</small><span>в арсенале: ' + (arms[k] || 0) + '</span><i>' + (lock || esc(W.desc)) + '</i><div class="row">' + buy('guns', k, W.pack, E.armCost(S, me, k, W.pack), '×' + W.pack, lock) + buy('guns', k, n2, E.armCost(S, me, k, n2), '×' + n2, lock) + '</div></div></div>';
+    });
+    const V = D.VEST, vlock = y < V.from ? 'появятся в ' + V.from + ' году' : '';
+    h += '<div class="item' + (vlock ? ' locked' : '') + '">' + A.vest() + '<div class="ii"><b>' + V.name + '</b><small>' + V.alt + '</small><span>на складе: ' + (p.vests || 0) + '</span><i>' + (vlock || esc(V.desc)) + '</i><div class="row">' + buy('vests', 'v', 5, E.vestCost(S, me, 5), '×5', vlock) + buy('vests', 'v', 20, E.vestCost(S, me, 20), '×20', vlock) + '</div></div></div></div>';
+    h += '<p class="muted">Лучшие стволы достаются бойцам первыми. Потери в бою списывают самое дешёвое. Покупка не тратит ход и поднимает авторитет.</p>';
+    h += '<h3>Гараж <span class="muted">мест ' + seats + ', на разборку едут до ' + (10 + seats) + ' бойцов, сила колёс +' + R(E.mobility(p)) + '</span></h3>' + disc('car', 'от автосервисов') + '<div class="shop">';
+    Object.keys(D.CARS).forEach(k => {
+      const Cr = D.CARS[k], lock = y < Cr.from ? 'появится в ' + Cr.from + ' году' : '';
+      h += '<div class="item' + (lock ? ' locked' : '') + '">' + A.car(k) + '<div class="ii"><b>' + Cr.name + '</b><small>' + Cr.alt + ' · мест ' + Cr.seats + ', боец на ней +' + Cr.q + (Cr.rep ? ' · авторитет +' + Cr.rep : '') + '</small><span>в гараже: ' + (gar[k] || 0) + '</span><i>' + (lock || esc(Cr.desc)) + '</i><div class="row">' + buy('car', k, 1, E.carCost(S, me, k), 'Купить', lock) + '</div></div></div>';
+    });
+    return h + '</div>' + (E.carTalk(S, me) ? '<p class="good">Шестисотые в гараже: переговоры +' + E.carTalk(S, me) + '%.</p>' : '') + (E.armorK(p) < 1 ? '<p class="good">Бронированный гелик: глава и бригадиры гибнут и ранятся вдвое реже.</p>' : '');
   }
 
   // ---------- семья: схема бригады (главный экран) и досье ----------
@@ -192,13 +212,13 @@
   const slotName = (pos, ok) => POSTS[pos].name + (pos === 'capo' && ok ? ' · ' + DD.OKRUGS[ok].short : '');
   function node(c, role, slot, extra) {
     const isSel = focus && (c ? focus.id === c.id : focus.id == null && focus.pos === slot.pos && (focus.ok || null) === (slot.ok || null));
-    if (!c) return '<button class="node vacant' + (isSel ? ' sel' : '') + '" data-a="vacant" data-pos="' + slot.pos + '" data-ok="' + (slot.ok || '') + '"><span class="role">' + role + '</span><b>Вакантно</b>' + (extra || '') + '<small>' + (slot.dis ? 'нужно больше районов' : 'подобрать человека') + '</small></button>';
+    if (!c) return '<button class="node vacant' + (isSel ? ' sel' : '') + '" data-a="vacant" data-pos="' + slot.pos + '" data-ok="' + (slot.ok || '') + '"><span class="ava">' + A.vacantFace() + '</span><span class="nb"><span class="role">' + role + '</span><b>Вакантно</b>' + (extra || '') + '<small>' + (slot.dis ? 'нужно больше районов' : 'подобрать человека') + '</small></span></button>';
     const st = c.st === 'hurt' ? '<em class="badge">ранен</em>' : c.st === 'jail' ? '<em class="badge">сидит</em>' : '';
-    return '<button class="node' + (c.st !== 'ok' ? ' out' : '') + (isSel ? ' sel' : '') + '" data-a="person" data-id="' + c.id + '"><span class="role">' + role + '</span>' + st + '<b>' + esc(c.name.split(' ')[0]) + ' «' + esc(c.nick) + '»</b><small>' + esc(c.name.split(' ')[1]) + ', ' + c.age + ' лет</small>' + (extra || '') + '<span class="mini">' + mini('Сила', c.str) + mini('Ум', c.wit) + mini('Верн.', c.loy) + '</span></button>';
+    return '<button class="node' + (c.st !== 'ok' ? ' out' : '') + (c.leg ? ' legend' : '') + (isSel ? ' sel' : '') + '" data-a="person" data-id="' + c.id + '"><span class="ava">' + A.face(c) + '</span><span class="nb"><span class="role">' + role + (c.leg ? ' · легенда' : '') + '</span>' + st + '<b>«' + esc(c.nick) + '»</b><small>' + esc(c.name) + ', ' + c.age + '</small>' + (extra || '') + '<span class="mini">' + mini('Сила', c.str) + mini('Ум', c.wit) + mini('Верн.', c.loy) + '</span></span></button>';
   }
   function renderOrg() {
     const p = P(), cr = E.crew(S, me), total = E.count(S, me), capos = cr.filter(x => x.pos === 'capo'), max = E.capoMax(S, me), bench = cr.filter(x => !x.pos);
-    let h = '<div class="tier"><div class="node boss"><span class="role">Глава</span><b>Ты</b><small>' + fd(me).name + '</small><span class="bossline">бойцов ' + p.men + ' · районов ' + total + ' · сила ' + R(E.power(p)) + '</span></div></div>';
+    let h = '<div class="tier"><div class="node boss"><span class="ava">' + A.bossFace(fd(me)) + '</span><span class="nb"><span class="role">Глава</span><b>Ты</b><small>' + fd(me).name + '</small><span class="bossline">бойцов ' + p.men + ' · районов ' + total + ' · сила ' + R(E.power(p)) + '</span></span></div></div>';
     h += '<p class="tlabel">Ближний круг</p><div class="tier">' + ['right', 'cons', 'treas'].map(pos => node(cr.find(x => x.pos === pos), POSTS[pos].name, { pos })).join('') + '</div>';
     h += '<p class="tlabel">Бригадиры · ' + capos.length + ' из ' + max + '</p><div class="tier">' + myOkrugs().map(ok => {
       const n = okDistricts(ok).length, zv = '<span class="zv">' + n + ' ' + (n === 1 ? 'район' : n < 5 ? 'района' : 'районов') + ' · ~' + Math.round(p.men * n / Math.max(1, total)) + ' бойцов</span>';
@@ -215,7 +235,7 @@
       const c = cr.find(x => x.id === focus.id), order = chartOrder(), k = order.indexOf(c);
       let h = '';
       if (order.length > 1) { const pv = order[(k - 1 + order.length) % order.length], nx = order[(k + 1) % order.length]; h += '<div class="pnav"><button class="btn sm" data-a="person" data-id="' + pv.id + '">← ' + esc(pv.nick) + '</button><span>' + (k + 1) + ' из ' + order.length + '</span><button class="btn sm" data-a="person" data-id="' + nx.id + '">' + esc(nx.nick) + ' →</button></div>'; }
-      h += '<p class="eyebrow">' + (c.pos ? slotName(c.pos, c.ok) : 'Резерв') + '</p><h2>' + esc(E.cname(c)) + '</h2><p class="sub">' + c.age + ' лет · в семье с ' + E.date(c.since).label + (c.st === 'hurt' ? ' · ранен, встанет: ' + E.date(c.until + 1).label : c.st === 'jail' ? ' · сидит, выйдет: ' + E.date(c.until + 1).label : '') + '</p>';
+      h += '<div class="dhero"><span class="ava big">' + A.face(c) + '</span><div><p class="eyebrow">' + (c.pos ? slotName(c.pos, c.ok) : 'Резерв') + (c.leg ? ' · легенда эпохи' : '') + '</p><h2>' + esc(E.cname(c)) + '</h2><p class="sub">' + c.age + ' лет · в семье с ' + E.date(c.since).label + (c.st === 'hurt' ? ' · ранен, встанет: ' + E.date(c.until + 1).label : c.st === 'jail' ? ' · сидит, выйдет: ' + E.date(c.until + 1).label : '') + '</p></div></div>';
       h += '<p class="lead2">' + esc(c.bio) + '.</p><div class="stats">' + statBar('Сила', c.str) + statBar('Ум', c.wit) + statBar('Верность', c.loy) + '</div>';
       if (c.loy <= 3) h += '<p class="bad">Ненадёжен: может сдать на допросе или уйти с общаком.</p>';
       if (c.pos) h += '<h3>Что даёт</h3>' + postEffect(c) + '<button class="btn sm" data-a="unassign" data-id="' + c.id + '">Снять в резерв</button>';
@@ -238,7 +258,7 @@
     if (capFull) h += '<p class="bad">Бригадиров уже ' + E.capoMax(S, me) + ': на большее не хватает районов. Один бригадир на каждые шесть районов.</p>';
     h += '<h3>Кандидаты из резерва <span class="muted">лучшие по ' + (key === 'str' ? 'силе' : 'уму') + '</span></h3>';
     if (!cand.length) return h + '<p class="muted">Свободных людей нет. Они выделяются из бригады каждый месяц; чем больше бойцов, тем чаще.</p>';
-    return h + cand.map(c => '<div class="cand"><div><b>' + esc(E.cname(c)) + '</b><small>' + esc(c.bio) + '</small><span class="mini">' + mini('Сила', c.str) + mini('Ум', c.wit) + mini('Верн.', c.loy) + '</span>' + postEffect(Object.assign({}, c, { pos, ok })) + '</div><div class="cbtn"><button class="btn sm" data-a="appoint" data-id="' + c.id + '" data-pos="' + pos + '" data-ok="' + (ok || '') + '"' + (capFull ? ' disabled' : '') + '>Назначить</button><button class="btn sm ghost" data-a="person" data-id="' + c.id + '">Досье</button></div></div>').join('');
+    return h + cand.map(c => '<div class="cand"><span class="ava">' + A.face(c) + '</span><div><b>' + esc(E.cname(c)) + '</b><small>' + esc(c.bio) + '</small><span class="mini">' + mini('Сила', c.str) + mini('Ум', c.wit) + mini('Верн.', c.loy) + '</span>' + postEffect(Object.assign({}, c, { pos, ok })) + '</div><div class="cbtn"><button class="btn sm" data-a="appoint" data-id="' + c.id + '" data-pos="' + pos + '" data-ok="' + (ok || '') + '"' + (capFull ? ' disabled' : '') + '>Назначить</button><button class="btn sm ghost" data-a="person" data-id="' + c.id + '">Досье</button></div></div>').join('');
   }
   function deadList() {
     const p = P();
@@ -256,7 +276,7 @@
     h += '<h3>Люди во власти <span class="muted">связи: ' + E.conn(S, me) + '</span></h3><div class="grid">';
     Object.keys(D.OFFICIALS).forEach(k => {
       const O = D.OFFICIALS[k], c = E.officialCost(S, me, k), lock = y < O.from ? 'с ' + O.from + ' года' : p.off[k] >= D.OFFICIAL_MAX ? 'больше не купить' : p.money < c ? 'не хватает денег' : '';
-      h += '<button class="card" data-a="hire" data-k="' + k + '"' + (lock || p.ap < 1 ? ' disabled' : '') + '><b>' + O.name + '</b><em>' + p.off[k] + ' из ' + D.OFFICIAL_MAX + '</em><span>' + c + ' тыс. и ' + O.keep + ' в мес.</span><span>связи +' + O.w + ', розыск −' + O.cool + ' в мес.</span>' + (lock ? '<small>' + lock + '</small>' : '') + '</button>';
+      h += '<button class="card offc" data-a="hire" data-k="' + k + '"' + (lock || p.ap < 1 ? ' disabled' : '') + '><span class="ava">' + A.officialFace(k) + '</span><b>' + O.name + '</b><em>' + p.off[k] + ' из ' + D.OFFICIAL_MAX + '</em><span>' + c + ' тыс. и ' + O.keep + ' в мес.</span><span>связи +' + O.w + ', розыск −' + O.cool + ' в мес.</span>' + (lock ? '<small>' + lock + '</small>' : '') + '</button>';
     });
     return h + '</div>';
   }
@@ -326,7 +346,7 @@
     let h = '<h2>Кланы</h2><table class="tbl clans"><tr><th>Бригада</th><th>Районы</th><th>Сила</th><th></th></tr>';
     D.FACTIONS.filter(f => !S.f[f.id].absent).sort((a, b) => E.count(S, b.id) - E.count(S, a.id)).forEach(f => {
       const x = S.f[f.id], mine = f.id === me;
-      h += '<tr class="' + (x.alive ? '' : 'dead') + '"><td><i class="dot" style="background:' + f.color + '"></i>' + f.name + (mine ? ' (ты)' : x.human ? ' · ' + esc(x.nick || 'игрок') : '') + '</td><td>' + E.count(S, f.id) + '</td><td>' + (x.alive ? R(E.power(x)) : '—') + '</td><td>';
+      h += '<tr class="' + (x.alive ? '' : 'dead') + '"><td><span class="ava xs">' + A.bossFace(f) + '</span><i class="dot" style="background:' + f.color + '"></i>' + f.name + (mine ? ' (ты)' : x.human ? ' · ' + esc(x.nick || 'игрок') : '') + '</td><td>' + E.count(S, f.id) + '</td><td>' + (x.alive ? R(E.power(x)) : '—') + '</td><td>';
       if (!mine && x.alive) {
         if (x.human) h += '<span class="' + (x.ready ? 'good' : 'muted') + '">' + (x.ready ? 'готов' : 'ходит') + '</span>';
         else h += E.inTruce(S, me, f.id) ? '<span class="muted">мир до ' + E.date(p.truce[f.id]).label + '</span>' : '<button class="btn sm" data-a="truce" data-k="' + f.id + '"' + (p.ap < 1 || p.money < E.truceCost(S, f.id) ? ' disabled' : '') + '>Стрелка · ' + E.truceCost(S, f.id) + '</button>';
@@ -408,8 +428,9 @@
     else if (a === 'unassign') act('unassign', [+b.dataset.id]);
     else if (a === 'dismiss') act('dismiss', [+b.dataset.id]);
     else if (a === 'recruit') act('recruit', [+b.dataset.n || 1]);
-    else if (a === 'guns') act('buyGuns', []);
-    else if (a === 'car') act('buyCar', []);
+    else if (a === 'guns') act('buyGuns', [k || 'pm', +b.dataset.n || 5]);
+    else if (a === 'vests') act('buyVests', [+b.dataset.n || 5]);
+    else if (a === 'car') act('buyCar', [k || 'nine']);
     else if (a === 'hire') act('hire', [k]);
     else if (a === 'bribe') act('bribe', []);
     else if (a === 'truce') act('truce', [k]);
@@ -451,15 +472,24 @@
       if (rp.lost && rp.lost.length) h += '<span class="bad">Потеряны районы: ' + esc(rp.lost.join(', ')) + '</span>';
       h += '</div>';
     }
-    h += '<h2>' + esc(ev.title) + '</h2><p class="lead">' + esc(ev.text) + '</p><div class="opts">';
-    ev.opts.forEach((o, k) => { const os = E.optState(S, me, o); h += '<button class="opt" data-a="opt" data-k="' + k + '"' + (os.lock ? ' disabled' : '') + '><span>' + esc(o.t) + '</span>' + (os.cost ? '<em>' + os.cost + ' тыс.</em>' : '') + (os.lock ? '<small>' + esc(os.lock) + '</small>' : '') + '</button>'; });
+    const tx = s => esc(E.evText(S, me, s)), w = E.evWho(S, me), L = ev.npc && D.LEGENDS[ev.npc];
+    h += '<h2>' + tx(ev.title) + '</h2>';
+    if (L) h += '<div class="evwho"><span class="ava">' + A.legendFace(ev.npc) + '</span><div><b>' + esc(L.nick) + '</b><small>' + esc(L.name) + ', ' + esc(L.bio.charAt(0).toLowerCase() + L.bio.slice(1)) + '</small></div></div>';
+    else if (w) h += '<div class="evwho"><span class="ava">' + A.face(w) + '</span><div><b>' + esc(E.cname(w)) + '</b><small>' + (w.pos ? POSTS[w.pos].name : 'резерв') + ' · сила ' + w.str + ', ум ' + w.wit + ', верность ' + w.loy + '</small></div></div>';
+    h += '<p class="lead">' + tx(ev.text) + '</p><div class="opts">';
+    ev.opts.forEach((o, k) => { const os = E.optState(S, me, o); h += '<button class="opt" data-a="opt" data-k="' + k + '"' + (os.lock ? ' disabled' : '') + '><span>' + tx(o.t) + '</span>' + (os.cost ? '<em>' + os.cost + ' тыс.</em>' : '') + (os.lock ? '<small>' + esc(os.lock) + '</small>' : '') + '</button>'; });
     openModal(h + '</div>', 'event', key);
   }
   function showResult(r) {
-    const d = r.delta, names = { money: 'Касса', rep: 'Авторитет', heat: 'Розыск', men: 'Бойцы', guns: 'Стволы', cars: 'Тачки', later: 'Вернётся позже' };
+    const d = r.delta, names = { money: 'Касса', rep: 'Авторитет', heat: 'Розыск', men: 'Бойцы', guns: 'Стволы', cars: 'Тачки', vests: 'Бронежилеты', later: d.later < 0 ? 'Долг, заберут позже' : 'Вернётся позже', loy: 'Верность', str: 'Сила', wit: 'Ум' };
     let ch = '';
     Object.keys(names).forEach(k => { if (d[k]) { const good = k === 'heat' ? d[k] < 0 : d[k] > 0; ch += '<span class="' + (good ? 'good' : 'bad') + '">' + names[k] + ' ' + sign(d[k]) + '</span>'; } });
-    openModal('<p class="eyebrow">' + esc(r.title) + '</p><p class="lead">' + esc(r.msg) + '</p><p class="deltas">' + (ch || '<span>Без последствий</span>') + '</p><button class="btn primary wide" data-a="close">Дальше</button>', 'event', 'result');
+    if (d.arm) ch += '<span class="good">' + esc(d.arm) + '</span>';
+    if (d.car) ch += '<span class="good">В гараже: ' + esc(d.car) + '</span>';
+    if (d.join) ch += '<span class="good">В семье: ' + esc(d.join) + '</span>';
+    if (d.gone) ch += '<span class="bad">Ушёл: ' + esc(d.gone) + '</span>';
+    const wc = r.who != null && E.crew(S, me).find(c => c.id === r.who);
+    openModal('<p class="eyebrow">' + esc(r.title) + '</p>' + (wc ? '<div class="evwho"><span class="ava">' + A.face(wc) + '</span><div><b>' + esc(E.cname(wc)) + '</b><small>' + (wc.st === 'hurt' ? 'ранен' : wc.st === 'jail' ? 'сидит' : 'сила ' + wc.str + ', ум ' + wc.wit + ', верность ' + wc.loy) + '</small></div></div>' : '') + '<p class="lead">' + esc(r.msg) + '</p><p class="deltas">' + (ch || '<span>Без последствий</span>') + '</p><button class="btn primary wide" data-a="close">Дальше</button>', 'event', 'result');
     if (!net) renderTop();
   }
   function showOver() {
@@ -482,7 +512,7 @@
     h += '<div class="modes"><section><h3>Онлайн</h3><div id="online"><p class="muted">Ищу сервер…</p></div></section><section><h3>Одиночная игра</h3>';
     if (sv) h += '<button class="btn primary wide" data-a="continue">Продолжить: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
     h += '<p class="muted">Выбери бригаду. Остальных ведут боты.</p><div class="factions">';
-    D.FACTIONS.forEach(f => { const d = D.DISTRICTS.find(x => x.name === f.home); h += '<button class="fac" data-a="start" data-k="' + f.id + '"><i style="background:' + f.color + '"></i><b>' + f.name + '</b><span>' + f.home + ', ' + D.OKRUGS[d.ok].short + '</span><small>' + esc(f.perk) + '</small></button>'; });
+    D.FACTIONS.forEach(f => { const d = D.DISTRICTS.find(x => x.name === f.home); h += '<button class="fac" data-a="start" data-k="' + f.id + '"><span class="ava">' + A.bossFace(f) + '</span><i style="background:' + f.color + '"></i><b>' + f.name + '</b><span>' + f.home + ', ' + D.OKRUGS[d.ok].short + '</span><small>' + esc(f.perk) + '</small></button>'; });
     h += '</div></section></div><p class="muted">Ход — один месяц. В начале месяца случается событие с пятью решениями. Потом у тебя три хода: нападай на соседние районы, похищай, покупай людей во власти, веди крупный бизнес. Бойцы, стволы, тачки, точки на районах и их улучшения стоят только денег.</p>';
     openModal(h, 'start', 'start');
     Net.rooms().then(list => {
@@ -542,7 +572,7 @@
 
   buildMap();
   function boot(data) {
-    if (data && data.S) { S = data.S; me = S.humans[0]; sel = data.sel; render(); return; }
+    if (data && data.S) { S = E.migrate(data.S); me = S.humans[0]; sel = data.sel; render(); return; }
     const m = /^#room-([\w-]+)$/.exec(location.hash), rec = Net.recall() || {};
     if (m && rec[m[1]]) { enterRoom(m[1], rec[m[1]]); return; }
     showStart();
