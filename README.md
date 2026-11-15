@@ -20,22 +20,30 @@ node server.js
 
 ## Деплой на сервер
 
-Нужен Linux-сервер с Node 18+ и git. Зависимостей нет, `npm install` не нужен.
+Боевой сервер: Ubuntu 24.04, Node 22, PM2, Nginx. Код лежит в `/opt/war90`, деплоится ветка `main`. Зависимостей нет, `npm install` не нужен.
+
+- Игра запущена под PM2 с именем `war90`, `PORT=3090`, слушает только `127.0.0.1:3090`. Автозапуск через `pm2 save` и `pm2 startup`.
+- Снаружи её отдаёт Nginx на 80-м порту (`/etc/nginx/sites-available/war90`, `proxy_pass http://127.0.0.1:3090`).
+- Онлайн-состояние идёт потоком Server-Sent Events (`/api/stream`). Без `proxy_buffering off`, `proxy_read_timeout 1h`, `proxy_http_version 1.1` и пустого заголовка `Connection` онлайн тормозит или рвётся.
+- Комнаты хранятся в `data/rooms.json` и переживают перезапуск.
 
 ```bash
-# один раз: забрать код
-git clone https://github.com/alexlaostra-max/war90.git && cd war90
+# обновить игру
+cd /opt/war90 && git pull && pm2 restart war90
 
-# запуск в фоне через pm2 (перезапускается при падении и после ребута)
-npm install -g pm2
-PORT=3000 pm2 start server.js --name war90
-pm2 save && pm2 startup   # выполни команду, которую напечатает pm2 startup
+# статус, логи, проверка изнутри
+pm2 list
+pm2 logs war90
+curl -s http://127.0.0.1/api/rooms        # ответ {"rooms":[...]}
 
-# обновление
-git pull && pm2 restart war90
+# после правки Nginx
+nginx -t && systemctl reload nginx
+
+# подключить домен и HTTPS (нужен для Telegram Mini App): A-запись на IP сервера, затем
+sed -i 's/server_name _;/server_name ДОМЕН;/' /etc/nginx/sites-available/war90 && nginx -t && systemctl reload nginx && certbot --nginx -d ДОМЕН
 ```
 
-Комнаты лежат в `data/rooms.json` рядом с кодом и переживают перезапуск. Если перед сервером стоит nginx, для `/api/stream` нужен `proxy_buffering off;` (поток событий), остальное проксируется как обычно.
+Перед рискованными изменениями на сервере сделай снэпшот в панели хостинга.
 
 ## Сложность
 
