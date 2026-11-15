@@ -35,7 +35,7 @@
       if (f.id === 'cher') x.money = 30;
       if (f.id === 'tag') x.off.uch = 1;
     });
-    humans.forEach(h => { S.f[h].ap = apMax(S, h); pickEvent(S, h); log(S, 'Декабрь 1991-го. Ты глава бригады, у тебя один район и горстка пацанов.', 'big', h); });
+    humans.forEach(h => { S.f[h].pool = inflow(S, h).total; S.f[h].ap = apMax(S, h); pickEvent(S, h); log(S, 'Декабрь 1991-го. Ты глава бригады, у тебя один район и горстка пацанов.', 'big', h); });
     return S;
   }
 
@@ -50,6 +50,17 @@
   const conn = (S, fid) => { const o = S.f[fid].off || {}; return Object.keys(o).reduce((s, k) => s + o[k] * D.OFFICIALS[k].w, 0); };
   const apMax = (S, fid) => Math.min(6, 3 + okrugsHeld(S, fid).length + (S.f[fid].rep >= 60 ? 1 : 0));
   const menCap = (S, fid) => 10 + count(S, fid) * 6 + Math.floor(S.f[fid].rep / 2);
+  // Новобранцы: сколько людей готово прийти в бригаду за месяц и откуда они берутся
+  function inflow(S, fid) {
+    const rows = [['Двор', 2]], n = count(S, fid);
+    let gyms = 0, other = 0;
+    owned(S, fid).forEach(i => S.d[i].b.forEach((b, x) => { const r = (D.BUILDS[b].rec || 0) * pointLvl(S.d[i], x); if (b === 'gym') gyms += r; else other += r; }));
+    rows.push(['Спортзалы', gyms], ['ЧОПы', other], ['Районы', Math.floor(n / 3)], ['Авторитет', Math.floor(S.f[fid].rep / 20)]);
+    if (fid === 'oreh') rows.push(['Ореховские качалки', 2]);
+    return { rows, total: rows.reduce((s, r) => s + r[1], 0) };
+  }
+  const pool = (S, fid) => S.f[fid].pool == null ? inflow(S, fid).total : S.f[fid].pool;
+  const recruitPrice = S => Math.round(1 + S.turn / 40);
   function lawLevel(heat) { let l = 0; D.LAW.forEach((x, i) => { if (heat >= x.at) l = i; }); return l; }
 
   function districtDef(S, i) {
@@ -119,13 +130,16 @@
   const addRep = (S, fid, v) => { const p = S.f[fid]; p.rep = clamp(p.rep + v, 0, 100); };
   const addHeat = (S, fid, v) => { const p = S.f[fid]; p.heat = clamp(p.heat + v, 0, 100); };
 
-  function recruit(S, fid) {
-    const e = spend(S, fid, 1); if (e) return fail(e);
-    const p = S.f[fid], cap = menCap(S, fid);
-    if (p.men >= cap) return fail('Больше людей район не даст. Нужны новые районы или авторитет');
-    const n = Math.min(cap - p.men, 3 + Math.floor(p.rep / 10) + (fid === 'oreh' ? 2 : 0));
-    p.men += n; p.ap--;
-    return { ok: true, msg: 'В бригаду пришли ' + n + ' чел.' };
+  // Вербовка стоит денег и не тратит ход; нанять можно только тех, кто ждёт во дворах и спортзалах
+  function recruit(S, fid, n) {
+    const e = spend(S, fid, 0); if (e) return fail(e);
+    const p = S.f[fid], cap = menCap(S, fid), price = recruitPrice(S), have = pool(S, fid);
+    if (p.men >= cap) return fail('Больше людей бригада не удержит. Нужны новые районы или авторитет');
+    if (have < 1) return fail('Желающих нет. Новые придут в следующем месяце; строй спортзалы');
+    if (p.money < price) return fail('Не хватает денег: боец стоит ' + price);
+    n = Math.max(1, Math.min(Math.floor(+n) || 1, have, cap - p.men, Math.floor(p.money / price)));
+    p.men += n; p.money -= n * price; p.pool = have - n;
+    return { ok: true, msg: 'В бригаду пришли ' + n + ' чел. за ' + n * price + ' тыс.' };
   }
   function buyGuns(S, fid) {
     const e = spend(S, fid, 0); if (e) return fail(e);
@@ -517,7 +531,7 @@
     checkDone(S);
     if (S.done) return { ok: true, msg: 'Игра окончена', over: true };
     S.turn++;
-    active(S).forEach(h => { const p = S.f[h]; p.report.lost = p.lostNow || []; p.lostNow = null; p.ap = apMax(S, h); p.ready = false; pickEvent(S, h); });
+    active(S).forEach(h => { const p = S.f[h], inf = inflow(S, h).total; p.pool = Math.min(pool(S, h) + inf, inf * 3); p.report.lost = p.lostNow || []; p.lostNow = null; p.ap = apMax(S, h); p.ready = false; pickEvent(S, h); });
     return { ok: true, msg: date(S.turn).label };
   }
 
@@ -530,5 +544,5 @@
   }
 
   const ACTIONS = { recruit, buyGuns, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
-  G.Engine = { MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);

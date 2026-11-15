@@ -79,7 +79,7 @@
     let pips = ''; for (let i = 0; i < E.apMax(S, me); i++) pips += '<u class="' + (i < p.ap ? 'on' : '') + '"></u>';
     $('#stats').innerHTML =
       st('Касса, тыс. $', R(p.money), sign(inc.total) + ' в мес.', p.money < 0 ? 'bad' : '') +
-      st('Бойцы', p.men, 'из ' + cap) + st('Стволы', p.guns) + st('Тачки', p.cars) +
+      st('Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('Стволы', p.guns) + st('Тачки', p.cars) +
       st('Авторитет', R(p.rep)) + st('Связи', E.conn(S, me)) +
       '<div class="st heat l' + L + '"><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div>' +
       '<div class="st ap"><span>Ходы</span><div class="pips">' + pips + '</div></div>';
@@ -150,8 +150,13 @@
     const p = P(), inc = E.income(S, me), cap = E.menCap(S, me);
     let h = '<h2>' + fd(me).name + '</h2><p class="sub">' + esc(fd(me).perk) + '</p>';
     h += '<dl class="kv"><dt>Сила бригады</dt><dd>' + R(E.power(p)) + '</dd><dt>Бойцы</dt><dd>' + p.men + ' из ' + cap + '</dd><dt>Со стволом</dt><dd>' + Math.min(p.men, p.guns) + '</dd><dt>На колёсах</dt><dd>' + Math.min(p.men, p.cars * 4) + '</dd><dt>Районы</dt><dd>' + E.count(S, me) + ' из 102</dd></dl>';
-    h += '<div class="grid">' +
-      '<button class="card" data-a="recruit"' + (p.ap < 1 || p.men >= cap ? ' disabled' : '') + '><b>Вербовать</b><span>1 ход, бесплатно</span>' + (p.men >= cap ? '<small>предел: нужны районы и авторитет</small>' : '') + '</button>' +
+    const inf = E.inflow(S, me), have = E.pool(S, me), price = E.recruitPrice(S), room = cap - p.men, can = Math.max(0, Math.min(have, room, Math.floor(p.money / price)));
+    const why = room < 1 ? 'бригада полна: нужны районы и авторитет' : have < 1 ? 'желающих нет до следующего месяца' : p.money < price ? 'не хватает денег' : '';
+    h += '<h3>Вербовка <span class="muted">ждут ' + have + ' чел., боец стоит ' + price + ' тыс.</span></h3><div class="grid g3">' +
+      [1, 5, can].map((n, x) => { const m = x === 2 ? Math.max(can, 1) : n; return '<button class="card" data-a="recruit" data-n="' + m + '"' + (can < m || (x === 2 && can < 1) ? ' disabled' : '') + '><b>' + (x === 2 ? 'Всех: ' + can : 'Нанять ' + n) + '</b><span>' + m * price + ' тыс.</span>' + (x === 0 && why ? '<small>' + why + '</small>' : '') + '</button>'; }).join('') + '</div>';
+    h += '<table class="tbl">' + inf.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td>+' + r[1] + '</td></tr>').join('') + '<tr class="sum"><td>Приходит каждый месяц</td><td>+' + inf.total + '</td></tr></table>';
+    h += '<p class="muted">Вербовка не тратит ход. Кого не нанял, подождут, но не больше трёх месячных притоков. Больше людей дают спортзалы на районах: строй и улучшай их во вкладке «Бизнес».</p>';
+    h += '<h3>Снаряжение</h3><div class="grid">' +
       '<button class="card" data-a="guns"' + (p.money < E.gunPrice(S, me) * 5 ? ' disabled' : '') + '><b>5 стволов</b><span>' + E.gunPrice(S, me) * 5 + ' тыс., без хода</span></button>' +
       '<button class="card" data-a="car"' + (p.money < E.CAR_PRICE ? ' disabled' : '') + '><b>Тачка</b><span>' + E.CAR_PRICE + ' тыс., без хода</span></button></div>';
     h += '<p class="muted">Боец со стволом дерётся за двоих. Тачка возит четверых на разборку. Стволы и тачки поднимают авторитет.</p>';
@@ -310,7 +315,7 @@
     else if (a === 'dopen') { if (openD.has(di)) openD.delete(di); else openD.add(di); render(); }
     else if (a === 'kidnap') act('kidnap', [sel]);
     else if (a === 'raid') act('raid', [di]);
-    else if (a === 'recruit') act('recruit', []);
+    else if (a === 'recruit') act('recruit', [+b.dataset.n || 1]);
     else if (a === 'guns') act('buyGuns', []);
     else if (a === 'car') act('buyCar', []);
     else if (a === 'hire') act('hire', [k]);
@@ -382,7 +387,7 @@
     if (sv) h += '<button class="btn primary wide" data-a="continue">Продолжить: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
     h += '<p class="muted">Выбери бригаду. Остальных ведут боты.</p><div class="factions">';
     D.FACTIONS.forEach(f => { const d = D.DISTRICTS.find(x => x.name === f.home); h += '<button class="fac" data-a="start" data-k="' + f.id + '"><i style="background:' + f.color + '"></i><b>' + f.name + '</b><span>' + f.home + ', ' + D.OKRUGS[d.ok].short + '</span><small>' + esc(f.perk) + '</small></button>'; });
-    h += '</div></section></div><p class="muted">Ход — один месяц. В начале месяца случается событие с пятью решениями. Потом у тебя три хода: вербуй, вооружай, нападай на соседние районы, ставь точки, покупай людей во власти.</p>';
+    h += '</div></section></div><p class="muted">Ход — один месяц. В начале месяца случается событие с пятью решениями. Потом у тебя три хода: нападай на соседние районы, ставь точки, покупай людей во власти. Бойцов, стволы и тачки покупаешь за деньги без траты хода.</p>';
     openModal(h, 'start', 'start');
     Net.rooms().then(list => {
       const box = $('#online'); if (!box || modalKey !== 'start') return;
