@@ -95,6 +95,24 @@
   const kindTag = k => '<span class="tag ' + k + '">' + ({ w: 'белый', g: 'серый', b: 'чёрный' }[k]) + '</span>';
   const who = f => fd(f).name + (S.f[f].human && S.f[f].nick ? ' · ' + esc(S.f[f].nick) : '');
 
+  const ROMAN = ['', 'I', 'II', 'III'];
+  // точки района: что стоит, что можно улучшить и что построить
+  function pointsHTML(i) {
+    const d = S.d[i], dd = D.DISTRICTS[i], p = P();
+    let h = '<h3>Точки <span class="muted">' + d.b.length + ' из ' + dd.slots + '</span></h3>';
+    if (d.b.length) h += '<table class="tbl pts">' + d.b.map((b, x) => {
+      const B = D.BUILDS[b], lv = E.pointLvl(d, x), c = E.upgradeCost(S, i, x), inc = E.pointInc(me, b);
+      return '<tr><td>' + B.name + ' <b class="lv">' + ROMAN[lv] + '</b></td><td class="good">+' + inc * lv + '</td><td>' + (lv >= E.MAX_LVL ? '<span class="muted">макс.</span>' : '<button class="btn sm" data-a="upgrade" data-i="' + i + '" data-x="' + x + '"' + (p.money < c || p.ap < 1 ? ' disabled' : '') + '>Улучшить · ' + c + ' → +' + inc * (lv + 1) + '</button>') + '</td></tr>';
+    }).join('') + '</table>';
+    if (d.b.length >= dd.slots) return h + '<p class="muted">Свободных мест нет. Улучшай то, что стоит.</p>';
+    h += '<div class="grid">';
+    Object.keys(D.BUILDS).forEach(k => {
+      const B = D.BUILDS[k], lock = E.canBuild(S, me, i, k);
+      if (B.onlyMarket && !dd.m) return;
+      h += '<button class="card" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock || p.ap < 1 ? ' disabled' : '') + ' title="' + esc(B.desc) + '"><b>' + B.name + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? B.cost + ' тыс.' : 'бесплатно') + ' → +' + E.pointInc(me, k) + '/мес.</span>' + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
+    });
+    return h + '</div>';
+  }
   function paneDistrict() {
     if (sel == null) return '<p class="muted">Выбери район на карте. Нападать можно только на районы, которые граничат с твоими: они обведены пунктиром.</p>';
     const d = S.d[sel], dd = D.DISTRICTS[sel], p = P(), mine = d.o === me, c = E.conn(S, me);
@@ -115,15 +133,8 @@
       h += '</div>';
     }
     if (mine) {
-      h += '<h3>Точки <span class="muted">' + d.b.length + ' из ' + dd.slots + '</span></h3>';
-      if (d.b.length) h += '<p class="chips">' + d.b.map(b => '<span>' + D.BUILDS[b].name + '</span>').join('') + '</p>';
-      h += '<div class="grid">';
-      Object.keys(D.BUILDS).forEach(k => {
-        const B = D.BUILDS[k], lock = E.canBuild(S, me, sel, k);
-        if (B.onlyMarket && !dd.m) return;
-        h += '<button class="card" data-a="build" data-k="' + k + '"' + (lock || p.ap < 1 ? ' disabled' : '') + ' title="' + esc(B.desc) + '"><b>' + B.name + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? B.cost + ' тыс.' : 'бесплатно') + ' → +' + E.pointInc(me, k) + '/мес.</span>' + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
-      });
-      h += '</div>' + btn('Похитить коммерсанта', 'kidnap', '', p.kidnapTurn === S.turn ? 'раз в месяц' : p.men < 4 ? 'нужно 4 бойца' : p.ap < 1, 'wide');
+      h += pointsHTML(sel);
+      h += btn('Похитить коммерсанта', 'kidnap', '', p.kidnapTurn === S.turn ? 'раз в месяц' : p.men < 4 ? 'нужно 4 бойца' : p.ap < 1, 'wide');
     } else if (E.attackable(S, me, sel)) {
       if (d.o && !S.f[d.o].human && E.inTruce(S, me, d.o)) h += '<p class="muted">С бригадой перемирие до ' + E.date(p.truce[d.o]).label + '.</p>';
       else {
@@ -167,9 +178,37 @@
     return h + '</div>';
   }
 
+  let bizView = 'districts'; const openD = new Set();
   function paneBiz() {
+    const seg = '<div class="seg"><button class="' + (bizView === 'districts' ? 'on' : '') + '" data-a="biz" data-k="districts">Районы</button><button class="' + (bizView === 'big' ? 'on' : '') + '" data-a="biz" data-k="big">Крупный и чёрный</button></div>';
+    return '<h2>Бизнес</h2>' + seg + (bizView === 'districts' ? bizDistricts() : bizBig());
+  }
+  function bizDistricts() {
+    const p = P(), own = E.owned(S, me), held = E.okrugsHeld(S, me), c = E.conn(S, me);
+    if (!own.length) return '<p class="muted">Районов нет.</p>';
+    const oks = Object.keys(D.OKRUGS);
+    own.sort((a, b) => oks.indexOf(D.DISTRICTS[a].ok) - oks.indexOf(D.DISTRICTS[b].ok) || D.DISTRICTS[a].name.localeCompare(D.DISTRICTS[b].name, 'ru'));
+    let h = '<p class="sub">Твои районы: что стоит, что можно построить и улучшить. Каждая стройка и улучшение — один ход.</p><div class="dlist">';
+    own.forEach(i => {
+      const d = S.d[i], dd = D.DISTRICTS[i], open = openD.has(i);
+      const pts = d.b.reduce((s, b, x) => s + E.pointInc(me, b) * E.pointLvl(d, x), 0), tribute = dd.inc * (held.includes(dd.ok) ? 2 : 1), ent = d.ent ? dd.ent.inc : 0;
+      const canUp = d.b.some((b, x) => E.pointLvl(d, x) < E.MAX_LVL);
+      h += '<div class="drow' + (open ? ' open' : '') + '"><button class="dhead" data-a="dopen" data-i="' + i + '" aria-expanded="' + open + '"><b>' + esc(dd.name) + '</b><span>' + D.OKRUGS[dd.ok].short + ' · точек ' + d.b.length + '/' + dd.slots + (dd.ent ? ' · ' + (d.ent ? 'предприятие взято' : 'есть предприятие') : '') + '</span><em>+' + (tribute + pts + ent) + '</em><i>' + (d.b.length < dd.slots ? 'строить' : canUp ? 'улучшать' : 'готово') + '</i></button>';
+      if (open) {
+        h += '<div class="dbody"><p class="muted">Дань ' + tribute + ', точки ' + pts + (ent ? ', предприятие ' + ent : '') + ' в мес.</p>' + pointsHTML(i);
+        if (dd.ent) {
+          const e = dd.ent;
+          h += '<h3>' + esc(e.name) + '</h3>' + (d.ent ? '<p class="good">Под тобой. +' + e.inc + ' в мес.</p>' : '<p class="muted">Доход ' + e.inc + '. Нужны бойцы ' + e.men + ', связи ' + e.conn + ', ' + e.cost + ' тыс.</p>' + btn('Захватить · 2 хода · шанс ' + R(E.raidOdds(S, me, i)) + '%', 'raid', 'data-i="' + i + '"', p.men < e.men || c < e.conn || p.money < e.cost || p.ap < 2, 'wide'));
+        }
+        h += btn('Показать на карте', 'goto', 'data-i="' + i + '"', false, 'wide ghost') + '</div>';
+      }
+      h += '</div>';
+    });
+    return h + '</div>';
+  }
+  function bizBig() {
     const p = P();
-    let h = '<h2>Крупный бизнес</h2><p class="sub">Три шага: поездка, переговоры, вход в капитал. Один шаг в месяц.</p>';
+    let h = '<p class="sub">Три шага: поездка, переговоры, вход в капитал. Один шаг в месяц.</p>';
     D.PROJECTS.forEach(pr => {
       const ps = E.projStatus(S, me, pr), stage = ps.st.stage || 0, pi = E.projIncome(S, me, pr);
       h += '<div class="box proj ' + (stage === 3 ? 'live' : '') + '"><h3>' + pr.name + ' ' + kindTag(pr.kind) + '</h3>';
@@ -189,8 +228,6 @@
       }
       h += '</div>';
     });
-    const ents = E.owned(S, me).filter(i => D.DISTRICTS[i].ent);
-    if (ents.length) h += '<h3>Предприятия на твоих районах</h3><table class="tbl">' + ents.map(i => '<tr data-a="goto" data-i="' + i + '" class="link"><td>' + esc(D.DISTRICTS[i].ent.name) + '</td><td>' + (S.d[i].ent ? '<span class="good">+' + D.DISTRICTS[i].ent.inc + '</span>' : 'не взято') + '</td></tr>').join('') + '</table>';
     return h;
   }
 
@@ -224,9 +261,9 @@
     if (!S) return;
     renderTop(); paintMap();
     $('#tabs').innerHTML = TABS.map(t => '<button class="' + (t[0] === tab ? 'on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('');
-    const pane = $('#pane'), keep = pane.dataset.key === tab + ':' + sel ? pane.scrollTop : 0;
+    const pane = $('#pane'), pk = tab + ':' + (tab === 'district' ? sel : ''), keep = pane.dataset.key === pk ? pane.scrollTop : 0;
     pane.innerHTML = ({ district: paneDistrict, gang: paneGang, law: paneLaw, biz: paneBiz, clans: paneClans, log: paneLog })[tab]();
-    pane.dataset.key = tab + ':' + sel; pane.scrollTop = keep;
+    pane.dataset.key = pk; pane.scrollTop = keep;
     if (P().over) showOver(); else if (P().event) showEvent();
   }
 
@@ -265,10 +302,14 @@
     if (a === 'leave') { netCall('leave').then(r => { if (r.ok) { forget(net.room); leaveToMenu(); } }); return; }
     if (a === 'copy') { const t = location.origin + location.pathname + '#room-' + net.room; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Ссылка скопирована'), () => toast(t)); return; }
     if (!S) return;
+    const di = b.dataset.i != null ? +b.dataset.i : sel;
     if (a === 'attack') act('attack', [sel, +b.dataset.l]);
-    else if (a === 'build') act('build', [sel, k]);
+    else if (a === 'build') act('build', [di, k]);
+    else if (a === 'upgrade') act('upgrade', [di, +b.dataset.x]);
+    else if (a === 'biz') { bizView = k; render(); }
+    else if (a === 'dopen') { if (openD.has(di)) openD.delete(di); else openD.add(di); render(); }
     else if (a === 'kidnap') act('kidnap', [sel]);
-    else if (a === 'raid') act('raid', [sel]);
+    else if (a === 'raid') act('raid', [di]);
     else if (a === 'recruit') act('recruit', []);
     else if (a === 'guns') act('buyGuns', []);
     else if (a === 'car') act('buyCar', []);

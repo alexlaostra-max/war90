@@ -172,3 +172,22 @@ code { font-family: var(--mono); color: var(--gold); }
 .fac.slot.human { border-color: var(--gold); }
 .fac.slot.mine { border-color: var(--crimson-hi); background: #2f1f2c; }
 .btn.primary.waiting { background: var(--raise); border-color: var(--gold); font-family: var(--body); font-size: 13px; }
+
+/* бизнес: список районов */
+.seg { display: flex; gap: 0; margin: 10px 0 4px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg button { flex: 1; background: none; border: 0; padding: 8px; color: var(--dim); font-size: 13px; }
+.seg button.on { background: var(--raise); color: var(--fg); font-weight: 700; }
+.dlist { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.drow { border: 1px solid var(--line); border-radius: 4px; }
+.drow.open { border-color: var(--gold); }
+.dhead { width: 100%; background: none; border: 0; padding: 9px 12px; text-align: left; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; align-items: baseline; }
+.dhead b { font-weight: 700; } .dhead span { grid-column: 1; font-size: 12px; color: var(--dim); }
+.dhead em { grid-column: 2; grid-row: 1; font: normal 14px var(--mono); color: var(--good); text-align: right; }
+.dhead i { grid-column: 2; grid-row: 2; font: normal 11px var(--mono); color: var(--gold); text-align: right; }
+.dhead:hover b { color: var(--gold); }
+.dbody { padding: 0 12px 12px; border-top: 1px solid var(--line); }
+.dbody h3 { margin-top: 12px; }
+.pts td { vertical-align: middle; } .lv { font: 400 12px var(--mono); color: var(--gold); }
+#music { padding: 9px 12px; font-size: 13px; color: var(--dim); flex-direction: row; }
+#music[aria-pressed="true"] { color: var(--gold); border-color: var(--gold); }
+@media (max-width: 860px) { #music { padding: 7px 10px; margin-left: auto; } #music + #end { margin-left: 0; } }

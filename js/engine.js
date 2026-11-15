@@ -56,7 +56,7 @@
     const d = S.d[i], dd = D.DISTRICTS[i];
     if (!d.o) return Math.round((5 + dd.inc + S.turn * 0.25) * (dd.ok === 'CAO' ? 1.5 : 1));
     let v = power(S.f[d.o]) * defFactor(count(S, d.o)) * 1.4 + S.turn * 0.1;
-    if (S.f[d.o].human) v += d.b.reduce((s, b) => s + (D.BUILDS[b].def || 0), 0);
+    if (S.f[d.o].human) v += d.b.reduce((s, b, x) => s + (D.BUILDS[b].def || 0) * pointLvl(d, x), 0);
     return Math.max(3, Math.round(v));
   }
   const attackable = (S, fid, i) => S.d[i].o !== fid && GEO.adj[i].some(j => S.d[j].o === fid);
@@ -68,6 +68,10 @@
   const gunPrice = (S, fid) => fid === 'kopt' ? 2 : 3;
   const CAR_PRICE = 12;
   const pointInc = (fid, k) => D.BUILDS[k].inc + (fid === 'tush' ? 1 : 0);
+  // точки улучшаются до третьего уровня: доход и оборона умножаются на уровень
+  const MAX_LVL = 3;
+  const pointLvl = (d, x) => (d.l && d.l[x]) || 1;
+  const upgradeCost = (S, i, x) => Math.round(Math.max(D.BUILDS[S.d[i].b[x]].cost, 20) * pointLvl(S.d[i], x) * 1.5);
 
   function projIncome(S, fid, pr) {
     const st = S.f[fid].proj[pr.id]; if (!st || st.stage !== 3) return 0;
@@ -81,7 +85,7 @@
     owned(S, fid).forEach(i => {
       const dd = D.DISTRICTS[i];
       dist += dd.inc * (held.includes(dd.ok) ? 2 : 1);
-      S.d[i].b.forEach(b => { const v = pointInc(fid, b); pts += v; if (D.BUILDS[b].kind === 'w') white += v; else black += v; });
+      S.d[i].b.forEach((b, x) => { const v = pointInc(fid, b) * pointLvl(S.d[i], x); pts += v; if (D.BUILDS[b].kind === 'w') white += v; else black += v; });
       if (S.d[i].ent) { ents += dd.ent.inc; white += dd.ent.inc; }
     });
     black += dist;
@@ -215,9 +219,20 @@
   function build(S, fid, i, k) {
     const e = spend(S, fid, 1) || canBuild(S, fid, i, k); if (e) return fail(e);
     const B = D.BUILDS[k], p = S.f[fid];
-    p.money -= buildCost(S, k); S.d[i].b.push(k); p.ap--;
+    p.money -= buildCost(S, k); S.d[i].l = S.d[i].b.map((_, j) => pointLvl(S.d[i], j)); S.d[i].b.push(k); S.d[i].l.push(1); p.ap--;
     if (B.heat) addHeat(S, fid, B.heat);
     return { ok: true, msg: B.name + ': ' + D.DISTRICTS[i].name + '. +' + pointInc(fid, k) + ' в месяц' };
+  }
+  function upgrade(S, fid, i, x) {
+    const e = spend(S, fid, 1); if (e) return fail(e);
+    const d = S.d[i], p = S.f[fid];
+    if (!d || d.o !== fid) return fail('Район не твой');
+    const k = d.b[x]; if (!k) return fail('Нет такой точки');
+    const lv = pointLvl(d, x); if (lv >= MAX_LVL) return fail('Улучшать больше некуда');
+    const c = upgradeCost(S, i, x);
+    if (p.money < c) return fail('Не хватает денег: нужно ' + c);
+    p.money -= c; p.ap--; d.l = d.b.map((_, j) => pointLvl(d, j)); d.l[x] = lv + 1;
+    return { ok: true, msg: D.BUILDS[k].name + ' улучшен: ' + D.DISTRICTS[i].name + '. Теперь +' + pointInc(fid, k) * (lv + 1) + ' в месяц' };
   }
   function kidnap(S, fid, i) {
     const e = spend(S, fid, 1); if (e) return fail(e);
@@ -514,6 +529,6 @@
     return V;
   }
 
-  const ACTIONS = { recruit, buyGuns, buyCar, attack, build, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
-  G.Engine = { ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  const ACTIONS = { recruit, buyGuns, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
+  G.Engine = { MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);
