@@ -6,6 +6,8 @@
 
 ## Онлайн
 
+Где и как развёрнут боевой сервер: [DEPLOY.md](DEPLOY.md).
+
 ```bash
 node server.js
 ```
