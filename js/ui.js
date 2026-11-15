@@ -343,7 +343,7 @@
 
   function paneClans() {
     const p = P();
-    let h = '<h2>Кланы</h2><table class="tbl clans"><tr><th>Бригада</th><th>Районы</th><th>Сила</th><th></th></tr>';
+    let h = '<h2>Кланы</h2><p class="sub">Сложность: ' + E.dif(S).name.toLowerCase() + '. Первые ' + E.dif(S).grace + ' месяцев боты не нападают на живых игроков. Родной район держится в ' + E.dif(S).home + ' раза крепче.</p><table class="tbl clans"><tr><th>Бригада</th><th>Районы</th><th>Сила</th><th></th></tr>';
     D.FACTIONS.filter(f => !S.f[f.id].absent).sort((a, b) => E.count(S, b.id) - E.count(S, a.id)).forEach(f => {
       const x = S.f[f.id], mine = f.id === me;
       h += '<tr class="' + (x.alive ? '' : 'dead') + '"><td><span class="ava xs">' + A.bossFace(f) + '</span><i class="dot" style="background:' + f.color + '"></i>' + f.name + (mine ? ' (ты)' : x.human ? ' · ' + esc(x.nick || 'игрок') : '') + '</td><td>' + E.count(S, f.id) + '</td><td>' + (x.alive ? R(E.power(x)) : '—') + '</td><td>';
@@ -406,12 +406,13 @@
     const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
     const a = b.dataset.a, k = b.dataset.k;
     // меню и лобби
-    if (a === 'start') { S = E.newGame(k, (Math.random() * 2e9) | 0); me = k; net = null; sel = D.DISTRICTS.find(d => d.name === fd(k).home).id; section = 'gang'; focus = { pos: 'right' }; view = FULL.slice(); applyView(); save(); closeModal(); render(); return; }
+    if (a === 'start') { S = E.newGame(k, (Math.random() * 2e9) | 0, null, null, diff); me = k; net = null; sel = D.DISTRICTS.find(d => d.name === fd(k).home).id; section = 'gang'; focus = { pos: 'right' }; view = FULL.slice(); applyView(); save(); closeModal(); render(); return; }
     if (a === 'continue') { const sv = load(); if (sv) { S = sv; me = S.humans[0]; net = null; closeModal(); render(); } return; }
     if (a === 'menu') { leaveToMenu(); return; }
-    if (a === 'create') { const nick = nickValue(); Net.post('create', { name: $('#roomname').value, nick }).then(r => r.room ? enterRoom(r.room, r.token) : toast(r.err, true)); return; }
+    if (a === 'create') { const nick = nickValue(); Net.post('create', { name: $('#roomname').value, nick, diff }).then(r => r.room ? enterRoom(r.room, r.token) : toast(r.err, true)); return; }
     if (a === 'join') { Net.post('join', { room: k, nick: nickValue(), token: (Net.recall() || {})[k] }).then(r => r.room ? enterRoom(r.room, r.token) : toast(r.err, true)); return; }
     if (a === 'refresh') { showStart(); return; }
+    if (a === 'diff') { diff = k; try { localStorage.setItem('war90.diff', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=diff]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#diffnote').textContent = DIFF_NOTE[k]; return; }
     if (a === 'pick') { netCall('pick', { fid: k || null }); return; }
     if (a === 'slot') { netCall('slot', { fid: k, mode: b.dataset.m }); return; }
     if (a === 'go') { netCall('start'); return; }
@@ -505,10 +506,13 @@
 
   // ---------- меню ----------
   const nickValue = () => { const v = ($('#nick') ? $('#nick').value : '').trim().slice(0, 20); try { localStorage.setItem('war90.nick', v); } catch (e) { /* ignore */ } return v; };
+  const DIFF_NOTE = { easy: 'Боты не трогают тебя два года, родной район почти не взять', norm: 'Полтора года тишины, потом не больше одного района в месяц', hard: 'Через год боты приходят всерьёз и могут отнять три района за месяц' };
+  let diff = (() => { try { const v = localStorage.getItem('war90.diff'); return E.DIFF[v] ? v : 'norm'; } catch (e) { return 'norm'; } })();
+  const diffHTML = () => '<div class="seg" role="group" aria-label="Сложность"><span>Сложность</span>' + Object.keys(E.DIFF).map(k => '<button class="' + (k === diff ? 'on' : '') + '" data-a="diff" data-k="' + k + '" aria-pressed="' + (k === diff) + '">' + E.DIFF[k].name + '</button>').join('') + '<small id="diffnote">' + DIFF_NOTE[diff] + '</small></div>';
   const savedNick = () => { try { return localStorage.getItem('war90.nick') || ''; } catch (e) { return ''; } };
   function showStart() {
     const sv = load();
-    let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>';
+    let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + diffHTML();
     h += '<div class="modes"><section><h3>Онлайн</h3><div id="online"><p class="muted">Ищу сервер…</p></div></section><section><h3>Одиночная игра</h3>';
     if (sv) h += '<button class="btn primary wide" data-a="continue">Продолжить: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
     h += '<p class="muted">Выбери бригаду. Остальных ведут боты.</p><div class="factions">';
@@ -547,7 +551,7 @@
   }
   function showLobby() {
     const L = net.lobby, my = L.me && L.me.fid, humans = L.players.filter(p => p.fid).length;
-    let h = '<p class="eyebrow">Комната · набор игроков</p><h2>' + esc(L.name) + '</h2>';
+    let h = '<p class="eyebrow">Комната · набор игроков · сложность: ' + (E.DIFF[L.diff] || E.DIFF.norm).name.toLowerCase() + '</p><h2>' + esc(L.name) + '</h2>';
     h += '<p class="muted">Игроки: ' + L.players.map(p => '<span class="' + (p.online ? 'good' : '') + '">' + esc(p.nick) + (p.host ? ' (создатель)' : '') + '</span>').join(', ') + '</p>';
     h += btn('Скопировать ссылку на комнату', 'copy', '', false, 'wide ghost');
     h += '<h3>Бригады</h3><p class="muted">Займи бригаду. Свободные ведёт бот' + (L.host ? '; ты можешь убрать любую из игры.' : '; создатель комнаты может убрать любую из игры.') + '</p><div class="factions">';

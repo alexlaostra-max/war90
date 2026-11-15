@@ -305,3 +305,9 @@ svg.art.face { aspect-ratio: 1; }
 @media (max-width: 860px) { .node .ava { width: 38px; height: 38px; } .ptiles, .shop { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
 .dhero h2 { font-size: 21px; }
 .node small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* выбор сложности */
+.seg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 12px 0 4px; }
+.seg > span { font: 11px var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin-right: 4px; }
+.seg button { background: var(--raise); border: 1px solid var(--line); border-radius: 4px; padding: 6px 12px; font-size: 14px; }
+.seg button.on { border-color: var(--gold); color: var(--gold); }
+.seg small { flex-basis: 100%; font-size: 12px; color: var(--dim); }

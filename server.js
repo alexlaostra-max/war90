@@ -35,7 +35,7 @@ const online = (r, token) => { const m = streams.get(r.id); return !!(m && m.get
 const taken = (r, fid) => Object.keys(r.players).find(t => r.players[t].fid === fid);
 function lobby(r, token) {
   return {
-    id: r.id, name: r.name, started: r.started, host: r.host === token, slots: r.slots,
+    id: r.id, name: r.name, started: r.started, host: r.host === token, slots: r.slots, diff: r.diff || 'norm',
     me: r.players[token] ? { nick: r.players[token].nick, fid: r.players[token].fid } : null,
     players: Object.keys(r.players).map(t => ({ nick: r.players[t].nick, fid: r.players[t].fid, host: t === r.host, online: online(r, t) }))
   };
@@ -63,6 +63,7 @@ const api = {
     if (rooms.size >= MAX_ROOMS) return { err: 'Сервер переполнен, попробуй позже' };
     const name = clean(b.name, 40) || 'Без названия', nick = clean(b.nick, 20) || 'Безымянный';
     const r = newRoom(name), token = id(16);
+    r.diff = E.DIFF[b.diff] ? b.diff : 'norm';
     r.host = token; r.players[token] = { nick, fid: null };
     save(); return { room: r.id, token };
   },
@@ -96,7 +97,7 @@ const api = {
     const absent = FIDS.filter(f => r.slots[f] === 'off' && !humans.includes(f));
     if (FIDS.length - absent.length < 2) return { err: 'Нужны хотя бы две бригады' };
     Object.keys(r.players).forEach(t => { if (!r.players[t].fid) delete r.players[t]; }); // зрителей нет
-    r.S = E.newGame(humans, crypto.randomBytes(4).readInt32LE(0), nicks, absent); r.started = true;
+    r.S = E.newGame(humans, crypto.randomBytes(4).readInt32LE(0), nicks, absent, r.diff); r.started = true;
     push(r); return { ok: true };
   },
   act(b, r, token) {

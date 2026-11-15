@@ -11,6 +11,15 @@
   const ri = (S, a, b) => Math.floor(rr(S, a, b + 1));
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
+  // Сложность: grace — сколько месяцев боты не трогают живых игроков, ratio — во сколько раз бот должен быть
+  // сильнее района живого игрока, grow — рост ботов, aggr — частота нападений, home — крепость родного района,
+  // hits — сколько районов боты могут отнять у одного игрока за месяц
+  const DIFF = {
+    easy: { name: 'Лёгкая', grace: 24, ratio: 1.7, grow: 0.8, aggr: 0.7, home: 1.8, hits: 1 },
+    norm: { name: 'Обычная', grace: 18, ratio: 1.4, grow: 1, aggr: 1, home: 1.5, hits: 1 },
+    hard: { name: 'Жёсткая', grace: 12, ratio: 1.2, grow: 1.15, aggr: 1.5, home: 1.2, hits: 3 }
+  };
+  const dif = S => DIFF[S.diff] || DIFF.norm;
   function date(turn) { const mi = 11 + turn; return { year: 1991 + Math.floor(mi / 12), month: mi % 12 + 1, label: MONTHS[mi % 12] + ' ' + (1991 + Math.floor(mi / 12)) }; }
   const era = S => 1 + S.turn / 60;
   const fdef = id => D.FACTIONS.find(f => f.id === id);
@@ -19,10 +28,10 @@
   const active = S => S.humans.filter(h => !S.f[h].over);
 
   // humans — бригады живых игроков, absent — бригады вне игры, остальные ведёт бот
-  function newGame(humans, seed, nicks, absent) {
+  function newGame(humans, seed, nicks, absent, diff) {
     if (typeof humans === 'string') humans = [humans];
     absent = absent || [];
-    const S = { v: 4, seed: seed | 0 || 1, turn: 0, humans: humans.slice(), f: {}, d: [], log: [], done: false };
+    const S = { v: 4, seed: seed | 0 || 1, turn: 0, humans: humans.slice(), f: {}, d: [], log: [], done: false, diff: DIFF[diff] ? diff : 'norm' };
     D.DISTRICTS.forEach(() => S.d.push({ o: null, b: [], ent: false }));
     D.FACTIONS.forEach(f => {
       const x = S.f[f.id] = { id: f.id, men: 8, guns: 0, cars: 0, money: 0, rep: 10, heat: 0, alive: true, acc: 0, human: humans.includes(f.id) };
@@ -107,9 +116,13 @@
     const d = S.d[i], dd = D.DISTRICTS[i];
     if (!d.o) return Math.round((5 + dd.inc + S.turn * 0.25) * (dd.ok === 'CAO' ? 1.5 : 1));
     let v = power(S.f[d.o]) * defFactor(count(S, d.o)) * 1.4 + S.turn * 0.1;
-    if (S.f[d.o].human) { v += d.b.reduce((s, b, x) => s + (D.BUILDS[b].def || 0) * pointLvl(d, x), 0); const cp = capoOf(S, d.o, dd.ok); if (cp) v += cp.str * 2; }
+    if (S.f[d.o].human) {
+      v += d.b.reduce((s, b, x) => s + (D.BUILDS[b].def || 0) * pointLvl(d, x), 0); const cp = capoOf(S, d.o, dd.ok); if (cp) v += cp.str * 2;
+      if (isHome(S, d.o, i) || count(S, d.o) === 1) v = v * dif(S).home + 6; // родные стены: тут каждый двор свой
+    }
     return Math.max(3, Math.round(v));
   }
+  const isHome = (S, fid, i) => D.DISTRICTS[i].name === fdef(fid).home;
   const attackable = (S, fid, i) => S.d[i].o !== fid && GEO.adj[i].some(j => S.d[j].o === fid);
   // перемирие хранит живой игрок; между двумя живыми перемирий нет
   const inTruce = (S, human, other) => ((S.f[human].truce || {})[other] || -1) >= S.turn;
@@ -670,31 +683,43 @@
 
   function aiTurn(S, fid) {
     const f = S.f[fid]; if (!f.alive) return;
-    const n = count(S, fid);
-    f.acc += 1 + n * 0.3; const add = Math.floor(f.acc); f.acc -= add;
+    const n = count(S, fid), X = dif(S);
+    // большой бригаде люди даются труднее: после 15 районов каждый следующий даёт втрое меньше
+    f.acc += (1 + Math.min(n, 15) * 0.3 + Math.max(0, n - 15) * 0.1) * X.grow; const add = Math.floor(f.acc); f.acc -= add;
     f.men = Math.min(menCap(S, fid), f.men + add);
     f.money += n * 3 * (1 + S.turn / 90);
     while (f.money >= 15 && f.guns < f.men) { f.money -= 15; f.guns += 5; }
     while (f.money >= 12 && f.cars * 4 < f.men) { f.money -= 12; f.cars++; }
     f.rep = clamp(10 + n * 2, 0, 100);
-    if (rnd(S) < 0.05) { const l = Math.round(f.men * 0.15); f.men -= l; if (l > 6) log(S, 'Силовики накрыли бригаду ' + fdef(fid).name + ': минус ' + l + ' бойцов.'); }
+    // чем больше бригада, тем чаще ею занимаются силовики
+    if (rnd(S) < 0.05 + Math.min(0.15, n * 0.004)) { const l = Math.round(f.men * rr(S, 0.12, 0.22)); f.men -= l; f.guns = Math.max(0, f.guns - Math.floor(l / 2)); if (l > 6) log(S, 'Силовики накрыли бригаду ' + fdef(fid).name + ': минус ' + l + ' бойцов.'); }
+    // раскол: разросшуюся бригаду рвут изнутри, часть районов уходит местным
+    if (n >= 18 && rnd(S) < 0.03 + (n - 18) * 0.002) {
+      const own = owned(S, fid).filter(i => !isHome(S, fid, i)), k = Math.ceil(n * rr(S, 0.12, 0.2));
+      for (let j = 0; j < k && own.length; j++) { const x = own.splice(Math.floor(rnd(S) * own.length), 1)[0]; S.d[x].o = null; S.d[x].ent = false; }
+      f.men = Math.round(f.men * 0.85);
+      log(S, 'Раскол у бригады ' + fdef(fid).name + ': бригадиры не поделили деньги, ' + k + ' районов отошли местным.', 'big');
+      return;
+    }
     const top = Math.max(0, ...active(S).map(h => count(S, h))), lead = top > n * 1.5;
     let tries = 1 + (n > 8 ? 1 : 0) + (top > 25 ? 1 : 0);
+    const chance = (lead ? 0.55 : 0.22) * X.aggr * clamp(16 / (n + 4), 0.4, 1);
     while (tries-- > 0) {
-      if (rnd(S) > (lead ? 0.55 : 0.22)) continue;
+      if (rnd(S) > chance) continue;
       const homeOk = D.DISTRICTS.find(d => d.name === fdef(fid).home).ok;
       const cand = new Set(); owned(S, fid).forEach(i => GEO.adj[i].forEach(j => { if (S.d[j].o !== fid) cand.add(j); }));
       let best = -1, bv = 1e9;
       cand.forEach(j => {
         const o = S.d[j].o, hum = o && S.f[o].human;
-        if (hum && (S.turn < 12 || inTruce(S, o, fid))) return;
+        if (hum && (S.turn < X.grace || inTruce(S, o, fid) || (S.hits[o] || 0) >= X.hits)) return;
         const v = districtDef(S, j) * (D.DISTRICTS[j].ok === homeOk ? 0.8 : 1) * (hum && count(S, o) > n * 1.5 ? 0.7 : 1) * (0.85 + rnd(S) * 0.3);
         if (v < bv) { bv = v; best = j; }
       });
       if (best < 0) continue;
       const bo = S.d[best].o, hum = bo && S.f[bo].human;
-      if (power(f) * strike(f, 0.65) / Math.max(1, f.men) < districtDef(S, best) * (hum ? 1.3 : 1.2)) continue;
+      if (power(f) * strike(f, 0.65) / Math.max(1, f.men) < districtDef(S, best) * (hum ? X.ratio : 1.2)) continue;
       const r = fight(S, fid, best, 0.65);
+      if (hum && r.win) S.hits[bo] = (S.hits[bo] || 0) + 1;
       if (!hum && r.win && r.prev) log(S, fdef(fid).name + ' забрали ' + D.DISTRICTS[best].name + ' у бригады ' + fdef(r.prev).name + '.');
     }
   }
@@ -729,6 +754,7 @@
     if (S.done) return fail('Игра окончена');
     if (!force && active(S).some(h => S.f[h].event)) return fail('Сначала реши, что делать с событием');
     active(S).forEach(h => { S.f[h].event = null; humanPhase(S, h); });
+    S.hits = {};
     D.FACTIONS.forEach(f => { if (!S.f[f.id].human) aiTurn(S, f.id); });
     active(S).forEach(h => { if (count(S, h) === 0) eliminate(S, h); });
     if (S.turn >= LAST_TURN) active(S).forEach(h => finale(S, h));
@@ -748,5 +774,5 @@
   }
 
   const ACTIONS = { assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
-  G.Engine = { migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);
