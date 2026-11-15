@@ -90,7 +90,7 @@
   }
 
   // ---------- вкладки ----------
-  const VIEWS = [['gang', 'Банда'], ['men', 'Бойцы'], ['biz', 'Бизнес'], ['map', 'Карта'], ['law', 'Власть'], ['clans', 'Кланы'], ['log', 'Хроника']];
+  const VIEWS = [['gang', 'Банда'], ['men', 'Бойцы'], ['dist', 'Районы'], ['big', 'Крупный бизнес'], ['map', 'Карта'], ['law', 'Власть'], ['clans', 'Кланы'], ['log', 'Хроника']];
   const btn = (label, a, attrs, lock, cls) => '<button class="btn ' + (cls || '') + '" data-a="' + a + '" ' + (attrs || '') + (lock ? ' disabled' : '') + '>' + label + (lock && typeof lock === 'string' ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
   const kindTag = k => '<span class="tag ' + k + '">' + ({ w: 'белый', g: 'серый', b: 'чёрный' }[k]) + '</span>';
   const who = f => fd(f).name + (S.f[f].human && S.f[f].nick ? ' · ' + esc(S.f[f].nick) : '');
@@ -156,7 +156,7 @@
     h += '<h3>Вербовка <span class="muted">ждут ' + have + ' чел., боец стоит ' + price + ' тыс.</span></h3><div class="grid g3">' +
       [1, 5, can].map((n, x) => { const m = x === 2 ? Math.max(can, 1) : n; return '<button class="card" data-a="recruit" data-n="' + m + '"' + (can < m || (x === 2 && can < 1) ? ' disabled' : '') + '><b>' + (x === 2 ? 'Всех: ' + can : 'Нанять ' + n) + '</b><span>' + m * price + ' тыс.</span>' + (x === 0 && why ? '<small>' + why + '</small>' : '') + '</button>'; }).join('') + '</div>';
     h += '<table class="tbl">' + inf.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td>+' + r[1] + '</td></tr>').join('') + '<tr class="sum"><td>Приходит каждый месяц</td><td>+' + inf.total + '</td></tr></table>';
-    h += '<p class="muted">Вербовка не тратит ход. Кого не нанял, подождут, но не больше трёх месячных притоков. Больше людей дают спортзалы на районах: строй и улучшай их во вкладке «Бизнес».</p>';
+    h += '<p class="muted">Вербовка не тратит ход. Кого не нанял, подождут, но не больше трёх месячных притоков. Больше людей дают спортзалы на районах: строй и улучшай их во вкладке «Районы».</p>';
     h += shopHTML();
     h += '<h3>Касса за месяц</h3><table class="tbl">' + inc.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="' + (r[1] < 0 ? 'bad' : 'good') + '">' + sign(r[1]) + '</td></tr>').join('') + '<tr class="sum"><td>Итого</td><td>' + sign(inc.total) + '</td></tr></table>';
     const tot = inc.white + inc.black;
@@ -281,31 +281,46 @@
     return h + '</div>';
   }
 
-  const openD = new Set();
-  function paneBiz() {
-    return '<div class="cols"><section><h2>Районы</h2>' + bizDistricts() + '</section><section><h2>Крупный и чёрный бизнес</h2>' + bizBig() + '</section></div>';
-  }
-  function bizDistricts() {
-    const p = P(), own = E.owned(S, me), held = E.okrugsHeld(S, me), c = E.conn(S, me);
-    if (!own.length) return '<p class="muted">Районов нет.</p>';
+  const openD = new Set(); let showDone = false;
+  const paneBig = () => '<h2>Крупный и чёрный бизнес</h2>' + bizBig();
+  // Районы делятся на три группы: где есть место под стройку, где есть что улучшать и где всё прокачано
+  function paneDist() {
+    const own = E.owned(S, me);
+    if (!own.length) return '<h2>Районы</h2><p class="muted">Районов нет.</p>';
     const oks = Object.keys(D.OKRUGS);
     own.sort((a, b) => oks.indexOf(D.DISTRICTS[a].ok) - oks.indexOf(D.DISTRICTS[b].ok) || D.DISTRICTS[a].name.localeCompare(D.DISTRICTS[b].name, 'ru'));
-    let h = fxSummary() + '<p class="sub">Твои районы: что стоит, что можно построить и улучшить. Стройка и улучшения стоят только денег, ходы не тратят.</p><div class="dlist">';
-    own.forEach(i => {
-      const d = S.d[i], dd = D.DISTRICTS[i], open = openD.has(i);
-      const pts = d.b.reduce((s, b, x) => s + E.pointInc(me, b) * E.pointLvl(d, x), 0), tribute = dd.inc * (held.includes(dd.ok) ? 2 : 1), ent = d.ent ? dd.ent.inc : 0;
-      const canUp = d.b.some((b, x) => E.pointLvl(d, x) < E.MAX_LVL);
-      h += '<div class="drow' + (open ? ' open' : '') + '"><button class="dhead" data-a="dopen" data-i="' + i + '" aria-expanded="' + open + '"><b>' + esc(dd.name) + '</b><span>' + D.OKRUGS[dd.ok].short + ' · точек ' + d.b.length + '/' + dd.slots + (dd.ent ? ' · ' + (d.ent ? 'предприятие взято' : 'есть предприятие') : '') + '</span><em>+' + (tribute + pts + ent) + '</em><i>' + (d.b.length < dd.slots ? 'строить' : canUp ? 'улучшать' : 'готово') + '</i></button>';
-      if (open) {
-        h += '<div class="dbody"><p class="muted">Дань ' + tribute + ', точки ' + pts + (ent ? ', предприятие ' + ent : '') + ' в мес.</p>' + pointsHTML(i);
-        if (dd.ent) {
-          const e = dd.ent;
-          h += '<h3>' + esc(e.name) + '</h3>' + (d.ent ? '<p class="good">Под тобой. +' + e.inc + ' в мес.</p>' : '<p class="muted">Доход ' + e.inc + '. Нужны бойцы ' + e.men + ', связи ' + e.conn + ', ' + e.cost + ' тыс.</p>' + btn('Захватить · 2 хода · шанс ' + R(E.raidOdds(S, me, i)) + '%', 'raid', 'data-i="' + i + '"', p.men < e.men || c < e.conn || p.money < e.cost || p.ap < 2, 'wide'));
-        }
-        h += btn('Показать на карте', 'goto', 'data-i="' + i + '"', false, 'wide ghost') + '</div>';
+    const free = i => D.DISTRICTS[i].slots - S.d[i].b.length;
+    const ups = i => S.d[i].b.map((b, x) => x).filter(x => E.pointLvl(S.d[i], x) < E.MAX_LVL);
+    const build = own.filter(i => free(i) > 0), up = own.filter(i => !free(i) && ups(i).length), done = own.filter(i => !free(i) && !ups(i).length);
+    let h = '<h2>Районы <span class="muted">' + own.length + ' из 102</span></h2><p class="sub">Стройка и улучшения стоят только денег, ходы не тратят. Нажми на район, чтобы открыть его точки.</p>' + fxSummary();
+    h += distGroup('Есть свободные места', 'можно строить новые точки', build, i => 'свободно ' + free(i));
+    h += distGroup('Можно улучшить', 'все места заняты, но не всё на III уровне', up, i => { const c = Math.min(...ups(i).map(x => E.upgradeCost(S, i, x))); return 'улучшить ' + ups(i).length + ' · от ' + c + ' тыс.'; });
+    h += '<div class="dgroup done"><button class="dgh" data-a="dshow" aria-expanded="' + showDone + '"><h3>Прокачано полностью <span class="muted">' + done.length + ' · ' + sign(done.reduce((a, i) => a + distInc(i), 0)) + ' в мес.</span></h3><i>' + (done.length ? (showDone ? 'скрыть' : 'показать') : '') + '</i></button>';
+    if (!done.length) h += '<p class="muted">Пока ни одного: все точки района на III уровне — и он попадёт сюда.</p>';
+    else if (showDone) h += '<div class="dlist">' + done.map(i => distRow(i, 'готово')).join('') + '</div>';
+    return h + '</div>';
+  }
+  function distInc(i) {
+    const d = S.d[i], dd = D.DISTRICTS[i];
+    return dd.inc * (E.okrugsHeld(S, me).includes(dd.ok) ? 2 : 1) + d.b.reduce((s, b, x) => s + E.pointInc(me, b) * E.pointLvl(d, x), 0) + (d.ent ? dd.ent.inc : 0);
+  }
+  function distGroup(title, note, ids, tag) {
+    let h = '<div class="dgroup"><h3>' + title + ' <span class="muted">' + ids.length + (ids.length ? ' · ' + sign(ids.reduce((a, i) => a + distInc(i), 0)) + ' в мес.' : '') + '</span></h3>';
+    if (!ids.length) return h + '<p class="muted">Таких районов нет.</p></div>';
+    return h + '<p class="muted">' + note + '</p><div class="dlist">' + ids.map(i => distRow(i, tag(i))).join('') + '</div></div>';
+  }
+  function distRow(i, tag) {
+    const p = P(), c = E.conn(S, me), d = S.d[i], dd = D.DISTRICTS[i], open = openD.has(i);
+    const pts = d.b.reduce((s, b, x) => s + E.pointInc(me, b) * E.pointLvl(d, x), 0), tribute = dd.inc * (E.okrugsHeld(S, me).includes(dd.ok) ? 2 : 1), ent = d.ent ? dd.ent.inc : 0;
+    let h = '<div class="drow' + (open ? ' open' : '') + '"><button class="dhead" data-a="dopen" data-i="' + i + '" aria-expanded="' + open + '"><b>' + esc(dd.name) + '</b><span>' + D.OKRUGS[dd.ok].short + ' · точек ' + d.b.length + '/' + dd.slots + (dd.ent ? ' · ' + (d.ent ? 'предприятие взято' : 'предприятие не взято') : '') + '</span><em>+' + (tribute + pts + ent) + '</em><i>' + tag + '</i></button>';
+    if (open) {
+      h += '<div class="dbody"><p class="muted">Дань ' + tribute + ', точки ' + pts + (ent ? ', предприятие ' + ent : '') + ' в мес.</p>' + pointsHTML(i);
+      if (dd.ent) {
+        const e = dd.ent;
+        h += '<h3>' + esc(e.name) + '</h3>' + (d.ent ? '<p class="good">Под тобой. +' + e.inc + ' в мес.</p>' : '<p class="muted">Доход ' + e.inc + '. Нужны бойцы ' + e.men + ', связи ' + e.conn + ', ' + e.cost + ' тыс.</p>' + btn('Захватить · 2 хода · шанс ' + R(E.raidOdds(S, me, i)) + '%', 'raid', 'data-i="' + i + '"', p.men < e.men || c < e.conn || p.money < e.cost || p.ap < 2, 'wide'));
       }
-      h += '</div>';
-    });
+      h += btn('Показать на карте', 'goto', 'data-i="' + i + '"', false, 'wide ghost') + '</div>';
+    }
     return h + '</div>';
   }
   const FXL = [['car', 'Тачки дешевле', '%'], ['gun', 'Стволы дешевле', '%'], ['upkeep', 'Содержание бойцов дешевле', '%'], ['med', 'Потери в бою меньше', '%'], ['talk', 'Переговоры и стрелки', '%', '+'], ['hide', 'При облавах берут меньше', '%'], ['wash', 'Чёрного дохода отмывается', '%'], ['kid', 'Похищения удачнее', '%', '+'], ['cool', 'Розыск в месяц', '', '−'], ['conn', 'Связи', '', '+'], ['cap', 'Бригада больше', ' чел.', '+']];
@@ -314,7 +329,7 @@
     const recr = E.inflow(S, me).rows.filter(r => r[0] === 'Спортзалы' || r[0] === 'ЧОПы').reduce((a, r) => a + r[1], 0);
     if (recr) rows.push([['rec', 'Новобранцев в месяц', '', '+'], recr]);
     if (!rows.length) return '<div class="box"><h3>Что дают точки империи</h3><p class="muted">Пока ничего. Автосервис удешевляет тачки, спортзал даёт людей, бордель сбивает розыск, казино отмывает деньги. Польза растёт с уровнем точки.</p></div>';
-    return '<div class="box"><h3>Что дают точки империи</h3><table class="tbl">' + rows.map(r => { const cap = W90.DATA.FX_CAP[r[0][0]]; return '<tr><td>' + r[0][1] + '</td><td class="good">' + (r[0][3] || '') + r[1] + r[0][2] + (cap && r[1] >= cap ? ' (потолок)' : '') + '</td></tr>'; }).join('') + '</table></div>';
+    return '<div class="box"><h3>Что дают точки империи</h3><div class="fxgrid">' + rows.map(r => { const cap = W90.DATA.FX_CAP[r[0][0]]; return '<div><span>' + r[0][1] + '</span><b class="good">' + (r[0][3] || '') + r[1] + r[0][2] + (cap && r[1] >= cap ? ' · потолок' : '') + '</b></div>'; }).join('') + '</div></div>';
   }
   function bizBig() {
     const p = P();
@@ -377,8 +392,8 @@
     $('#org').hidden = section !== 'gang'; $('#mapview').hidden = section !== 'map'; $('#page').hidden = split;
     if (section === 'gang') renderOrg();
     const host = split ? $('#pane') : $('#page'), pk = section + ':' + (section === 'map' ? sel : section === 'gang' ? JSON.stringify(focus) : ''), keep = host.dataset.key === pk ? host.scrollTop : 0;
-    const fn = { gang: paneDossier, map: paneDistrict, men: paneGang, biz: paneBiz, law: paneLaw, clans: paneClans, log: paneLog }[section];
-    host.innerHTML = split ? fn() : '<div class="inner' + (section === 'biz' ? ' wide' : '') + '">' + fn() + '</div>';
+    const fn = { gang: paneDossier, map: paneDistrict, men: paneGang, dist: paneDist, big: paneBig, law: paneLaw, clans: paneClans, log: paneLog }[section];
+    host.innerHTML = split ? fn() : '<div class="inner' + (section === 'dist' ? ' wide' : '') + '">' + fn() + '</div>';
     host.dataset.key = pk; host.scrollTop = keep;
     if (P().over) showOver(); else if (P().event) showEvent();
   }
@@ -423,6 +438,7 @@
     if (a === 'attack') act('attack', [sel, +b.dataset.l]);
     else if (a === 'build') act('build', [di, k]);
     else if (a === 'upgrade') act('upgrade', [di, +b.dataset.x]);
+    else if (a === 'dshow') { showDone = !showDone; render(); }
     else if (a === 'dopen') { if (openD.has(di)) openD.delete(di); else openD.add(di); render(); }
     else if (a === 'kidnap') act('kidnap', [sel]);
     else if (a === 'raid') act('raid', [di]);
