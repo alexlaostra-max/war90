@@ -1,0 +1,8 @@
+{
+  "name": "war90",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Передел: стратегия про Москву 1991-2007",
+  "scripts": { "start": "node server.js", "build": "node build.js" },
+  "engines": { "node": ">=18" }
+}

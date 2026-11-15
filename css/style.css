@@ -153,3 +153,22 @@ main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1
   .sheet { padding: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* меню и лобби онлайна */
+.modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px 28px; margin-top: 6px; }
+.modes section { min-width: 0; }
+.field { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; margin-top: 8px; }
+.field span { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; }
+.field input { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; min-width: 0; width: 100%; }
+.field input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+h3 .btn.sm { float: right; font-family: var(--body); }
+code { font-family: var(--mono); color: var(--gold); }
+.fac.slot { cursor: default; }
+.fac.slot:hover { border-color: var(--line); }
+.fac.slot em { font: normal 12px var(--mono); color: var(--fg); margin-top: 4px; }
+.fac.slot .row { margin-top: 6px; min-height: 26px; }
+.fac.slot.off { opacity: .45; }
+.fac.slot.human { border-color: var(--gold); }
+.fac.slot.mine { border-color: var(--crimson-hi); background: #2f1f2c; }
+.btn.primary.waiting { background: var(--raise); border-color: var(--gold); font-family: var(--body); font-size: 13px; }
