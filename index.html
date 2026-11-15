@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Передел</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans:wght@400;700&family=Russo+One&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand"><b>Передел</b><span id="date"></span></div>
+    <div id="stats"></div>
+    <button id="end" class="btn primary">Конец месяца</button>
+  </header>
+  <main>
+    <section id="mapbox" aria-label="Карта Москвы">
+      <svg id="map" preserveAspectRatio="xMidYMid meet"></svg>
+      <div id="zoom"><button data-z="1" aria-label="Приблизить">+</button><button data-z="-1" aria-label="Отдалить">−</button><button data-z="0" aria-label="Вся карта">◎</button></div>
+      <p id="legend"><span><i class="lg mine"></i>твои</span><span><i class="lg target"></i>можно напасть</span><span><i class="lg ent"></i>предприятие</span></p>
+    </section>
+    <aside id="side">
+      <nav id="tabs"></nav>
+      <div id="pane"></div>
+    </aside>
+  </main>
+</div>
+<div id="modal" hidden></div>
+<div id="toast" hidden role="status"></div>
+<script src="js/data.js"></script>
+<script src="js/events.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
