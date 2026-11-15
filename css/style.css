@@ -327,3 +327,46 @@ svg.art.face { aspect-ratio: 1; }
 .fxgrid span { font-size: 12px; color: var(--dim); }
 .fxgrid b { font: 400 14px var(--mono); }
 @media (max-width: 420px) { .fxgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* смотрящие на схеме */
+.wchip { display: flex; gap: 8px; align-items: center; background: var(--raise); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px 5px 5px; text-align: left; min-width: 0; max-width: 200px; }
+.wchip:hover, .wchip.sel { border-color: var(--gold); }
+.wchip.out { opacity: .6; }
+.wchip .ava { width: 32px; height: 32px; }
+.wchip span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.wchip b { font: 400 13px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wchip small { font-size: 11px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tier.promo { margin-top: 10px; }
+/* перестрелка */
+.sheet.battle { max-width: 640px; }
+.vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: start; margin: 12px 0 6px; }
+.vs > i { font: 400 22px var(--display); color: var(--crimson-hi); font-style: normal; align-self: center; }
+.vs > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; background: var(--raise); border-radius: 4px; padding: 10px; }
+.vs .ava { width: 56px; height: 56px; }
+.vs b { font: 400 15px var(--display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs small { font: 12px var(--mono); color: var(--dim); }
+.bbar { position: relative; height: 10px; background: var(--neutral); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+.bbar em { position: absolute; inset: 0 auto 0 0; transition: width .3s; }
+.bbar.our em { background: var(--good); } .bbar.their em { background: var(--crimson-hi); }
+.bbar s { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--gold); }
+.blog { margin: 8px 0; padding-left: 20px; font-size: 13px; display: flex; flex-direction: column; gap: 3px; }
+.blog span { float: right; font: 12px var(--mono); } .blog em { font-style: normal; margin-left: 8px; }
+.tacts { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin-top: 10px; }
+.tacts .card span { font-family: var(--body); }
+.tacts .card.ghost { background: none; }
+/* стрелка */
+.relm { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin: 12px 0; font-size: 13px; }
+.relm > span { color: var(--dim); }
+.relm > div { position: relative; height: 8px; background: var(--neutral); border-radius: 2px; overflow: hidden; }
+.relm em { position: absolute; top: 0; bottom: 0; } .relm em.pos { background: var(--good); } .relm em.neg { background: var(--bad); }
+.relm s { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--fg); }
+.relm b { font: 13px var(--mono); }
+.clans small { font: 11px var(--mono); margin-left: 34px; }
+@media (max-width: 520px) { .vs { grid-template-columns: 1fr; } .vs > i { display: none; } }
+@media (max-width: 520px) {
+  .vs > div { display: block; }
+  .vs .ava { float: left; width: 44px; height: 44px; margin-right: 10px; }
+  .vs b, .vs small { display: block; }
+  .vs .bbar { clear: both; }
+  .tacts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

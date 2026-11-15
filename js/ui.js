@@ -134,7 +134,7 @@
       h += '</div>';
     }
     if (mine) {
-      h += pointsHTML(sel);
+      h += '<dl class="kv">' + watchLine(sel) + '</dl>' + pointsHTML(sel);
       h += btn('Похитить коммерсанта', 'kidnap', '', p.kidnapTurn === S.turn ? 'раз в месяц' : p.men < 4 ? 'нужно 4 бойца' : p.ap < 1, 'wide');
     } else if (E.attackable(S, me, sel)) {
       if (d.o && !S.f[d.o].human && E.inTruce(S, me, d.o)) h += '<p class="muted">С бригадой перемирие до ' + E.date(p.truce[d.o]).label + '.</p>';
@@ -198,6 +198,7 @@
     const cr = E.crew(S, me), out = [];
     ['right', 'cons', 'treas'].forEach(pos => { const c = cr.find(x => x.pos === pos); if (c) out.push(c); });
     myOkrugs().forEach(ok => { const c = cr.find(x => x.pos === 'capo' && x.ok === ok); if (c) out.push(c); });
+    watchers().forEach(c => out.push(c));
     cr.forEach(c => { if (!out.includes(c) && c.pos) out.push(c); });
     cr.forEach(c => { if (!c.pos) out.push(c); });
     return out;
@@ -206,10 +207,21 @@
   const statBar = (l, v) => '<span class="stat"><i>' + l + '</i><b>' + v + '</b><u><s style="width:' + v * 10 + '%"></s></u></span>';
   function postEffect(c) {
     if (c.st !== 'ok') return '<p class="bad">Вне строя. Должность не работает, пока он не вернётся.</p>';
-    const t = { right: '+1 ход в месяц, нападения +' + c.str * 2 + '%', cons: 'Переговоры и стрелки +' + c.wit * 3 + '%, взятки наверх −' + c.wit * 3 + '%', treas: c.loy <= 3 ? 'Будет подворовывать: доход −5%. Верность низкая' : 'Доход +' + c.wit * 2 + '%', capo: 'Оборона районов округа +' + c.str * 2 + ', дань +' + c.str * 5 + '%, нападения в округе +' + c.str * 3 + '%' }[c.pos];
+    const t = { right: '+1 ход в месяц, нападения +' + c.str * 2 + '%', cons: 'Переговоры и стрелки +' + c.wit * 3 + '%, взятки наверх −' + c.wit * 3 + '%', treas: c.loy <= 3 ? 'Будет подворовывать: доход −5%. Верность низкая' : 'Доход +' + c.wit * 2 + '%', capo: 'Оборона районов округа +' + c.str * 2 + ', дань +' + c.str * 5 + '%, нападения в округе +' + c.str * 3 + '%', watch: 'Оборона района +' + c.str * 3 + ', дань +' + c.str * 3 + '%, доход точек +' + c.wit * 4 + '%' }[c.pos];
+    if (c.pos === 'watch' && c.loy <= 3) return '<p class="bad">Будет утаивать половину дани района: верность низкая</p>';
     return '<p class="good">' + t + '</p>';
   }
-  const slotName = (pos, ok) => POSTS[pos].name + (pos === 'capo' && ok ? ' · ' + DD.OKRUGS[ok].short : '');
+  const slotName = (pos, ok) => POSTS[pos].name + (pos === 'capo' && ok ? ' · ' + DD.OKRUGS[ok].short : pos === 'watch' && ok ? ' · ' + DD.DISTRICTS[E.watchDist({ ok })].name : '');
+  // смотрящие по районам, в порядке округов и названий
+  function watchers() {
+    const oks = Object.keys(DD.OKRUGS), name = c => DD.DISTRICTS[E.watchDist(c)];
+    return E.crew(S, me).filter(c => c.pos === 'watch').sort((a, b) => oks.indexOf(name(a).ok) - oks.indexOf(name(b).ok) || name(a).name.localeCompare(name(b).name, 'ru'));
+  }
+  // строка «смотрящий» для страницы района
+  function watchLine(i) {
+    const w = E.watcherOf(S, me, i, true);
+    return '<dt>Смотрящий</dt><dd>' + (w ? '<button class="link" data-a="person" data-id="' + w.id + '">' + esc(E.cname(w)) + '</button>' + (w.st !== 'ok' ? ' <span class="bad">(' + (w.st === 'hurt' ? 'ранен' : 'сидит') + ')</span>' : '') : '<button class="link" data-a="vacant" data-pos="watch" data-ok="' + E.watchKey(i) + '">нет, назначить</button>') + '</dd>';
+  }
   function node(c, role, slot, extra) {
     const isSel = focus && (c ? focus.id === c.id : focus.id == null && focus.pos === slot.pos && (focus.ok || null) === (slot.ok || null));
     if (!c) return '<button class="node vacant' + (isSel ? ' sel' : '') + '" data-a="vacant" data-pos="' + slot.pos + '" data-ok="' + (slot.ok || '') + '"><span class="ava">' + A.vacantFace() + '</span><span class="nb"><span class="role">' + role + '</span><b>Вакантно</b>' + (extra || '') + '<small>' + (slot.dis ? 'нужно больше районов' : 'подобрать человека') + '</small></span></button>';
@@ -224,7 +236,11 @@
       const n = okDistricts(ok).length, zv = '<span class="zv">' + n + ' ' + (n === 1 ? 'район' : n < 5 ? 'района' : 'районов') + ' · ~' + Math.round(p.men * n / Math.max(1, total)) + ' бойцов</span>';
       return node(capos.find(x => x.ok === ok), 'Бригадир · ' + DD.OKRUGS[ok].short, { pos: 'capo', ok, dis: capos.length >= max }, zv);
     }).join('') + '</div>';
+    const ws = watchers();
+    h += '<p class="tlabel">Смотрящие · ' + ws.length + ' из ' + total + ' районов</p><div class="tier">' + (ws.length ? ws.map(c => '<button class="wchip' + (c.st !== 'ok' ? ' out' : '') + (focus && focus.id === c.id ? ' sel' : '') + '" data-a="person" data-id="' + c.id + '"><span class="ava">' + A.face(c) + '</span><span><b>«' + esc(c.nick) + '»</b><small>' + esc(DD.DISTRICTS[E.watchDist(c)].name) + '</small></span></button>').join('') : '<p class="muted">Смотрящих нет. Назначь человека из резерва на район: в его досье или на странице района.</p>') + '</div>';
+    const pc = E.promoteCost(S), plock = p.promoTurn === S.turn ? 'раз в месяц' : p.men < 6 ? 'нужно 6 бойцов' : p.money < pc ? 'не хватает денег' : '';
     h += '<p class="tlabel">Резерв · ' + bench.length + '</p><div class="tier">' + (bench.length ? bench.map(c => node(c, 'Резерв')).join('') : '<p class="muted">Пусто. Каждый месяц из бригады может выделиться новый человек.</p>') + '</div>';
+    h += '<div class="tier promo">' + btn('Выдвинуть бойца из рядовых · ' + pc + ' тыс.', 'promote', '', plock || false, 'ghost') + '</div>';
     $('#org').innerHTML = h;
   }
   function paneDossier() {
@@ -240,8 +256,11 @@
       if (c.loy <= 3) h += '<p class="bad">Ненадёжен: может сдать на допросе или уйти с общаком.</p>';
       if (c.pos) h += '<h3>Что даёт</h3>' + postEffect(c) + '<button class="btn sm" data-a="unassign" data-id="' + c.id + '">Снять в резерв</button>';
       if (c.st === 'ok') {
-        const slots = [['right'], ['cons'], ['treas']].concat(myOkrugs().map(ok => ['capo', ok])).filter(s => !(c.pos === s[0] && (c.ok || null) === (s[1] || null)));
-        h += '<h3>Назначить</h3><select class="pick" data-a="reassign" data-id="' + c.id + '" aria-label="Назначить на должность"><option value="">Выбрать должность…</option>' + slots.map(s => { const hold = cr.find(x => x.pos === s[0] && (x.ok || null) === (s[1] || null)); return '<option value="' + s[0] + '|' + (s[1] || '') + '">' + slotName(s[0], s[1]) + (hold ? ' (сейчас ' + esc(hold.nick) + ')' : '') + '</option>'; }).join('') + '</select>';
+        const same = s => c.pos === s[0] && (c.ok || null) === (s[1] || null);
+        const opt = s => { const hold = cr.find(x => x.pos === s[0] && (x.ok || null) === (s[1] || null)); return '<option value="' + s[0] + '|' + (s[1] || '') + '">' + (s[0] === 'watch' ? DD.DISTRICTS[E.watchDist({ ok: s[1] })].name : slotName(s[0], s[1])) + (hold ? ' (сейчас ' + esc(hold.nick) + ')' : '') + '</option>'; };
+        const top = [['right'], ['cons'], ['treas']].concat(myOkrugs().map(ok => ['capo', ok])).filter(s => !same(s));
+        const ws = E.owned(S, me).slice().sort((a, b) => DD.DISTRICTS[a].name.localeCompare(DD.DISTRICTS[b].name, 'ru')).map(i => ['watch', E.watchKey(i)]).filter(s => !same(s));
+        h += '<h3>Назначить</h3><select class="pick" data-a="reassign" data-id="' + c.id + '" aria-label="Назначить на должность"><option value="">Выбрать должность…</option><optgroup label="Ближний круг и бригадиры">' + top.map(opt).join('') + '</optgroup><optgroup label="Смотрящий за районом">' + ws.map(opt).join('') + '</optgroup></select>';
         if (!c.pos) h += '<button class="btn sm ghost" data-a="dismiss" data-id="' + c.id + '">Вернуть в рядовые</button>';
       }
       const hist = S.log.filter(l => (!l.to || l.to === me) && l.s.indexOf('«' + c.nick + '»') >= 0).slice(0, 8);
@@ -252,7 +271,7 @@
     const pos = focus.pos, ok = focus.ok || null, hold = cr.find(x => x.pos === pos && (x.ok || null) === ok);
     if (hold) { focus = { id: hold.id }; return paneDossier(); }
     const capFull = pos === 'capo' && cr.filter(x => x.pos === 'capo').length >= E.capoMax(S, me);
-    const key = pos === 'right' || pos === 'capo' ? 'str' : 'wit';
+    const key = pos === 'right' || pos === 'capo' || pos === 'watch' ? 'str' : 'wit';
     const cand = cr.filter(x => !x.pos && x.st === 'ok').sort((a, b) => b[key] - a[key] || b.loy - a.loy);
     let h = '<p class="eyebrow">Вакантно</p><h2>' + slotName(pos, ok) + '</h2><p class="sub">' + POSTS[pos].alt + '</p><p>' + POSTS[pos].desc + '.</p>';
     if (capFull) h += '<p class="bad">Бригадиров уже ' + E.capoMax(S, me) + ': на большее не хватает районов. Один бригадир на каждые шесть районов.</p>';
@@ -312,9 +331,9 @@
   function distRow(i, tag) {
     const p = P(), c = E.conn(S, me), d = S.d[i], dd = D.DISTRICTS[i], open = openD.has(i);
     const pts = d.b.reduce((s, b, x) => s + E.pointInc(me, b) * E.pointLvl(d, x), 0), tribute = dd.inc * (E.okrugsHeld(S, me).includes(dd.ok) ? 2 : 1), ent = d.ent ? dd.ent.inc : 0;
-    let h = '<div class="drow' + (open ? ' open' : '') + '"><button class="dhead" data-a="dopen" data-i="' + i + '" aria-expanded="' + open + '"><b>' + esc(dd.name) + '</b><span>' + D.OKRUGS[dd.ok].short + ' · точек ' + d.b.length + '/' + dd.slots + (dd.ent ? ' · ' + (d.ent ? 'предприятие взято' : 'предприятие не взято') : '') + '</span><em>+' + (tribute + pts + ent) + '</em><i>' + tag + '</i></button>';
+    let h = '<div class="drow' + (open ? ' open' : '') + '"><button class="dhead" data-a="dopen" data-i="' + i + '" aria-expanded="' + open + '"><b>' + esc(dd.name) + '</b><span>' + D.OKRUGS[dd.ok].short + ' · точек ' + d.b.length + '/' + dd.slots + (dd.ent ? ' · ' + (d.ent ? 'предприятие взято' : 'предприятие не взято') : '') + (E.watcherOf(S, me, i, true) ? ' · смотрит «' + esc(E.watcherOf(S, me, i, true).nick) + '»' : ' · без смотрящего') + '</span><em>+' + (tribute + pts + ent) + '</em><i>' + tag + '</i></button>';
     if (open) {
-      h += '<div class="dbody"><p class="muted">Дань ' + tribute + ', точки ' + pts + (ent ? ', предприятие ' + ent : '') + ' в мес.</p>' + pointsHTML(i);
+      h += '<div class="dbody"><p class="muted">Дань ' + tribute + ', точки ' + pts + (ent ? ', предприятие ' + ent : '') + ' в мес.</p><dl class="kv">' + watchLine(i) + '</dl>' + pointsHTML(i);
       if (dd.ent) {
         const e = dd.ent;
         h += '<h3>' + esc(e.name) + '</h3>' + (d.ent ? '<p class="good">Под тобой. +' + e.inc + ' в мес.</p>' : '<p class="muted">Доход ' + e.inc + '. Нужны бойцы ' + e.men + ', связи ' + e.conn + ', ' + e.cost + ' тыс.</p>' + btn('Захватить · 2 хода · шанс ' + R(E.raidOdds(S, me, i)) + '%', 'raid', 'data-i="' + i + '"', p.men < e.men || c < e.conn || p.money < e.cost || p.ap < 2, 'wide'));
@@ -361,14 +380,14 @@
     let h = '<h2>Кланы</h2><p class="sub">Сложность: ' + E.dif(S).name.toLowerCase() + '. Первые ' + E.dif(S).grace + ' месяцев боты не нападают на живых игроков. Родной район держится в ' + E.dif(S).home + ' раза крепче.</p><table class="tbl clans"><tr><th>Бригада</th><th>Районы</th><th>Сила</th><th></th></tr>';
     D.FACTIONS.filter(f => !S.f[f.id].absent).sort((a, b) => E.count(S, b.id) - E.count(S, a.id)).forEach(f => {
       const x = S.f[f.id], mine = f.id === me;
-      h += '<tr class="' + (x.alive ? '' : 'dead') + '"><td><span class="ava xs">' + A.bossFace(f) + '</span><i class="dot" style="background:' + f.color + '"></i>' + f.name + (mine ? ' (ты)' : x.human ? ' · ' + esc(x.nick || 'игрок') : '') + '</td><td>' + E.count(S, f.id) + '</td><td>' + (x.alive ? R(E.power(x)) : '—') + '</td><td>';
+      h += '<tr class="' + (x.alive ? '' : 'dead') + '"><td><span class="ava xs">' + A.bossFace(f) + '</span><i class="dot" style="background:' + f.color + '"></i>' + f.name + (mine ? ' (ты)' : x.human ? ' · ' + esc(x.nick || 'игрок') : '') + (!mine && !x.human && x.alive ? '<br><small class="' + relCls(E.rel(S, me, f.id)) + '">' + relName(E.rel(S, me, f.id)) + (E.inTruce(S, me, f.id) ? ' · мир до ' + E.date(p.truce[f.id]).label : '') + '</small>' : '') + '</td><td>' + E.count(S, f.id) + '</td><td>' + (x.alive ? R(E.power(x)) : '—') + '</td><td>';
       if (!mine && x.alive) {
         if (x.human) h += '<span class="' + (x.ready ? 'good' : 'muted') + '">' + (x.ready ? 'готов' : 'ходит') + '</span>';
-        else h += E.inTruce(S, me, f.id) ? '<span class="muted">мир до ' + E.date(p.truce[f.id]).label + '</span>' : '<button class="btn sm" data-a="truce" data-k="' + f.id + '"' + (p.ap < 1 || p.money < E.truceCost(S, f.id) ? ' disabled' : '') + '>Стрелка · ' + E.truceCost(S, f.id) + '</button>';
+        else h += '<button class="btn sm" data-a="parley" data-k="' + f.id + '">Стрелка</button>';
       }
       h += '</td></tr>';
     });
-    h += '</table><p class="muted">Стрелка: мир с ботом на год, если договоритесь. Чем выше авторитет и сила, тем сговорчивее соседи.' + (net ? ' С живыми игроками договаривайся сам.' : '') + '</p>';
+    h += '</table><p class="muted">Стрелка — встреча с главой бригады: мир, подарок, совместное дело, покупка района или дань. Один разговор с каждой бригадой в месяц, тратит ход. От 50 в отношениях бригада тебя не трогает, от −50 охотится за твоими районами.' + (net ? ' С живыми игроками договаривайся сам.' : '') + '</p>';
     if (net && net.lobby.host) h += btn('Завершить месяц за всех', 'force', '', false, 'wide ghost') + '<p class="muted">Если кто-то пропал. Кто не решил событие, пропустит его.</p>';
     h += '<h3>Округа</h3><table class="tbl">';
     Object.keys(D.OKRUGS).forEach(ok => { const ids = E.okrugIds(ok), n = ids.filter(i => S.d[i].o === me).length; h += '<tr><td>' + D.OKRUGS[ok].name + '</td><td class="' + (n === ids.length ? 'good' : '') + '">' + n + ' из ' + ids.length + '</td></tr>'; });
@@ -395,7 +414,7 @@
     const fn = { gang: paneDossier, map: paneDistrict, men: paneGang, dist: paneDist, big: paneBig, law: paneLaw, clans: paneClans, log: paneLog }[section];
     host.innerHTML = split ? fn() : '<div class="inner' + (section === 'dist' ? ' wide' : '') + '">' + fn() + '</div>';
     host.dataset.key = pk; host.scrollTop = keep;
-    if (P().over) showOver(); else if (P().event) showEvent();
+    if (P().over) showOver(); else if (P().event) showEvent(); else if (P().battle) showBattle(); else if (parleyWith) showParley();
   }
 
   // ---------- действия ----------
@@ -405,6 +424,8 @@
     if (!r) return;
     const msg = r.msg || r.err;
     if (r.event && r.ok) { save(); showResult(r); return; }
+    if (r.battleEnd && r.ok) { save(); showBattleEnd(r); if (!net) render(); return; }
+    if (r.ok && (r.battle || r.round)) { if (!net) { save(); render(); } return; }
     if (msg) toast(msg, !r.ok || r.win === false);
     if (r.ok && !net) { save(); render(); }
   }
@@ -451,6 +472,11 @@
     else if (a === 'hire') act('hire', [k]);
     else if (a === 'bribe') act('bribe', []);
     else if (a === 'truce') act('truce', [k]);
+    else if (a === 'parley') { parleyWith = k; showParley(); }
+    else if (a === 'talk') act('parley', [parleyWith, k, b.dataset.i != null ? +b.dataset.i : null]);
+    else if (a === 'pclose') { parleyWith = null; closeModal(); render(); }
+    else if (a === 'tac') act('battle', [k]);
+    else if (a === 'promote') act('promote', []);
     else if (a === 'proj') act('projStep', [k, b.dataset.h || null]);
     else if (a === 'cashout') act('cashOut', []);
     else if (a === 'opt') act('choose', [+k]);
@@ -492,10 +518,54 @@
     const tx = s => esc(E.evText(S, me, s)), w = E.evWho(S, me), L = ev.npc && D.LEGENDS[ev.npc];
     h += '<h2>' + tx(ev.title) + '</h2>';
     if (L) h += '<div class="evwho"><span class="ava">' + A.legendFace(ev.npc) + '</span><div><b>' + esc(L.nick) + '</b><small>' + esc(L.name) + ', ' + esc(L.bio.charAt(0).toLowerCase() + L.bio.slice(1)) + '</small></div></div>';
-    else if (w) h += '<div class="evwho"><span class="ava">' + A.face(w) + '</span><div><b>' + esc(E.cname(w)) + '</b><small>' + (w.pos ? POSTS[w.pos].name : 'резерв') + ' · сила ' + w.str + ', ум ' + w.wit + ', верность ' + w.loy + '</small></div></div>';
+    else if (w) h += '<div class="evwho"><span class="ava">' + A.face(w) + '</span><div><b>' + esc(E.cname(w)) + '</b><small>' + (w.pos ? slotName(w.pos, w.ok) : 'резерв') + ' · сила ' + w.str + ', ум ' + w.wit + ', верность ' + w.loy + (ev.advice ? '. Чем умнее советчик, тем вернее его совет' : '') + '</small></div></div>';
     h += '<p class="lead">' + tx(ev.text) + '</p><div class="opts">';
     ev.opts.forEach((o, k) => { const os = E.optState(S, me, o); h += '<button class="opt" data-a="opt" data-k="' + k + '"' + (os.lock ? ' disabled' : '') + '><span>' + tx(o.t) + '</span>' + (os.cost ? '<em>' + os.cost + ' тыс.</em>' : '') + (os.lock ? '<small>' + esc(os.lock) + '</small>' : '') + '</button>'; });
     openModal(h + '</div>', 'event', key);
+  }
+  const relName = v => (v >= 50 ? 'дружба' : v >= 15 ? 'тепло' : v > -15 ? 'нейтрально' : v > -50 ? 'холодно' : 'вражда') + ' · ' + sign(v);
+  const relCls = v => v >= 15 ? 'good' : v <= -15 ? 'bad' : 'muted';
+  const shpana = i => A.face({ seed: 'shpana' + i, name: 'Местная шпана', age: 22, str: 6, wit: 3, loy: 5, look: { cloth: 'tracksuit' } }, { label: 'Местная шпана' });
+  function showBattle() {
+    const p = P(), B = p.battle; if (!B) return;
+    const key = 'battle:' + B.round + ':' + B.i; if (modalKey === key) return;
+    const dd = D.DISTRICTS[B.i], foe = B.foe && S.f[B.foe] ? fd(B.foe) : null, l = E.crew(S, me).find(c => c.st === 'ok' && ((c.pos === 'capo' && c.ok === dd.ok) || c.pos === 'right'));
+    const bar = (v, v0, cls, brk) => '<div class="bbar ' + cls + '"><em style="width:' + Math.max(0, Math.min(100, v / v0 * 100)) + '%"></em>' + (brk ? '<s style="left:' + E.BREAK * 100 + '%"></s>' : '') + '</div>';
+    let h = '<p class="eyebrow">' + E.KINDS[B.lvl] + ' · раунд ' + (B.round + 1) + ' из ' + E.BATTLE_ROUNDS + '</p><h2>Перестрелка: ' + esc(dd.name) + '</h2>';
+    h += '<div class="vs"><div><span class="ava">' + (l ? A.face(l) : A.bossFace(fd(me))) + '</span><b>' + (l ? esc(E.cname(l)) : 'Ты лично') + '</b><small>ведёт ' + B.men + ' бойцов</small>' + bar(B.a, B.a0, 'our', true) + '<small>силы ' + R(Math.max(0, B.a)) + ' из ' + R(B.a0) + '</small></div><i>×</i><div><span class="ava">' + (foe ? A.bossFace(foe) : shpana(B.i)) + '</span><b>' + (foe ? esc(foe.name) : 'Местная шпана') + '</b><small>' + (foe ? esc(foe.boss) : 'держат дворы') + '</small>' + bar(B.d, B.d0, 'their') + '<small>оборона ' + R(Math.max(0, B.d)) + ' из ' + R(B.d0) + '</small></div></div>';
+    h += '<p class="muted">Район наш, когда оборона упадёт до нуля. Если наших сил останется меньше черты, бойцы дрогнут. На всё ' + E.BATTLE_ROUNDS + ' раундов.</p>';
+    if (B.log.length) h += '<ol class="blog">' + B.log.map(x => '<li><b>' + E.TACTICS[x.t].name + '</b>' + (x.note ? ' · ' + esc(x.note) : '') + '<span><em class="good">урон ' + x.dealt + '</em> <em class="bad">получили ' + x.took + '</em></span></li>').join('') + '</ol>';
+    h += '<div class="tacts">' + Object.keys(E.TACTICS).map(t => {
+      const T = E.TACTICS[t], lock = E.tacticLock(S, me, t), extra = t === 'flank' ? 'удача ' + R(E.flankOdds(S, me) * 100) + '%' : t === 'talk' ? 'шанс ' + R(E.talkOdds(S, me)) + '%' : t === 'rpg' ? 'РПГ: ' + ((p.arms || {}).rpg || 0) : t === 'snipe' ? 'СВД: ' + ((p.arms || {}).svd || 0) : '';
+      return '<button class="card' + (t === 'storm' || t === 'flank' || t === 'rpg' ? ' atk' : '') + (t === 'retreat' ? ' ghost' : '') + '" data-a="tac" data-k="' + t + '"' + (lock ? ' disabled' : '') + '><b>' + T.name + '</b><span>' + esc(T.desc) + '</span>' + (extra ? '<small>' + extra + '</small>' : '') + (lock ? '<small class="bad">' + lock + '</small>' : '') + '</button>';
+    }).join('') + '</div>';
+    openModal(h, 'event battle', key);
+  }
+  function showBattleEnd(r) {
+    openModal('<p class="eyebrow">Итог перестрелки</p><h2>' + esc(r.title) + '</h2><p class="lead ' + (r.win ? 'good' : 'bad') + '">' + esc(r.msg) + '</p><button class="btn primary wide" data-a="close">Дальше</button>', 'event', 'bres');
+    if (!net) renderTop();
+  }
+  let parleyWith = null;
+  function showParley() {
+    const f = fd(parleyWith), x = S.f[parleyWith], p = P(); if (!x || !x.alive) { parleyWith = null; closeModal(); return; }
+    const key = 'parley:' + parleyWith + ':' + S.turn + ':' + R(p.money) + ':' + p.ap + ':' + E.rel(S, me, parleyWith) + ':' + E.count(S, parleyWith); if (modalKey === key) return;
+    const rl = E.rel(S, me, parleyWith), busy = E.parleyCheck(S, me, parleyWith) || (p.ap < 1 ? 'нет ходов' : '');
+    let h = '<div class="dhero"><span class="ava big">' + A.bossFace(f) + '</span><div><p class="eyebrow">Стрелка · ' + esc(f.name) + '</p><h2>' + esc(f.boss) + '</h2><p class="sub">районов ' + E.count(S, parleyWith) + ' · сила ' + R(E.power(x)) + ' (у тебя ' + R(E.power(p)) + ')</p></div></div>';
+    h += '<div class="relm"><span>Отношения</span><div><em class="' + (rl < 0 ? 'neg' : 'pos') + '" style="' + (rl < 0 ? 'right:50%;width:' + (-rl / 2) : 'left:50%;width:' + (rl / 2)) + '%"></em><s></s></div><b class="' + relCls(rl) + '">' + relName(rl) + '</b></div>';
+    if (E.inTruce(S, me, parleyWith)) h += '<p class="good">Мир до ' + E.date(p.truce[parleyWith]).label + '.</p>';
+    if (busy) h += '<p class="bad">' + esc(busy) + '</p>';
+    const card = (kind, title, sub, note, lock, arg) => '<button class="card" data-a="talk" data-k="' + kind + '"' + (arg != null ? ' data-i="' + arg + '"' : '') + (busy || lock ? ' disabled' : '') + '><b>' + title + '</b><span>' + sub + '</span>' + (note ? '<small>' + note + '</small>' : '') + (lock ? '<small class="bad">' + lock + '</small>' : '') + '</button>';
+    h += '<div class="grid">';
+    const tc = E.truceCost(S, parleyWith);
+    h += card('truce', 'Мир на год', tc + ' тыс. · шанс ' + R(E.truceOdds(S, me, parleyWith)) + '%', 'отношения +15', E.inTruce(S, me, parleyWith) ? 'мир уже есть' : p.money < tc ? 'не хватает денег' : '');
+    h += card('gift', 'Подарок', E.giftCost(S) + ' тыс.', 'отношения +20 без риска', p.money < E.giftCost(S) ? 'не хватает денег' : '');
+    h += card('deal', 'Совместное дело', E.dealCost(S) + ' тыс. · шанс ' + R(E.dealOdds(S, me, parleyWith)) + '%', 'вернётся ×1,8 через 3–6 мес.', rl < -20 ? 'с врагами дел не ведут' : p.money < E.dealCost(S) ? 'не хватает денег' : '');
+    h += card('tribute', 'Потребовать дань', E.tributeSum(S, parleyWith) + ' тыс. · шанс ' + R(E.tributeOdds(S, me, parleyWith)) + '%', 'отказ — вражда', E.tributeOk(S, me, parleyWith) ? '' : 'нужно быть сильнее в 1,3 раза');
+    h += '</div>';
+    const ids = E.owned(S, parleyWith).filter(i => E.attackable(S, me, i) && !E.isHome(S, parleyWith, i));
+    h += '<h3>Купить район <span class="muted">шанс ' + R(E.buyOdds(S, me, parleyWith)) + '%, деньги берут только при согласии</span></h3>';
+    h += ids.length ? '<div class="grid">' + ids.map(i => { const c = E.buyPrice(S, me, i); return card('buy', esc(D.DISTRICTS[i].name), c + ' тыс. · дань ' + D.DISTRICTS[i].inc, D.DISTRICTS[i].ent ? esc(D.DISTRICTS[i].ent.name) : '', p.money < c ? 'не хватает денег' : '', i); }).join('') + '</div>' : '<p class="muted">У них нет районов на твоей границе, кроме родного.</p>';
+    openModal(h + '<button class="btn wide ghost" data-a="pclose">Уйти со стрелки</button>', 'event', key);
   }
   function showResult(r) {
     const d = r.delta, names = { money: 'Касса', rep: 'Авторитет', heat: 'Розыск', men: 'Бойцы', guns: 'Стволы', cars: 'Тачки', vests: 'Бронежилеты', later: d.later < 0 ? 'Долг, заберут позже' : 'Вернётся позже', loy: 'Верность', str: 'Сила', wit: 'Ум' };
@@ -504,6 +574,8 @@
     if (d.arm) ch += '<span class="good">' + esc(d.arm) + '</span>';
     if (d.car) ch += '<span class="good">В гараже: ' + esc(d.car) + '</span>';
     if (d.join) ch += '<span class="good">В семье: ' + esc(d.join) + '</span>';
+    if (d.truce) ch += '<span class="good">Мир на год: ' + esc(d.truce) + '</span>';
+    if (d.rel) ch += '<span class="' + (d.rel > 0 ? 'good' : 'bad') + '">Отношения со всеми ' + sign(d.rel) + '</span>';
     if (d.gone) ch += '<span class="bad">Ушёл: ' + esc(d.gone) + '</span>';
     const wc = r.who != null && E.crew(S, me).find(c => c.id === r.who);
     openModal('<p class="eyebrow">' + esc(r.title) + '</p>' + (wc ? '<div class="evwho"><span class="ava">' + A.face(wc) + '</span><div><b>' + esc(E.cname(wc)) + '</b><small>' + (wc.st === 'hurt' ? 'ранен' : wc.st === 'jail' ? 'сидит' : 'сила ' + wc.str + ', ум ' + wc.wit + ', верность ' + wc.loy) + '</small></div></div>' : '') + '<p class="lead">' + esc(r.msg) + '</p><p class="deltas">' + (ch || '<span>Без последствий</span>') + '</p><button class="btn primary wide" data-a="close">Дальше</button>', 'event', 'result');
