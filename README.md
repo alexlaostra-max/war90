@@ -20,33 +20,6 @@ node server.js
 - Правила считает сервер. Игрок получает только свою кассу, события и связи; про чужих игроков видит то же, что про ботов.
 - Вернуться в комнату можно с того же браузера: пропуск хранится в localStorage. Комнаты сохраняются в `data/rooms.json` и переживают перезапуск.
 
-## Деплой на сервер
-
-Боевой сервер: Ubuntu 24.04, Node 22, PM2, Nginx. Код лежит в `/opt/war90`, деплоится ветка `main`. Зависимостей нет, `npm install` не нужен.
-
-- Игра запущена под PM2 с именем `war90`, `PORT=3090`, слушает только `127.0.0.1:3090`. Автозапуск через `pm2 save` и `pm2 startup`.
-- Снаружи её отдаёт Nginx на 80-м порту (`/etc/nginx/sites-available/war90`, `proxy_pass http://127.0.0.1:3090`).
-- Онлайн-состояние идёт потоком Server-Sent Events (`/api/stream`). Без `proxy_buffering off`, `proxy_read_timeout 1h`, `proxy_http_version 1.1` и пустого заголовка `Connection` онлайн тормозит или рвётся.
-- Комнаты хранятся в `data/rooms.json` и переживают перезапуск.
-
-```bash
-# обновить игру
-cd /opt/war90 && git pull && pm2 restart war90
-
-# статус, логи, проверка изнутри
-pm2 list
-pm2 logs war90
-curl -s http://127.0.0.1/api/rooms        # ответ {"rooms":[...]}
-
-# после правки Nginx
-nginx -t && systemctl reload nginx
-
-# подключить домен и HTTPS (нужен для Telegram Mini App): A-запись на IP сервера, затем
-sed -i 's/server_name _;/server_name ДОМЕН;/' /etc/nginx/sites-available/war90 && nginx -t && systemctl reload nginx && certbot --nginx -d ДОМЕН
-```
-
-Перед рискованными изменениями на сервере сделай снэпшот в панели хостинга.
-
 ## Сложность
 
 В меню выбирается сложность, она же действует для онлайн-комнаты, которую ты создаёшь.
