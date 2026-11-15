@@ -231,21 +231,21 @@
     return null;
   }
   function build(S, fid, i, k) {
-    const e = spend(S, fid, 1) || canBuild(S, fid, i, k); if (e) return fail(e);
+    const e = spend(S, fid, 0) || canBuild(S, fid, i, k); if (e) return fail(e); // стройка стоит только денег
     const B = D.BUILDS[k], p = S.f[fid];
-    p.money -= buildCost(S, k); S.d[i].l = S.d[i].b.map((_, j) => pointLvl(S.d[i], j)); S.d[i].b.push(k); S.d[i].l.push(1); p.ap--;
+    p.money -= buildCost(S, k); S.d[i].l = S.d[i].b.map((_, j) => pointLvl(S.d[i], j)); S.d[i].b.push(k); S.d[i].l.push(1);
     if (B.heat) addHeat(S, fid, B.heat);
     return { ok: true, msg: B.name + ': ' + D.DISTRICTS[i].name + '. +' + pointInc(fid, k) + ' в месяц' };
   }
   function upgrade(S, fid, i, x) {
-    const e = spend(S, fid, 1); if (e) return fail(e);
+    const e = spend(S, fid, 0); if (e) return fail(e);
     const d = S.d[i], p = S.f[fid];
     if (!d || d.o !== fid) return fail('Район не твой');
     const k = d.b[x]; if (!k) return fail('Нет такой точки');
     const lv = pointLvl(d, x); if (lv >= MAX_LVL) return fail('Улучшать больше некуда');
     const c = upgradeCost(S, i, x);
     if (p.money < c) return fail('Не хватает денег: нужно ' + c);
-    p.money -= c; p.ap--; d.l = d.b.map((_, j) => pointLvl(d, j)); d.l[x] = lv + 1;
+    p.money -= c; d.l = d.b.map((_, j) => pointLvl(d, j)); d.l[x] = lv + 1;
     return { ok: true, msg: D.BUILDS[k].name + ' улучшен: ' + D.DISTRICTS[i].name + '. Теперь +' + pointInc(fid, k) * (lv + 1) + ' в месяц' };
   }
   function kidnap(S, fid, i) {

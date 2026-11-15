@@ -102,14 +102,14 @@
     let h = '<h3>Точки <span class="muted">' + d.b.length + ' из ' + dd.slots + '</span></h3>';
     if (d.b.length) h += '<table class="tbl pts">' + d.b.map((b, x) => {
       const B = D.BUILDS[b], lv = E.pointLvl(d, x), c = E.upgradeCost(S, i, x), inc = E.pointInc(me, b);
-      return '<tr><td>' + B.name + ' <b class="lv">' + ROMAN[lv] + '</b></td><td class="good">+' + inc * lv + '</td><td>' + (lv >= E.MAX_LVL ? '<span class="muted">макс.</span>' : '<button class="btn sm" data-a="upgrade" data-i="' + i + '" data-x="' + x + '"' + (p.money < c || p.ap < 1 ? ' disabled' : '') + '>Улучшить · ' + c + ' → +' + inc * (lv + 1) + '</button>') + '</td></tr>';
+      return '<tr><td>' + B.name + ' <b class="lv">' + ROMAN[lv] + '</b></td><td class="good">+' + inc * lv + '</td><td>' + (lv >= E.MAX_LVL ? '<span class="muted">макс.</span>' : '<button class="btn sm" data-a="upgrade" data-i="' + i + '" data-x="' + x + '"' + (p.money < c ? ' disabled' : '') + '>Улучшить · ' + c + ' → +' + inc * (lv + 1) + '</button>') + '</td></tr>';
     }).join('') + '</table>';
     if (d.b.length >= dd.slots) return h + '<p class="muted">Свободных мест нет. Улучшай то, что стоит.</p>';
     h += '<div class="grid">';
     Object.keys(D.BUILDS).forEach(k => {
       const B = D.BUILDS[k], lock = E.canBuild(S, me, i, k);
       if (B.onlyMarket && !dd.m) return;
-      h += '<button class="card" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock || p.ap < 1 ? ' disabled' : '') + ' title="' + esc(B.desc) + '"><b>' + B.name + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? B.cost + ' тыс.' : 'бесплатно') + ' → +' + E.pointInc(me, k) + '/мес.</span>' + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
+      h += '<button class="card" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? ' disabled' : '') + ' title="' + esc(B.desc) + '"><b>' + B.name + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? B.cost + ' тыс.' : 'бесплатно') + ' → +' + E.pointInc(me, k) + '/мес.</span>' + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
     });
     return h + '</div>';
   }
@@ -193,7 +193,7 @@
     if (!own.length) return '<p class="muted">Районов нет.</p>';
     const oks = Object.keys(D.OKRUGS);
     own.sort((a, b) => oks.indexOf(D.DISTRICTS[a].ok) - oks.indexOf(D.DISTRICTS[b].ok) || D.DISTRICTS[a].name.localeCompare(D.DISTRICTS[b].name, 'ru'));
-    let h = '<p class="sub">Твои районы: что стоит, что можно построить и улучшить. Каждая стройка и улучшение — один ход.</p><div class="dlist">';
+    let h = '<p class="sub">Твои районы: что стоит, что можно построить и улучшить. Стройка и улучшения стоят только денег, ходы не тратят.</p><div class="dlist">';
     own.forEach(i => {
       const d = S.d[i], dd = D.DISTRICTS[i], open = openD.has(i);
       const pts = d.b.reduce((s, b, x) => s + E.pointInc(me, b) * E.pointLvl(d, x), 0), tribute = dd.inc * (held.includes(dd.ok) ? 2 : 1), ent = d.ent ? dd.ent.inc : 0;
@@ -387,7 +387,7 @@
     if (sv) h += '<button class="btn primary wide" data-a="continue">Продолжить: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
     h += '<p class="muted">Выбери бригаду. Остальных ведут боты.</p><div class="factions">';
     D.FACTIONS.forEach(f => { const d = D.DISTRICTS.find(x => x.name === f.home); h += '<button class="fac" data-a="start" data-k="' + f.id + '"><i style="background:' + f.color + '"></i><b>' + f.name + '</b><span>' + f.home + ', ' + D.OKRUGS[d.ok].short + '</span><small>' + esc(f.perk) + '</small></button>'; });
-    h += '</div></section></div><p class="muted">Ход — один месяц. В начале месяца случается событие с пятью решениями. Потом у тебя три хода: нападай на соседние районы, ставь точки, покупай людей во власти. Бойцов, стволы и тачки покупаешь за деньги без траты хода.</p>';
+    h += '</div></section></div><p class="muted">Ход — один месяц. В начале месяца случается событие с пятью решениями. Потом у тебя три хода: нападай на соседние районы, похищай, покупай людей во власти, веди крупный бизнес. Бойцы, стволы, тачки, точки на районах и их улучшения стоят только денег.</p>';
     openModal(h, 'start', 'start');
     Net.rooms().then(list => {
       const box = $('#online'); if (!box || modalKey !== 'start') return;
