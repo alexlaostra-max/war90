@@ -2,7 +2,7 @@
 (function () {
   const G = window.W90, E = G.Engine, D = G.DATA, GEO = G.GEO, Net = G.Net;
   const SAVE = 'war90.save.v4';
-  let S = null, me = null, sel = null, tab = 'district', confirmNew = false;
+  let S = null, me = null, sel = null, section = 'gang', confirmNew = false;
   let net = null;          // онлайн: { room, token, lobby }
   let modalKey = '';       // что сейчас в модальном окне
   const FULL = GEO.box.slice(); let view = FULL.slice();
@@ -53,7 +53,7 @@
     moved += Math.abs(dx) + Math.abs(dy);
     if (moved > 6) { if (!svg.hasPointerCapture(e.pointerId)) svg.setPointerCapture(e.pointerId); const sc = svgPoint(e)[2]; view[0] -= dx * sc; view[1] -= dy * sc; clampView(); applyView(); }
   });
-  const up = e => { const was = ptrs.has(e.pointerId); ptrs.delete(e.pointerId); pinch = 0; if (was && moved <= 6 && e.type === 'pointerup') { const t = document.elementFromPoint(e.clientX, e.clientY); if (S && t && t.dataset && t.dataset.i != null) { sel = +t.dataset.i; tab = 'district'; render(); } } };
+  const up = e => { const was = ptrs.has(e.pointerId); ptrs.delete(e.pointerId); pinch = 0; if (was && moved <= 6 && e.type === 'pointerup') { const t = document.elementFromPoint(e.clientX, e.clientY); if (S && t && t.dataset && t.dataset.i != null) { sel = +t.dataset.i; section = 'map'; render(); } } };
   svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
   svg.addEventListener('wheel', e => { e.preventDefault(); const p = svgPoint(e); zoomAt(e.deltaY > 0 ? 1.18 : 0.85, p[0], p[1]); }, { passive: false });
   $('#zoom').addEventListener('click', e => { const z = e.target.dataset.z; if (!z) return; if (z === '0') { view = FULL.slice(); applyView(); } else zoomAt(z === '1' ? 0.7 : 1.4, view[0] + view[2] / 2, view[1] + view[3] / 2); });
@@ -90,7 +90,7 @@
   }
 
   // ---------- вкладки ----------
-  const TABS = [['dossier', 'Досье'], ['district', 'Район'], ['gang', 'Братва'], ['biz', 'Бизнес'], ['law', 'Власть'], ['clans', 'Кланы'], ['log', 'Хроника']];
+  const VIEWS = [['gang', 'Банда'], ['men', 'Бойцы'], ['biz', 'Бизнес'], ['map', 'Карта'], ['law', 'Власть'], ['clans', 'Кланы'], ['log', 'Хроника']];
   const btn = (label, a, attrs, lock, cls) => '<button class="btn ' + (cls || '') + '" data-a="' + a + '" ' + (attrs || '') + (lock ? ' disabled' : '') + '>' + label + (lock && typeof lock === 'string' ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
   const kindTag = k => '<span class="tag ' + k + '">' + ({ w: 'белый', g: 'серый', b: 'чёрный' }[k]) + '</span>';
   const who = f => fd(f).name + (S.f[f].human && S.f[f].nick ? ' · ' + esc(S.f[f].nick) : '');
@@ -169,7 +169,7 @@
   }
 
   // ---------- семья: схема бригады (главный экран) и досье ----------
-  let mainView = 'org', focus = null; // focus: { id } — человек, { pos, ok } — пустая должность
+  let focus = null; // focus: { id } — человек, { pos, ok } — пустая должность
   const DD = W90.DATA, POSTS = DD.POSTS;
   const myOkrugs = () => Object.keys(DD.OKRUGS).filter(ok => E.owned(S, me).some(i => DD.DISTRICTS[i].ok === ok));
   const okDistricts = ok => E.owned(S, me).filter(i => DD.DISTRICTS[i].ok === ok);
@@ -261,10 +261,9 @@
     return h + '</div>';
   }
 
-  let bizView = 'districts'; const openD = new Set();
+  const openD = new Set();
   function paneBiz() {
-    const seg = '<div class="seg"><button class="' + (bizView === 'districts' ? 'on' : '') + '" data-a="biz" data-k="districts">Районы</button><button class="' + (bizView === 'big' ? 'on' : '') + '" data-a="biz" data-k="big">Крупный и чёрный</button></div>';
-    return '<h2>Бизнес</h2>' + seg + (bizView === 'districts' ? bizDistricts() : bizBig());
+    return '<div class="cols"><section><h2>Районы</h2>' + bizDistricts() + '</section><section><h2>Крупный и чёрный бизнес</h2>' + bizBig() + '</section></div>';
   }
   function bizDistricts() {
     const p = P(), own = E.owned(S, me), held = E.okrugsHeld(S, me), c = E.conn(S, me);
@@ -351,13 +350,16 @@
   function render() {
     if (!S) return;
     renderTop(); paintMap();
-    $('#org').hidden = mainView !== 'org'; $('#mapview').hidden = mainView !== 'map';
-    document.querySelectorAll('#views [data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === mainView));
-    if (mainView === 'org') renderOrg();
-    $('#tabs').innerHTML = TABS.map(t => '<button class="' + (t[0] === tab ? 'on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('');
-    const pane = $('#pane'), pk = tab + ':' + (tab === 'district' ? sel : tab === 'dossier' ? JSON.stringify(focus) : ''), keep = pane.dataset.key === pk ? pane.scrollTop : 0;
-    pane.innerHTML = ({ district: paneDistrict, gang: paneGang, dossier: paneDossier, law: paneLaw, biz: paneBiz, clans: paneClans, log: paneLog })[tab]();
-    pane.dataset.key = pk; pane.scrollTop = keep;
+    // меню разделов под шапкой; у «Банды» и «Карты» справа панель, остальные разделы во всю ширину
+    $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + v[1] + '</button>').join('');
+    const split = section === 'gang' || section === 'map';
+    $('#main').classList.toggle('wide', !split); $('#side').hidden = !split;
+    $('#org').hidden = section !== 'gang'; $('#mapview').hidden = section !== 'map'; $('#page').hidden = split;
+    if (section === 'gang') renderOrg();
+    const host = split ? $('#pane') : $('#page'), pk = section + ':' + (section === 'map' ? sel : section === 'gang' ? JSON.stringify(focus) : ''), keep = host.dataset.key === pk ? host.scrollTop : 0;
+    const fn = { gang: paneDossier, map: paneDistrict, men: paneGang, biz: paneBiz, law: paneLaw, clans: paneClans, log: paneLog }[section];
+    host.innerHTML = split ? fn() : '<div class="inner' + (section === 'biz' ? ' wide' : '') + '">' + fn() + '</div>';
+    host.dataset.key = pk; host.scrollTop = keep;
     if (P().over) showOver(); else if (P().event) showEvent();
   }
 
@@ -380,11 +382,11 @@
   const netCall = (name, body) => Net.post(name, Object.assign({ room: net.room, token: net.token }, body || {})).then(r => { if (r.err || r.ok === false) toast(r.err || r.msg, true); return r; });
 
   document.addEventListener('click', e => {
-    const tb = e.target.closest('[data-tab]'); if (tb) { tab = tb.dataset.tab; confirmNew = false; render(); return; }
+    const vb = e.target.closest('#menu [data-view]'); if (vb) { if (!S) return; section = vb.dataset.view; confirmNew = false; render(); if (section === 'map') applyView(); return; }
     const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
     const a = b.dataset.a, k = b.dataset.k;
     // меню и лобби
-    if (a === 'start') { S = E.newGame(k, (Math.random() * 2e9) | 0); me = k; net = null; sel = D.DISTRICTS.find(d => d.name === fd(k).home).id; tab = 'dossier'; mainView = 'org'; focus = { pos: 'right' }; view = FULL.slice(); applyView(); save(); closeModal(); render(); return; }
+    if (a === 'start') { S = E.newGame(k, (Math.random() * 2e9) | 0); me = k; net = null; sel = D.DISTRICTS.find(d => d.name === fd(k).home).id; section = 'gang'; focus = { pos: 'right' }; view = FULL.slice(); applyView(); save(); closeModal(); render(); return; }
     if (a === 'continue') { const sv = load(); if (sv) { S = sv; me = S.humans[0]; net = null; closeModal(); render(); } return; }
     if (a === 'menu') { leaveToMenu(); return; }
     if (a === 'create') { const nick = nickValue(); Net.post('create', { name: $('#roomname').value, nick }).then(r => r.room ? enterRoom(r.room, r.token) : toast(r.err, true)); return; }
@@ -400,7 +402,6 @@
     if (a === 'attack') act('attack', [sel, +b.dataset.l]);
     else if (a === 'build') act('build', [di, k]);
     else if (a === 'upgrade') act('upgrade', [di, +b.dataset.x]);
-    else if (a === 'biz') { bizView = k; render(); }
     else if (a === 'dopen') { if (openD.has(di)) openD.delete(di); else openD.add(di); render(); }
     else if (a === 'kidnap') act('kidnap', [sel]);
     else if (a === 'raid') act('raid', [di]);
@@ -416,9 +417,9 @@
     else if (a === 'cashout') act('cashOut', []);
     else if (a === 'opt') act('choose', [+k]);
     else if (a === 'force') netCall('force');
-    else if (a === 'goto') { sel = +b.dataset.i; tab = 'district'; mainView = 'map'; render(); applyView(); }
-    else if (a === 'person') { focus = { id: +b.dataset.id }; tab = 'dossier'; render(); }
-    else if (a === 'vacant') { focus = { pos: b.dataset.pos, ok: b.dataset.ok || null }; tab = 'dossier'; render(); }
+    else if (a === 'goto') { sel = +b.dataset.i; section = 'map'; render(); applyView(); }
+    else if (a === 'person') { focus = { id: +b.dataset.id }; section = 'gang'; render(); }
+    else if (a === 'vacant') { focus = { pos: b.dataset.pos, ok: b.dataset.ok || null }; section = 'gang'; render(); }
     else if (a === 'appoint') { focus = { id: +b.dataset.id }; act('assign', [+b.dataset.id, b.dataset.pos, b.dataset.ok || null]); }
     else if (a === 'new1') { confirmNew = true; render(); }
     else if (a === 'new0') { confirmNew = false; render(); }
@@ -426,7 +427,6 @@
     else if (a === 'close') { closeModal(); render(); }
   });
   document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.a === 'reassign' && t.value) { const v = t.value.split('|'); act('assign', [+t.dataset.id, v[0], v[1] || null]); } });
-  $('#views').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (!b || !S) return; mainView = b.dataset.view; render(); if (mainView === 'map') applyView(); });
   $('#end').addEventListener('click', () => {
     if (!S || P().over) return;
     if (net) { netCall('ready', { ready: !P().ready }); return; }
@@ -512,7 +512,7 @@
     net.lobby = msg.lobby;
     if (!msg.state) { S = null; showLobby(); return; }
     const first = !S; S = msg.state; me = S.me;
-    if (first) { sel = E.owned(S, me)[0]; if (sel == null) sel = null; tab = 'dossier'; mainView = 'org'; focus = { pos: 'right' }; if (modalKey === 'lobby') closeModal(); }
+    if (first) { sel = E.owned(S, me)[0]; if (sel == null) sel = null; section = 'gang'; focus = { pos: 'right' }; if (modalKey === 'lobby') closeModal(); }
     render();
   }
   function showLobby() {

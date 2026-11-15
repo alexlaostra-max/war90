@@ -16,20 +16,18 @@
     <button id="music" class="btn" aria-pressed="false">♪ Музыка</button>
     <button id="end" class="btn primary">Конец месяца</button>
   </header>
-  <main>
-    <section id="mapbox" aria-label="Бригада и карта">
-      <nav id="views"><button data-view="org" class="on">Бригада</button><button data-view="map">Карта</button></nav>
+  <nav id="menu" aria-label="Разделы"></nav>
+  <main id="main">
+    <section id="stage" aria-label="Раздел">
       <div id="org"></div>
       <div id="mapview" hidden>
         <svg id="map" preserveAspectRatio="xMidYMid meet"></svg>
         <div id="zoom"><button data-z="1" aria-label="Приблизить">+</button><button data-z="-1" aria-label="Отдалить">−</button><button data-z="0" aria-label="Вся карта">◎</button></div>
         <p id="legend"><span><i class="lg mine"></i>твои</span><span><i class="lg target"></i>можно напасть</span><span><i class="lg ent"></i>предприятие</span></p>
       </div>
+      <div id="page" hidden></div>
     </section>
-    <aside id="side">
-      <nav id="tabs"></nav>
-      <div id="pane"></div>
-    </aside>
+    <aside id="side"><div id="pane"></div></aside>
   </main>
 </div>
 <div id="modal" hidden></div>
