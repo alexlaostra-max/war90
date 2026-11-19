@@ -8,9 +8,12 @@ const E = globalThis.W90.Engine, D = globalThis.W90.DATA;
 const PORT = process.env.PORT || 3000;
 const STORE = process.env.ROOMS_FILE || path.join(__dirname, 'data', 'rooms.json');
 const MAX_ROOMS = 200, ROOM_TTL = 14 * 24 * 3600e3;
+// комната без единого подключённого человека закрывается через 10 минут (боты не в счёт)
+const IDLE = +process.env.ROOM_IDLE_MS || 10 * 60e3;
 const FIDS = D.FACTIONS.map(f => f.id);
 const rooms = new Map();    // id -> room
 const streams = new Map();  // roomId -> Map(token -> Set(res))
+const emptySince = new Map(); // roomId -> с какого момента в комнате нет ни одного подключения
 
 const id = n => crypto.randomBytes(n).toString('base64url');
 const clean = (s, n) => String(s || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, n);
@@ -29,8 +32,10 @@ function save() {
 function newRoom(name) {
   const r = { id: id(4), name, host: null, players: {}, slots: {}, started: false, S: null, touched: Date.now() };
   FIDS.forEach(f => r.slots[f] = 'bot'); // bot | off; занятый игроком слот определяется по players
-  rooms.set(r.id, r); return r;
+  rooms.set(r.id, r); emptySince.set(r.id, Date.now()); return r;
 }
+const live = r => { const m = streams.get(r.id); let n = 0; if (m) m.forEach(set => { n += set.size; }); return n; };
+function closeRoom(r) { rooms.delete(r.id); streams.delete(r.id); emptySince.delete(r.id); save(); }
 const online = (r, token) => { const m = streams.get(r.id); return !!(m && m.get(token) && m.get(token).size); };
 const taken = (r, fid) => Object.keys(r.players).find(t => r.players[t].fid === fid);
 function lobby(r, token) {
@@ -123,7 +128,7 @@ const api = {
   leave(b, r, token) {
     if (r.started) return { err: 'Из идущей игры выйти нельзя: твою бригаду некому вести' };
     delete r.players[token];
-    if (r.host === token) { const next = Object.keys(r.players)[0]; if (next) r.host = next; else { rooms.delete(r.id); save(); return { ok: true }; } }
+    if (r.host === token) { const next = Object.keys(r.players)[0]; if (next) r.host = next; else { closeRoom(r); return { ok: true }; } }
     push(r); return { ok: true };
   }
 };
@@ -140,9 +145,9 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no', Connection: 'keep-alive' });
     if (!streams.has(r.id)) streams.set(r.id, new Map());
     const m = streams.get(r.id); if (!m.has(token)) m.set(token, new Set());
-    m.get(token).add(res);
+    m.get(token).add(res); emptySince.delete(r.id);
     const ping = setInterval(() => res.write(': ping\n\n'), 25000);
-    req.on('close', () => { clearInterval(ping); m.get(token).delete(res); if (rooms.has(r.id)) push(r); });
+    req.on('close', () => { clearInterval(ping); m.get(token).delete(res); if (!rooms.has(r.id)) return; if (!live(r)) emptySince.set(r.id, Date.now()); push(r); });
     push(r); return;
   }
   if (url.pathname.startsWith('/api/') && req.method === 'POST') {
@@ -166,5 +171,10 @@ const server = http.createServer((req, res) => {
 });
 
 load();
-setInterval(() => { rooms.forEach(r => { if (Date.now() - r.touched > ROOM_TTL) { rooms.delete(r.id); streams.delete(r.id); } }); save(); }, 3600e3).unref();
+rooms.forEach(r => emptySince.set(r.id, Date.now())); // после перезапуска у игроков есть 10 минут, чтобы переподключиться
+setInterval(() => { rooms.forEach(r => { if (Date.now() - r.touched > ROOM_TTL) closeRoom(r); }); }, 3600e3).unref();
+setInterval(() => {
+  const now = Date.now();
+  emptySince.forEach((t, rid) => { const r = rooms.get(rid); if (!r) { emptySince.delete(rid); return; } if (now - t >= IDLE && !live(r)) { closeRoom(r); console.log('комната закрыта, никого нет ' + Math.round(IDLE / 60e3) + ' мин: ' + r.name); } });
+}, Math.min(30e3, IDLE / 4)).unref();
 server.listen(PORT, () => console.log('Передел: http://localhost:' + PORT));
