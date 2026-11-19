@@ -450,9 +450,10 @@ svg.art.face { aspect-ratio: 1; }
 /* строка под меню: плюшки империи и кто у власти */
 #strip { display: flex; align-items: center; gap: 8px 16px; margin-top: -4px; min-height: 26px; font-size: 12px; }
 #strip:empty, #perks:empty { display: none; }
-#perks { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
+/* все плюшки перед глазами: переносятся на новую строку, без прокрутки */
+#perks { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; flex: 1; min-width: 0; }
 #perks .slabel { color: var(--dim); text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
-#perks .perk { background: var(--raise); border: 1px solid var(--line); border-radius: 12px; padding: 2px 9px; color: var(--dim); }
+#perks .perk { background: var(--raise); border: 1px solid var(--line); border-radius: 12px; padding: 1px 8px; color: var(--dim); white-space: nowrap; }
 #perks .perk b { color: var(--good); font: 400 12px var(--mono); }
 #perks .perk.max { border-color: var(--gold); }
 @media (max-width: 860px) { #strip { flex-wrap: wrap; gap: 4px 12px; } #perks { flex-basis: 100%; } }
