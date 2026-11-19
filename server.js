@@ -133,7 +133,7 @@ const api = {
   }
 };
 
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.jpg': 'image/jpeg' };
 function send(res, code, obj) { const s = JSON.stringify(obj); res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(s); }
 
 const server = http.createServer((req, res) => {
@@ -166,8 +166,8 @@ const server = http.createServer((req, res) => {
   }
   // статика
   let p = url.pathname === '/' ? '/index.html' : url.pathname;
-  if (!/^\/(index\.html|css\/[\w.-]+\.css|js\/[\w.-]+\.js)$/.test(p)) { res.writeHead(404); return res.end('not found'); }
-  fs.readFile(path.join(__dirname, p), (err, buf) => { if (err) { res.writeHead(404); return res.end('not found'); } res.writeHead(200, { 'Content-Type': MIME[path.extname(p)], 'Cache-Control': 'no-cache' }); res.end(buf); });
+  if (!/^\/(index\.html|css\/[\w.-]+\.css|js\/[\w.-]+\.js|img\/[\w.-]+\.jpg)$/.test(p)) { res.writeHead(404); return res.end('not found'); }
+  fs.readFile(path.join(__dirname, p), (err, buf) => { if (err) { res.writeHead(404); return res.end('not found'); } res.writeHead(200, { 'Content-Type': MIME[path.extname(p)], 'Cache-Control': p.startsWith('/img/') ? 'public, max-age=604800' : 'no-cache' }); res.end(buf); });
 });
 
 load();

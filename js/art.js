@@ -362,18 +362,27 @@
     svd: () => P('M4 20L36 18L36 26L28 28Q22 36 12 34L6 30Z', WOOD) + P('M14 26Q20 28 26 25L24 31Q18 32 14 30Z', '#1b1a1f') + R(36, 17.4, 34, 7.2, METAL, 'rx="1"') + R(70, 18.4, 12, 5, WOOD) + R(82, 19.6, 30, 2, METAL) + R(110, 19, 5, 3, '#3a3840') + R(44, 9.6, 24, 4.4, '#1b1a1f', 'rx="2"') + R(42, 9, 4, 5.6, '#1b1a1f', 'rx="1"') + R(66, 9, 4, 5.6, '#1b1a1f', 'rx="1"') + C(69, 11.8, 1.8, '#6ccff0', 'opacity=".5"') + R(48, 14, 2, 3.4, METAL) + R(62, 14, 2, 3.4, METAL) + P('M52 24.6H58L57 32H53Z', METAL) + P('M40 24.6L46 24.6L45 34L40 33Z', WOOD2) + L(37, 18.6, 69, 18.6, MHI, 0.5),
     rpg: () => R(8, 20, 82, 5.4, '#4b5a3a') + R(6, 19, 4, 7.4, '#3a4630', 'rx="1"') + R(40, 18, 26, 9.4, WOOD, 'rx="1"') + L(40, 22.7, 66, 22.7, WOOD2, 0.6) + P('M90 18L100 14L114 20.6L114 24.6L100 31L90 27Z', '#566146') + P('M100 14L114 20.6L114 22.6L100 18Z', '#6d7a5a') + R(86, 19, 4, 7.4, '#3a4630') + P('M50 27.4L55 27.4L54 39L49.6 38Z', '#2c2b31') + P('M66 27.4L71 27.4L70 37L66 36.4Z', '#2c2b31') + R(66, 13, 2.4, 7, METAL) + R(64, 12, 6, 2, METAL) + P('M57 27.4Q57 32 62 32', 'none', 'stroke="' + METAL + '" stroke-width="1.4"')
   };
+  // настоящие фото со свободной лицензией (DATA.PHOTOS), если есть; иначе рисунок. Подпись автора обязательна по лицензии
+  const xesc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function photo(key, label) {
+    const F = (G.DATA.PHOTOS || {})[key]; if (!F) return null;
+    return '<figure class="photo"><img src="' + F.src + '" alt="' + xesc(label) + '" loading="lazy" decoding="async"' + (F.pos ? ' style="object-position:' + F.pos + '"' : '') + '><figcaption><a href="' + xesc(F.url) + '" target="_blank" rel="noopener noreferrer">Фото: ' + xesc(F.author) + ' · ' + xesc(F.license) + '</a></figcaption></figure>';
+  }
   function arm(k) {
     const A = G.DATA.ARMS[k]; if (!A) return '';
+    const ph = photo('arm-' + k, A.name); if (ph) return ph;
     const key = 'arm' + k; if (cache[key]) return cache[key];
     return (cache[key] = svg('0 0 120 48', R(0, 0, 120, 48, '#1d1a24') + R(0, 40, 120, 8, '#17141d') + '<g transform="translate(0 4)">' + ARM[k]() + '</g>', A.name, 'arm'));
   }
   function vest() {
+    const ph = photo('vest', G.DATA.VEST.name); if (ph) return ph;
     if (cache.vest) return cache.vest;
     const b = P('M44 6L52 4Q60 12 68 4L76 6L80 14Q76 18 78 24L78 42Q60 46 42 42L42 24Q44 18 40 14Z', '#3f4a33') + P('M47 20H73V40Q60 43 47 40Z', '#4e5b40') + [26, 31, 36].map(y => R(48, y, 24, 1.2, '#2d3524')).join('') + R(51, 22, 7, 5, '#2d3524', 'rx=".6"') + R(62, 22, 7, 5, '#2d3524', 'rx=".6"') + P('M44 6L52 4L54 10L46 12Z', '#2d3524') + P('M76 6L68 4L66 10L74 12Z', '#2d3524');
     return (cache.vest = svg('0 0 120 48', R(0, 0, 120, 48, '#1d1a24') + R(0, 40, 120, 8, '#17141d') + b, G.DATA.VEST.name, 'arm'));
   }
   function car(k) {
     const C0 = G.DATA.CARS[k]; if (!C0) return '';
+    const ph = photo('car-' + k, C0.name); if (ph) return ph;
     const key = 'car' + k; if (cache[key]) return cache[key];
     const kind = CAR_SHAPES[k] ? k : 'nine', len = CAR_SHAPES[kind].len || 60, s = Math.min(1.6, 100 / len);
     const bg = R(0, 0, 120, 48, '#1d1a24') + R(0, 38, 120, 10, '#24202b') + R(0, 38, 120, 0.8, '#3a3446') + [8, 38, 68, 98].map(x => R(x, 43.4, 14, 0.8, '#4a4352')).join('');

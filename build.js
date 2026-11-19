@@ -13,5 +13,5 @@ fs.writeFileSync(path.join(__dirname, 'index.html'),
 fs.mkdirSync(path.join(__dirname, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(__dirname, 'dist/artifact.html'),
   '<title>Передел</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n' + FONTS + '\n<style>\n' + rd('css/style.css') + '</style>\n' + body +
-  '<script>\n' + JS.map(f => rd('js/' + f + '.js')).join('\n') + '</script>\n');
+  '<script>\n' + JS.map(f => rd('js/' + f + '.js')).join('\n').replace(/img\/[\w.-]+\.jpg/g, f => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, f)).toString('base64')) + '</script>\n');
 console.log('ok');
