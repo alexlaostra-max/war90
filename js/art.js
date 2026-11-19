@@ -276,7 +276,7 @@
     const age = c.age || 35, str = c.str || 5, wit = c.wit || 5, loy = c.loy || 5;
     const skin = look.skin || pick(r, SKIN), dskin = 'rgba(80,40,30,.28)';
     let hairC = look.hairC || pick(r, HAIR);
-    const grey = look.grey || age > 44 && r() < 0.7;
+    const grey = look.grey != null ? !!look.grey : age > 44 && r() < 0.7;
     if (grey) hairC = age > 55 ? '#bdb8b2' : '#7d7873';
     const role = c.role || look.role;
     let cloth = look.cloth || (role === 'cop' ? 'cop' : role === 'general' ? 'general' : role === 'suit' ? 'suit' : clothFor(c, r));
@@ -347,6 +347,8 @@
   // глава бригады — тот же генератор с фиксированным сидом
   const bossFace = f => face({ seed: 'boss-' + f.id, name: f.boss, nick: '', age: 44, str: 7, wit: 7, loy: 8, look: { cloth: f.id === 'cher' ? 'suit' : f.id === 'lub' ? 'tracksuit' : 'raspberry', chain: f.id !== 'cher' } }, { bg: f.color + '40', label: f.boss });
   const legendFace = (k, opts) => { const L = G.DATA.LEGENDS[k]; return L ? face(Object.assign({ leg: k }, L), opts) : ''; };
+  // президент и мэр: портреты для страницы власти
+  const rulerFace = (R0, age) => R0.legend ? legendFace(R0.legend, { label: R0.name }) : face({ seed: 'ruler-' + R0.name, name: R0.name, age, str: 5, wit: 7, loy: 5, look: R0.look }, { label: R0.name });
   const OFF_ROLE = { uch: ['cop', 52], uvd: ['cop', 44], prok: ['suit', 47], dep: ['suit', 56], fsb: ['general', 58] };
   const officialFace = k => face({ seed: 'off-' + k, name: G.DATA.OFFICIALS[k].name, age: OFF_ROLE[k][1], str: 5, wit: 7, loy: 5, role: OFF_ROLE[k][0], look: k === 'dep' ? { glasses: 1, hair: 'side' } : {} }, { label: G.DATA.OFFICIALS[k].name });
   const vacantFace = () => svg('0 0 64 64', R(0, 0, 64, 64, '#211c29') + C(32, 26, 11, '#3a3446') + P('M10 64Q10 44 32 42Q54 44 54 64Z', '#3a3446') + T(32, 31, '?', 14, '#5a5466'), 'Вакантно', 'face');
@@ -567,5 +569,5 @@
   };
   const icon = k => '<svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + ICONS[k] + '</svg>';
 
-  G.ART = { build, face, bossFace, legendFace, officialFace, vacantFace, arm, vest, car, deal, hash, icon, ICONS };
+  G.ART = { build, face, bossFace, legendFace, officialFace, rulerFace, vacantFace, arm, vest, car, deal, hash, icon, ICONS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));

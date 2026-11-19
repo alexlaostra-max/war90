@@ -451,14 +451,11 @@ svg.art.face { aspect-ratio: 1; }
 #strip { display: flex; align-items: center; gap: 8px 16px; margin-top: -4px; min-height: 26px; font-size: 12px; }
 #strip:empty, #perks:empty { display: none; }
 #perks { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
-#perks .slabel, #rulers span { color: var(--dim); text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
+#perks .slabel { color: var(--dim); text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
 #perks .perk { background: var(--raise); border: 1px solid var(--line); border-radius: 12px; padding: 2px 9px; color: var(--dim); }
 #perks .perk b { color: var(--good); font: 400 12px var(--mono); }
 #perks .perk.max { border-color: var(--gold); }
-#rulers { display: flex; gap: 14px; flex: none; white-space: nowrap; }
-#rulers b { font: 700 12px var(--body); color: var(--fg); text-transform: none; letter-spacing: 0; margin-left: 3px; }
-#rulers i { font-style: normal; color: var(--gold); text-transform: none; letter-spacing: 0; }
-@media (max-width: 860px) { #strip { flex-wrap: wrap; gap: 4px 12px; } #perks { flex-basis: 100%; } #rulers { gap: 10px; } }
+@media (max-width: 860px) { #strip { flex-wrap: wrap; gap: 4px 12px; } #perks { flex-basis: 100%; } }
 /* районы: особенности и стройка */
 .traits { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 4px; }
 .trait { font-size: 12px; padding: 2px 9px; border-radius: 12px; background: #2f2a1f; border: 1px solid #5a4a2a; color: var(--gold); cursor: help; }
@@ -466,3 +463,12 @@ svg.art.face { aspect-ratio: 1; }
 .card.bcard .btag.fit { background: #2e5a3a; }
 .card.bcard.special { border-color: var(--crimson); }
 .card.bcard.fit { border-color: #3d6b45; }
+/* Власть: кто наверху — просто для атмосферы */
+.rulers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 8px; margin-top: 14px; }
+.ruler { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: linear-gradient(90deg, #232030, var(--raise)); }
+.ruler .ava { width: 64px; height: 64px; }
+.ruler .eyebrow { margin: 0 0 2px; font-size: 10px; }
+.ruler b { font: 400 16px var(--display); }
+.ruler b i { font: normal 12px var(--mono); color: var(--gold); }
+.ruler small { display: block; font: 11px var(--mono); color: var(--dim); margin-top: 2px; }
+.ruler p { margin: 6px 0 0; font-size: 13px; color: var(--dim); }

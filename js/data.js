@@ -309,8 +309,15 @@
 
   // Кто у власти: с какого месяца. Имена изменены, как у остальных легенд эпохи
   const RULERS = {
-    pres: [{ from: [1991, 12], name: 'Борис Ельцов' }, { from: [2000, 1], name: 'Владимир Путилин', note: 'и. о.' }, { from: [2000, 5], name: 'Владимир Путилин' }],
-    mayor: [{ from: [1991, 6], name: 'Гавриил Попков' }, { from: [1992, 6], name: 'Юрий Лужин', note: 'Кепка' }]
+    pres: [
+      { from: [1991, 12], name: 'Борис Ельцов', born: 1931, look: { hair: 'side', grey: 1, hairC: '#d8d4ce', wide: 1, cloth: 'suit', beard: 'none', brows: 'heavy' }, desc: 'Свердловский медведь. Залез на танк, разогнал Союз, отпустил цены. Страна пошла кто куда, и Москва — первой' },
+      { from: [2000, 1], name: 'Владимир Путилин', note: 'и. о.', born: 1952, look: { hair: 'bald', fringe: 1, hairC: '#a89470', grey: false, cloth: 'suit', beard: 'none' }, desc: 'Бывший подполковник из Питера. Говорит негромко и обещает диктатуру закона. В кабинетах вдруг стало тихо' },
+      { from: [2000, 5], name: 'Владимир Путилин', born: 1952, look: { hair: 'bald', fringe: 1, hairC: '#a89470', grey: false, cloth: 'suit', beard: 'none' }, desc: 'Вертикаль строится сверху вниз. Губернаторы присмирели, олигархи разъезжаются, бригадам советуют стать бизнесом' }
+    ],
+    mayor: [
+      { from: [1991, 6], name: 'Гавриил Попков', born: 1936, look: { glasses: 1, hair: 'side', grey: 1, cloth: 'suit', beard: 'none' }, desc: 'Профессор-экономист, первый всенародно избранный мэр. Разрешил торговать с рук и через год ушёл писать книги' },
+      { from: [1992, 6], name: 'Юрий Лужин', note: 'Кепка', legend: 'cap', born: 1936, desc: 'Хозяин Москвы в кепке. Стройки, рынки, подряды и Храм на Волхонке — всё через его кабинет. С ним договариваются все' }
+    ]
   };
 
   G.DATA = { RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };

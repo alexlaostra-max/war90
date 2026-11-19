@@ -92,7 +92,7 @@
       st('rep', 'Авторитет', R(p.rep)) + st('conn', 'Связи', E.conn(S, me)) +
       '<button class="st heat l' + L + '" data-go="law" title="Розыск">' + A.icon('heat') + '<div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></button>' +
       '';
-    $('#perks').innerHTML = fxStrip(); $('#rulers').innerHTML = rulersHTML();
+    $('#perks').innerHTML = fxStrip();
     $('#ap').innerHTML = '<span>Ходы</span><div class="pips">' + pips + '</div><b>' + p.ap + ' из ' + E.apMax(S, me) + '</b>';
     const end = $('#end');
     end.disabled = !!p.event || !!p.over || S.done;
@@ -323,6 +323,7 @@
     const blk = p.heat < 5 ? 'вопросов нет' : p.money < bc ? 'не хватает денег' : p.ap < 1 ? 'нет ходов' : '';
     let h = '<div class="lawhead"><div><h2>Власть</h2><p class="sub">Розыск ' + R(p.heat) + ' из 100 · ' + D.LAW[L].name + ' · связи ' + E.conn(S, me) + ' <button class="info" data-a="lawinfo" aria-label="Что бывает при розыске" title="Что бывает при розыске">i</button></p></div>';
     h += '<button class="bribe" data-a="bribe"' + (blk ? ' disabled' : '') + '>' + A.icon('money') + '<span><b>Занести наверх</b><small>' + bc + ' тыс. · розыск −12 · 1 ход</small>' + (blk ? '<i>' + blk + '</i>' : '') + '</span></button></div>';
+    h += rulersHTML();
     h += '<h3>Люди во власти <span class="muted">каждого можно купить до ' + D.OFFICIAL_MAX + ' раз, покупка тратит ход</span></h3><div class="offs">';
     Object.keys(D.OFFICIALS).forEach(k => {
       const O = D.OFFICIALS[k], c = E.officialCost(S, me, k), n = p.off[k] || 0, soon = y < O.from;
@@ -385,11 +386,15 @@
     const chips = rows.map(r => { const cap = W90.DATA.FX_CAP[r[0][0]]; return '<span class="perk' + (cap && r[1] >= cap ? ' max' : '') + '" title="' + (cap && r[1] >= cap ? 'Потолок' : '') + '">' + r[0][1] + ' <b>' + (r[0][3] || '') + r[1] + r[0][2] + '</b></span>'; }).join('');
     return '<span class="slabel">Плюшки империи</span>' + (chips || '<span class="muted">пока нет: строй точки на районах</span>');
   }
-  // кто сейчас президент и мэр
+  // кто сейчас президент и мэр: карточки с портретом на странице власти
+  const MON = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
   function rulersHTML() {
     const dt = E.date(S.turn), now = dt.year * 12 + dt.month, who = list => list.filter(r => r.from[0] * 12 + r.from[1] <= now).pop();
-    const p = who(D.RULERS.pres), m = who(D.RULERS.mayor);
-    return '<span>Президент <b>' + p.name + '</b>' + (p.note ? ' <i>' + p.note + '</i>' : '') + '</span><span>Мэр Москвы <b>' + m.name + '</b>' + (m.note ? ' <i>«' + m.note + '»</i>' : '') + '</span>';
+    const card = (role, list) => {
+      const r = who(list), first = list.find(x => x.name === r.name);
+      return '<div class="ruler"><span class="ava">' + A.rulerFace(r, dt.year - r.born) + '</span><div><p class="eyebrow">' + role + '</p><b>' + r.name + (r.note ? ' <i>' + (r.legend ? '«' + r.note + '»' : r.note) + '</i>' : '') + '</b><small>у власти с ' + MON[first.from[1] - 1] + ' ' + first.from[0] + ' · ' + (dt.year - r.born) + ' лет</small><p>' + r.desc + '.</p></div></div>';
+    };
+    return '<div class="rulers">' + card('Президент России', D.RULERS.pres) + card('Мэр Москвы', D.RULERS.mayor) + '</div>';
   }
   function bizBig() {
     const p = P();
