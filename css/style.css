@@ -404,3 +404,32 @@ svg.art.face { aspect-ratio: 1; }
 .proj.locked .dpic .art { filter: grayscale(.6) brightness(.8); }
 .projs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 12px; align-items: start; margin-top: 12px; }
 .projs .box.proj { margin: 0; }
+
+/* Власть: люди во власти строками, «занести» отдельной кнопкой */
+.lawhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.bribe { display: flex; align-items: center; gap: 10px; background: #2b2316; border: 1px solid var(--gold); border-radius: 6px; padding: 10px 16px 10px 12px; text-align: left; color: var(--fg); }
+.bribe:hover:not(:disabled) { background: #3a2f1a; }
+.bribe:disabled { opacity: .5; border-color: var(--line); background: var(--raise); }
+.bribe .ico { width: 30px; height: 30px; color: var(--good); flex: none; }
+.bribe span { display: flex; flex-direction: column; }
+.bribe b { font: 400 16px var(--display); color: var(--gold); }
+.bribe small { font: 12px var(--mono); color: var(--dim); }
+.bribe i { font-style: normal; font-size: 11px; color: var(--bad); }
+.offs { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.offrow { display: grid; grid-template-columns: 230px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 6px; background: var(--raise); overflow: hidden; }
+.offrow.have { border-color: #5a4a2a; }
+.offrow.soon { opacity: .55; }
+.offwho { display: flex; gap: 10px; align-items: center; padding: 10px 12px; background: #1d1a24; border-right: 1px solid var(--line); }
+.offwho .ava { width: 56px; height: 56px; }
+.offwho > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.offwho b { font: 400 15px var(--display); }
+.offwho small { font-size: 12px; color: var(--dim); }
+.offwho .pips { margin-top: 0; } .offwho .pips u { width: 10px; height: 10px; }
+.offwhat { padding: 10px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.offwhat p { margin: 0; }
+.offwhat .fx { font: 12px var(--mono); color: var(--dim); }
+@media (max-width: 600px) {
+  .offrow { grid-template-columns: minmax(0, 1fr); }
+  .offwho { border-right: 0; border-bottom: 1px solid var(--line); }
+  .bribe { width: 100%; }
+}

@@ -312,19 +312,25 @@
     return '<h3>Кладбище</h3><ul class="log">' + p.dead.map(d => '<li class="bad"><time>' + E.date(d.t).label + '</time>' + esc(d.n) + (d.pos ? ', ' + POSTS[d.pos].name.toLowerCase() : '') + ': ' + esc(d.how) + '</li>').join('') + '</ul>';
   }
 
+  // Власть: наверху люди во власти (слева человек, справа что он даёт), «занести» отдельной кнопкой, ниже ступени розыска
   function paneLaw() {
     const p = P(), L = E.lawLevel(p.heat), y = E.date(S.turn).year, bc = E.bribeCost(S, me);
-    let h = '<h2>Власть</h2><p class="sub">Розыск ' + R(p.heat) + ' из 100 · ' + D.LAW[L].name + '</p><ol class="ladder">';
+    const blk = p.heat < 5 ? 'вопросов нет' : p.money < bc ? 'не хватает денег' : p.ap < 1 ? 'нет ходов' : '';
+    let h = '<div class="lawhead"><div><h2>Власть</h2><p class="sub">Розыск ' + R(p.heat) + ' из 100 · ' + D.LAW[L].name + ' · связи ' + E.conn(S, me) + '</p></div>';
+    h += '<button class="bribe" data-a="bribe"' + (blk ? ' disabled' : '') + '>' + A.icon('money') + '<span><b>Занести наверх</b><small>' + bc + ' тыс. · розыск −12 · 1 ход</small>' + (blk ? '<i>' + blk + '</i>' : '') + '</span></button></div>';
+    h += '<h3>Люди во власти <span class="muted">каждого можно купить до ' + D.OFFICIAL_MAX + ' раз, покупка тратит ход</span></h3><div class="offs">';
+    Object.keys(D.OFFICIALS).forEach(k => {
+      const O = D.OFFICIALS[k], c = E.officialCost(S, me, k), n = p.off[k] || 0, soon = y < O.from;
+      const lock = soon ? 'появится в ' + O.from + ' году' : n >= D.OFFICIAL_MAX ? 'больше не купить' : p.money < c ? 'не хватает денег' : p.ap < 1 ? 'нет ходов' : '';
+      let pips = ''; for (let i = 0; i < D.OFFICIAL_MAX; i++) pips += '<u class="' + (i < n ? 'on' : '') + '"></u>';
+      h += '<div class="offrow' + (soon ? ' soon' : '') + (n ? ' have' : '') + '"><div class="offwho"><span class="ava">' + A.officialFace(k) + '</span><div><b>' + O.name + '</b><span class="pips">' + pips + '</span><small>' + (n ? 'свои: ' + n + ' из ' + D.OFFICIAL_MAX : 'своих нет') + '</small></div></div>';
+      h += '<div class="offwhat"><p>' + esc(O.desc || '') + '.</p><p class="fx"><span class="good">связи +' + O.w + '</span> · <span class="good">розыск −' + O.cool + ' в мес.</span> · содержание ' + O.keep + ' в мес.</p>' +
+        '<button class="btn sm" data-a="hire" data-k="' + k + '"' + (lock ? ' disabled' : '') + '>Купить · ' + c + ' тыс.' + (lock ? '<small>' + lock + '</small>' : '') + '</button></div></div>';
+    });
+    h += '</div><h3>Розыск</h3><ol class="ladder">';
     const what = ['', 'Берут по одному-два бойца', 'Облавы: до пяти бойцов', 'Десятая часть бригады и арест счетов', 'Пятая часть бригады, счета, бизнес. На 100 придут за тобой'];
     D.LAW.forEach((l, i) => { if (i) h += '<li class="' + (i === L ? 'cur' : i < L ? 'past' : '') + '"><b>' + l.name + '</b><span>от ' + l.at + ' · ' + what[i] + '</span></li>'; });
-    h += '</ol><p class="muted">Задержанных сажают, убивают при задержании или отпускают. От этого зависит авторитет. Чем больше связей, тем чаще отпускают.</p>';
-    h += btn('Занести наверх · ' + bc + ' тыс. · розыск −12', 'bribe', '', p.heat < 5 ? 'вопросов нет' : p.money < bc ? 'не хватает денег' : p.ap < 1, 'wide');
-    h += '<h3>Люди во власти <span class="muted">связи: ' + E.conn(S, me) + '</span></h3><div class="grid">';
-    Object.keys(D.OFFICIALS).forEach(k => {
-      const O = D.OFFICIALS[k], c = E.officialCost(S, me, k), lock = y < O.from ? 'с ' + O.from + ' года' : p.off[k] >= D.OFFICIAL_MAX ? 'больше не купить' : p.money < c ? 'не хватает денег' : '';
-      h += '<button class="card offc" data-a="hire" data-k="' + k + '"' + (lock || p.ap < 1 ? ' disabled' : '') + '><span class="ava">' + A.officialFace(k) + '</span><b>' + O.name + '</b><em>' + p.off[k] + ' из ' + D.OFFICIAL_MAX + '</em><span>' + c + ' тыс. и ' + O.keep + ' в мес.</span><span>связи +' + O.w + ', розыск −' + O.cool + ' в мес.</span>' + (lock ? '<small>' + lock + '</small>' : '') + '</button>';
-    });
-    return h + '</div>';
+    return h + '</ol><p class="muted">Задержанных сажают, убивают при задержании или отпускают. От этого зависит авторитет. Чем больше связей, тем чаще отпускают.</p>';
   }
 
   let showDone = false;
