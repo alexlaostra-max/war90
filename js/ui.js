@@ -285,7 +285,7 @@
       if (c.pos) h += '<h3>Что даёт</h3>' + postEffect(c) + '<button class="btn sm" data-a="unassign" data-id="' + c.id + '">Снять в резерв</button>';
       if (c.st === 'ok') {
         const same = s => c.pos === s[0] && (c.ok || null) === (s[1] || null);
-        const opt = s => { const hold = cr.find(x => x.pos === s[0] && (x.ok || null) === (s[1] || null)); return '<option value="' + s[0] + '|' + (s[1] || '') + '">' + (s[0] === 'watch' ? DD.DISTRICTS[E.watchDist({ ok: s[1] })].name : slotName(s[0], s[1])) + (hold ? ' (сейчас ' + esc(hold.nick) + ')' : '') + '</option>'; };
+        const opt = s => { const hold = cr.find(x => x.pos === s[0] && (x.ok || null) === (s[1] || null)); return '<option value="' + s[0] + '|' + (s[1] || '') + '">' + (s[0] === 'watch' ? DD.DISTRICTS[E.watchDist({ ok: s[1] })].name : slotName(s[0], s[1])) + (hold ? ' — сейчас «' + esc(hold.nick) + '»' : ' — свободно') + '</option>'; };
         const top = [['right'], ['cons'], ['treas']].concat(myOkrugs().map(ok => ['capo', ok])).filter(s => !same(s));
         const ws = E.owned(S, me).slice().sort((a, b) => DD.DISTRICTS[a].name.localeCompare(DD.DISTRICTS[b].name, 'ru')).map(i => ['watch', E.watchKey(i)]).filter(s => !same(s));
         h += '<h3>Назначить</h3><select class="pick" data-a="reassign" data-id="' + c.id + '" aria-label="Назначить на должность"><option value="">Выбрать должность…</option><optgroup label="Ближний круг и бригадиры">' + top.map(opt).join('') + '</optgroup><optgroup label="Смотрящий за районом">' + ws.map(opt).join('') + '</optgroup></select>';
