@@ -724,10 +724,10 @@
   function pickEvent(S, fid) {
     const p = S.f[fid], dt = date(S.turn), live = crew(S, fid).filter(c => c.st === 'ok');
     const holders = r => r === true ? live : live.filter(c => c.pos === r);
-    p.evWho = null; if (!p.once) p.once = [];
+    p.evWho = null; p.queue = []; if (!p.once) p.once = [];
     let ev = EVENTS.find(e => e.date && e.date[0] === dt.year && e.date[1] === dt.month);
     if (!ev) {
-      const fits = e => !e.date && (!e.from || dt.year >= e.from) && (!e.to || dt.year <= e.to) && (!e.who || holders(e.who).length) && (!e.needCars || p.cars > 0) && !(e.once && p.once.includes(e.id)) && !(e.legend && crew(S, fid).some(c => c.leg === e.legend));
+      const fits = e => !e.date && !e.extra && (!e.from || dt.year >= e.from) && (!e.to || dt.year <= e.to) && (!e.who || holders(e.who).length) && (!e.needCars || p.cars > 0) && !(e.once && p.once.includes(e.id)) && !(e.legend && crew(S, fid).some(c => c.leg === e.legend));
       let pool = EVENTS.filter(e => fits(e) && !p.recent.includes(e.id));
       const adv = pool.filter(e => e.advice);
       if (adv.length && rnd(S) < 0.35) pool = adv;
@@ -737,6 +737,23 @@
     }
     if (ev.who && holders(ev.who).length) { const h = holders(ev.who); p.evWho = h[Math.floor(rnd(S) * h.length)].id; }
     p.event = ev.id;
+    pickExtra(S, fid);
+  }
+  // Внеочередные события сверх события месяца: власть приходит за деньгами, на своих людей всплывает компромат.
+  // Идут по очереди после события месяца.
+  function pickExtra(S, fid) {
+    const p = S.f[fid], dt = date(S.turn), live = crew(S, fid).filter(c => c.st === 'ok');
+    const holders = r => r === 'post' ? live.filter(c => c.pos) : r === true ? live : live.filter(c => c.pos === r);
+    const fits = e => (!e.from || dt.year >= e.from) && (!e.to || dt.year <= e.to) && (!e.who || holders(e.who).length) && (!e.needCars || p.cars > 0) && !p.recent.includes(e.id);
+    const add = kind => {
+      const pool = EVENTS.filter(e => e.extra === kind && fits(e)); if (!pool.length) return;
+      const ev = pool[Math.floor(rnd(S) * pool.length)];
+      let who = null;
+      if (ev.who) { const h = holders(ev.who), wt = h.map(c => 12 - c.loy); let r = rnd(S) * wt.reduce((a, b) => a + b, 0); who = h.find((c, k) => (r -= wt[k]) < 0) || h[0]; } // ненадёжных подозревают чаще
+      p.queue.push({ id: ev.id, who: who ? who.id : null }); p.recent.push(ev.id); if (p.recent.length > 24) p.recent.shift();
+    };
+    if (S.turn > 0 && rnd(S) < 0.12 + p.heat / 250 + Math.min(0.15, count(S, fid) * 0.01)) add('law');
+    if (S.turn > 2 && rnd(S) < (live.some(c => c.pos && c.loy <= 4) ? 0.22 : 0.1)) add('crew');
   }
   const currentEvent = (S, fid) => S.f[fid].event ? EVENTS.find(e => e.id === S.f[fid].event) : null;
   const evWho = (S, fid) => S.f[fid].evWho != null ? crew(S, fid).find(c => c.id === S.f[fid].evWho) || null : null;
@@ -765,10 +782,11 @@
     if (os.cost) p.money -= os.cost; // цена варианта платится всегда
     let res = o;
     // совет от своего: чем умнее советчик, тем реже совет выходит боком
-    const wa = evWho(S, fid), altP = o.alt ? o.alt.p * (o.trust && wa ? clamp((11 - wa.wit) / 6, 0.3, 1.5) : 1) : 0;
+    // компромат (guilt): чем вернее человек, тем вероятнее, что его подставили
+    const wa = evWho(S, fid), altP = !o.alt ? 0 : o.guilt ? (wa ? clamp((wa.loy - 3) / 10, 0.05, 0.7) : 0.3) : o.alt.p * (o.trust && wa ? clamp((11 - wa.wit) / 6, 0.3, 1.5) : 1);
     if (o.alt && rnd(S) < altP) res = Object.assign({ $: 0 }, o.alt);
     const dl = {};
-    const gain = res.$ > 0 ? Math.round(res.$ * m) : 0; p.money += gain; dl.money = gain - os.cost;
+    const gain = (res.$ > 0 ? Math.round(res.$ * m) : 0) + (res.get ? Math.round(res.get * m) : 0); p.money += gain; dl.money = gain - os.cost;
     if (res.rep) { addRep(S, fid, res.rep); dl.rep = res.rep; }
     if (res.heat) { addHeat(S, fid, res.heat); dl.heat = res.heat; }
     if (res.men) { const v = Math.max(-p.men, res.men); p.men += v; dl.men = v; }
@@ -783,8 +801,9 @@
       if (res.wloy) { w.loy = clamp(w.loy + res.wloy, 1, 10); dl.loy = res.wloy; }
       if (res.wstr) { w.str = clamp(w.str + res.wstr, 1, 10); dl.str = res.wstr; }
       if (res.wwit) { w.wit = clamp(w.wit + res.wwit, 1, 10); dl.wit = res.wwit; }
+      if (res.demote && !res.wfate) { w.pos = null; w.ok = null; dl.demote = cname(w); }
       if (res.wfate === 'leave') { p.crew = p.crew.filter(x => x !== w); dl.gone = cname(w); }
-      else if (res.wfate) fate(S, fid, w, res.wfate, title.charAt(0).toLowerCase() + title.slice(1));
+      else if (res.wfate) { fate(S, fid, w, res.wfate, res.exec ? 'казнён по приговору бригады' : title.charAt(0).toLowerCase() + title.slice(1)); if (res.wfate === 'dead') dl.dead = cname(w); }
     }
     if (res.truce) { const nb = D.FACTIONS.filter(f => !S.f[f.id].human && S.f[f.id].alive && !inTruce(S, fid, f.id) && owned(S, f.id).some(i => GEO.adj[i].some(j => S.d[j].o === fid))); if (nb.length) { const f = nb[Math.floor(rnd(S) * nb.length)]; p.truce[f.id] = S.turn + res.truce; addRel(S, fid, f.id, 10); dl.truce = f.name; } }
     if (res.relAll) { D.FACTIONS.forEach(f => { if (f.id !== fid && !S.f[f.id].human) addRel(S, fid, f.id, res.relAll); }); dl.rel = res.relAll; }
@@ -792,6 +811,8 @@
     if (ev.once) p.once.push(ev.id);
     p.event = null; p.evWho = null;
     log(S, title + ': ' + r, '', fid);
+    // следующее внеочередное событие, если его человек ещё на месте
+    while (p.queue && p.queue.length && !p.event) { const q = p.queue.shift(), qe = EVENTS.find(e => e.id === q.id); if (qe && (!qe.who || crew(S, fid).some(c => c.id === q.who && c.st === 'ok' && (qe.who === 'post' ? c.pos : c.pos === qe.who)))) { p.event = q.id; p.evWho = q.who; } }
     return { ok: true, msg: r, delta: dl, title, event: true, who: w ? w.id : null };
   }
 
@@ -922,7 +943,7 @@
   function endTurn(S, force) {
     if (S.done) return fail('Игра окончена');
     if (!force && active(S).some(h => S.f[h].event)) return fail('Сначала реши, что делать с событием');
-    active(S).forEach(h => { if (S.f[h].battle) finishBattle(S, h, false, 'Месяц кончился'); S.f[h].event = null; humanPhase(S, h); });
+    active(S).forEach(h => { if (S.f[h].battle) finishBattle(S, h, false, 'Месяц кончился'); S.f[h].event = null; S.f[h].queue = []; humanPhase(S, h); });
     S.hits = {};
     D.FACTIONS.forEach(f => { if (!S.f[f.id].human) aiTurn(S, f.id); });
     active(S).forEach(h => { if (count(S, h) === 0) eliminate(S, h); });

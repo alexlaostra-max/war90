@@ -551,8 +551,8 @@
   function showEvent() {
     const p = P(), ev = E.currentEvent(S, me); if (!ev) return;
     const key = 'ev:' + S.turn + ':' + ev.id + ':' + R(p.money); if (modalKey === key) return;
-    let h = '<p class="eyebrow">' + E.date(S.turn).label + (ev.date ? ' · история' : '') + '</p>';
-    const rp = p.report;
+    let h = '<p class="eyebrow">' + E.date(S.turn).label + (ev.date ? ' · история' : ev.extra === 'law' ? ' · пришли из власти' : ev.extra === 'crew' ? ' · внутри семьи' : '') + '</p>';
+    const rp = !ev.extra && p.report;
     if (rp) {
       h += '<div class="report"><span>За прошлый месяц касса ' + sign(rp.money) + ' тыс. $</span>';
       if (rp.law) h += '<span class="bad">' + esc(rp.law) + '</span>';
@@ -562,6 +562,7 @@
     const tx = s => esc(E.evText(S, me, s)), w = E.evWho(S, me), L = ev.npc && D.LEGENDS[ev.npc];
     h += '<h2>' + tx(ev.title) + '</h2>';
     if (L) h += '<div class="evwho"><span class="ava">' + A.legendFace(ev.npc) + '</span><div><b>' + esc(L.nick) + '</b><small>' + esc(L.name) + ', ' + esc(L.bio.charAt(0).toLowerCase() + L.bio.slice(1)) + '</small></div></div>';
+    else if (ev.off) h += '<div class="evwho"><span class="ava">' + A.officialFace(ev.off) + '</span><div><b>' + esc(D.OFFICIALS[ev.off].name) + '</b><small>Пришёл не с пустыми руками: с папкой.' + (p.off[ev.off] ? ' Свой такой у тебя уже есть, но этот — чужой.' : '') + '</small></div></div>';
     else if (w) h += '<div class="evwho"><span class="ava">' + A.face(w) + '</span><div><b>' + esc(E.cname(w)) + '</b><small>' + (w.pos ? slotName(w.pos, w.ok) : 'резерв') + ' · сила ' + w.str + ', ум ' + w.wit + ', верность ' + w.loy + (ev.advice ? '. Чем умнее советчик, тем вернее его совет' : '') + '</small></div></div>';
     h += '<p class="lead">' + tx(ev.text) + '</p><div class="opts">';
     ev.opts.forEach((o, k) => { const os = E.optState(S, me, o); h += '<button class="opt" data-a="opt" data-k="' + k + '"' + (os.lock ? ' disabled' : '') + '><span>' + tx(o.t) + '</span>' + (os.cost ? '<em>' + os.cost + ' тыс.</em>' : '') + (os.lock ? '<small>' + esc(os.lock) + '</small>' : '') + '</button>'; });
@@ -621,6 +622,8 @@
     if (d.truce) ch += '<span class="good">Мир на год: ' + esc(d.truce) + '</span>';
     if (d.rel) ch += '<span class="' + (d.rel > 0 ? 'good' : 'bad') + '">Отношения со всеми ' + sign(d.rel) + '</span>';
     if (d.gone) ch += '<span class="bad">Ушёл: ' + esc(d.gone) + '</span>';
+    if (d.dead) ch += '<span class="bad">Казнён: ' + esc(d.dead) + '</span>';
+    if (d.demote) ch += '<span class="bad">Снят в резерв: ' + esc(d.demote) + '</span>';
     const wc = r.who != null && E.crew(S, me).find(c => c.id === r.who);
     openModal('<p class="eyebrow">' + esc(r.title) + '</p>' + (wc ? '<div class="evwho"><span class="ava">' + A.face(wc) + '</span><div><b>' + esc(E.cname(wc)) + '</b><small>' + (wc.st === 'hurt' ? 'ранен' : wc.st === 'jail' ? 'сидит' : 'сила ' + wc.str + ', ум ' + wc.wit + ', верность ' + wc.loy) + '</small></div></div>' : '') + '<p class="lead">' + esc(r.msg) + '</p><p class="deltas">' + (ch || '<span>Без последствий</span>') + '</p><button class="btn primary wide" data-a="close">Дальше</button>', 'event', 'result');
     if (!net) renderTop();
