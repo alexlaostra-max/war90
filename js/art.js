@@ -286,5 +286,28 @@
     return (cache[key] = svg('0 0 120 48', bg + carBody(kind, C0.col, (120 - len * s) / 2, 40, s), C0.name, 'car'));
   }
 
-  G.ART = { build, face, bossFace, legendFace, officialFace, vacantFace, arm, vest, car, hash };
+  // ---------- значки шапки: 24×24, цвет берут из CSS (currentColor) ----------
+  const STAR = (() => { let d = ''; for (let i = 0; i < 16; i++) { const a = Math.PI * i / 8 - Math.PI / 2, r = i % 2 ? 4.4 : 11; d += (i ? 'L' : 'M') + f1(12 + r * Math.cos(a)) + ' ' + f1(12 + r * Math.sin(a)); } return d + 'Z'; })();
+  const ICONS = {
+    // пачка долларов
+    money: '<rect x="5" y="4" width="17" height="10" rx="1.2" opacity=".45"/><path fill-rule="evenodd" d="M3.2 8h16.6c.7 0 1.2.5 1.2 1.2v8.6c0 .7-.5 1.2-1.2 1.2H3.2C2.5 19 2 18.5 2 17.8V9.2C2 8.5 2.5 8 3.2 8zM11.5 10.6a2.9 2.9 0 1 0 0 5.8 2.9 2.9 0 0 0 0-5.8zM4.5 10.3v1.6h1.6v-1.6zM16.9 15.1v1.6h1.6v-1.6z"/>',
+    // двое в кожанках
+    men: '<circle cx="16.5" cy="6.6" r="3" opacity=".5"/><path d="M11 19.5c.3-4 2.6-6.6 5.5-6.6s5.5 2.6 5.5 6.6z" opacity=".5"/><circle cx="9" cy="7.6" r="3.6"/><path d="M1.6 21.5c.3-5 3.4-8.3 7.4-8.3s7.1 3.3 7.4 8.3zM9 13.2l-1.5 2.6L9 21l1.5-5.2z"/>',
+    // пистолет Макарова
+    gun: '<path fill-rule="evenodd" d="M2.2 6.2h18.6c.6 0 1 .4 1 1v3.3c0 .5-.4.9-.9.9H12.6l-.7 1.8c-.3.7-.9 1.1-1.6 1.1H9.2l-1.4 5.8c-.1.5-.6.9-1.1.9H3.9c-.7 0-1.2-.7-1-1.4l1.7-6.2-2.5-.9c-.5-.2-.8-.6-.8-1.1V7.2c0-.6.4-1 .9-1zM9.9 11.4H8.5l-.3 1.6h1c.4 0 .7-.2.8-.6z"/><rect x="2.6" y="5" width="2.4" height="1.6" rx=".4"/>',
+    // седан сбоку
+    car: '<path fill-rule="evenodd" d="M1.5 15.6v-2.2c0-.8.5-1.4 1.3-1.6l3.3-.8 3-3.6c.4-.5 1-.8 1.6-.8h5.1c.6 0 1.2.3 1.6.8l2.9 3.6 1.4.3c.8.2 1.3.8 1.3 1.6v2.7zM10.4 8.2l-2.4 3h4.3v-3zM13.9 8.2v3h4.1l-2.4-3z"/><path fill-rule="evenodd" d="M6.3 14.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm0 1.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM17.5 14.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm0 1.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>',
+    // воровская восьмиконечная звезда
+    rep: '<path fill-rule="evenodd" d="' + STAR + 'M12 9.4a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2z"/>',
+    // телефон-вертушка: нужный звонок нужному человеку
+    conn: '<path d="M2.2 9.6C2.2 6.4 6.6 4 12 4s9.8 2.4 9.8 5.6v1.2c0 .5-.4.9-.9.9h-3c-.5 0-.9-.4-.9-.9V8.9A11 11 0 0 0 12 8a11 11 0 0 0-5 .9v1.9c0 .5-.4.9-.9.9h-3c-.5 0-.9-.4-.9-.9z"/><path fill-rule="evenodd" d="M8 10.4h8l3.6 8.3c.3.7-.2 1.3-.9 1.3H5.3c-.7 0-1.2-.6-.9-1.3zM12 12.2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><circle cx="12" cy="15.2" r="1"/>',
+    // мигалка
+    heat: '<path d="M7 17.2v-5a5 5 0 0 1 10 0v5z"/><rect x="5" y="17.6" width="14" height="3.4" rx=".8"/><path d="M12 1.6v3M3.4 5.4l2.1 2.1M20.6 5.4l-2.1 2.1M1.4 12.6h2.8M19.8 12.6h2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>',
+    // нота и «следующий трек» для плеера
+    note: '<path d="M9 17.5V5.2l11-2.2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><ellipse cx="6.4" cy="17.6" rx="3.2" ry="2.5"/><ellipse cx="17.4" cy="15.2" rx="3.2" ry="2.5"/>',
+    next: '<path d="M3 5.5v13l9-6.5zM12 5.5v13l9-6.5z"/><rect x="20" y="5.5" width="2" height="13" rx=".5"/>'
+  };
+  const icon = k => '<svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + ICONS[k] + '</svg>';
+
+  G.ART = { build, face, bossFace, legendFace, officialFace, vacantFace, arm, vest, car, hash, icon, ICONS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));

@@ -27,7 +27,13 @@ p { margin: 8px 0; }
 .brand b { font: 400 22px var(--display); color: var(--crimson-hi); letter-spacing: .04em; text-transform: uppercase; }
 .brand span { font: 13px var(--mono); color: var(--gold); }
 #stats { display: flex; flex: 1; flex-wrap: wrap; gap: 6px 16px; min-width: 0; }
-.st { display: flex; flex-direction: column; min-width: 54px; }
+.st { display: flex; align-items: center; gap: 7px; min-width: 54px; }
+.st > div { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.st > .ico { width: 24px; height: 24px; flex: none; color: var(--dim); }
+.s-money .ico { color: var(--good); } .st.bad .ico { color: var(--bad); }
+.s-men .ico { color: #d8cdbd; } .s-gun .ico { color: #a9b2c3; } .s-car .ico { color: var(--crimson-hi); }
+.s-rep .ico { color: var(--gold); } .s-conn .ico { color: #7fa8d8; }
+.heat .ico { color: var(--good); } .heat.l1 .ico { color: var(--gold); } .heat.l2 .ico { color: #e58a3c; } .heat.l3 .ico, .heat.l4 .ico { color: var(--bad); }
 .st span { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
 .st b { font: 400 18px var(--mono); font-variant-numeric: tabular-nums; }
 .st i { font: normal 11px var(--mono); color: var(--dim); white-space: nowrap; }
@@ -148,7 +154,9 @@ main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1
   #top { gap: 8px 12px; }
   .brand b { font-size: 17px; }
   #stats { order: 3; flex-basis: 100%; gap: 4px 12px; }
-  .st { min-width: 0; } .st b { font-size: 15px; } .st span { font-size: 10px; }
+  .st { min-width: 0; gap: 5px; } .st b { font-size: 15px; } .st span { font-size: 10px; }
+  .st > .ico { width: 18px; height: 18px; }
+  .st:not(.heat):not(.ap) span { display: none; } /* на телефоне подпись заменяет значок */
   .st.heat { flex: 1 1 150px; min-width: 150px; }
   #end { margin-left: auto; padding: 7px 12px; }
   #menu button { padding: 8px 12px; font-size: 14px; }
@@ -188,9 +196,12 @@ code { font-family: var(--mono); color: var(--gold); }
 .dbody { padding: 0 12px 12px; border-top: 1px solid var(--line); }
 .dbody h3 { margin-top: 12px; }
 .pts td { vertical-align: middle; } .lv { font: 400 12px var(--mono); color: var(--gold); }
-#music { padding: 9px 12px; font-size: 13px; color: var(--dim); flex-direction: row; }
+#music, #mnext { padding: 9px 12px; font-size: 13px; color: var(--dim); flex-direction: row; gap: 6px; }
+#music .ico, #mnext .ico { width: 15px; height: 15px; flex: none; }
+#music span { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #music[aria-pressed="true"] { color: var(--gold); border-color: var(--gold); }
-@media (max-width: 860px) { #music { padding: 7px 10px; margin-left: auto; } #music + #end { margin-left: 0; } }
+#mnext { padding-inline: 10px; margin-left: -8px; }
+@media (max-width: 860px) { #music, #mnext { padding: 7px 10px; } #music { margin-left: auto; } #music ~ #end { margin-left: 0; } #music span { display: none; } }
 
 /* главный экран: схема бригады */
 #org { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px 24px; }

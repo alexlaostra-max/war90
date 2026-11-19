@@ -75,14 +75,15 @@
   function renderTop() {
     const p = P(), inc = E.income(S, me), L = E.lawLevel(p.heat), cap = E.menCap(S, me);
     $('#date').textContent = E.date(S.turn).label + (net ? ' · ' + net.lobby.name : '');
-    const st = (l, v, x, cls) => '<div class="st ' + (cls || '') + '"><span>' + l + '</span><b>' + v + '</b>' + (x ? '<i>' + x + '</i>' : '') + '</div>';
+    // показатель шапки: значок, подпись, число, пояснение
+    const st = (k, l, v, x, cls) => '<div class="st s-' + k + ' ' + (cls || '') + '" title="' + l + '">' + A.icon(k) + '<div><span>' + l + '</span><b>' + v + '</b>' + (x ? '<i>' + x + '</i>' : '') + '</div></div>';
     let pips = ''; for (let i = 0; i < E.apMax(S, me); i++) pips += '<u class="' + (i < p.ap ? 'on' : '') + '"></u>';
     $('#stats').innerHTML =
-      st('Касса, тыс. $', R(p.money), sign(inc.total) + ' в мес.', p.money < 0 ? 'bad' : '') +
-      st('Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('Стволы', p.guns) + st('Тачки', p.cars) +
-      st('Авторитет', R(p.rep)) + st('Связи', E.conn(S, me)) +
-      '<div class="st heat l' + L + '"><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div>' +
-      '<div class="st ap"><span>Ходы</span><div class="pips">' + pips + '</div></div>';
+      st('money', 'Касса, тыс. $', R(p.money), sign(inc.total) + ' в мес.', p.money < 0 ? 'bad' : '') +
+      st('men', 'Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('gun', 'Стволы', p.guns) + st('car', 'Тачки', p.cars) +
+      st('rep', 'Авторитет', R(p.rep)) + st('conn', 'Связи', E.conn(S, me)) +
+      '<div class="st heat l' + L + '" title="Розыск">' + A.icon('heat') + '<div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></div>' +
+      '<div class="st ap"><div><span>Ходы</span><div class="pips">' + pips + '</div></div></div>';
     const end = $('#end');
     end.disabled = !!p.event || !!p.over || S.done;
     if (net) { const act = E.active(S), rd = act.filter(h => S.f[h].ready).length; end.textContent = p.ready ? 'Жду остальных ' + rd + '/' + act.length + ' · отменить' : 'Готов'; end.classList.toggle('waiting', !!p.ready); }
