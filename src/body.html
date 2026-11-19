@@ -3,10 +3,10 @@
     <div class="brand"><b>Передел</b><span id="date"></span></div>
     <div id="stats"></div>
     <button id="music" class="btn" aria-pressed="false" title="Включить музыку"><svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 17.5V5.2l11-2.2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><ellipse cx="6.4" cy="17.6" rx="3.2" ry="2.5"/><ellipse cx="17.4" cy="15.2" rx="3.2" ry="2.5"/></svg><span>Музыка</span></button>
-    <button id="mnext" class="btn" hidden aria-label="Следующий трек" title="Следующий трек"><svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5v13l9-6.5zM12 5.5v13l9-6.5z"/><rect x="20" y="5.5" width="2" height="13" rx=".5"/></svg></button>
+    <button id="mnext" class="btn off" disabled aria-hidden="true" aria-label="Следующий трек" title="Следующий трек"><svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5v13l9-6.5zM12 5.5v13l9-6.5z"/><rect x="20" y="5.5" width="2" height="13" rx=".5"/></svg></button>
     <button id="end" class="btn primary">Конец месяца</button>
   </header>
-  <nav id="menu" aria-label="Разделы"></nav>
+  <div id="bar"><nav id="menu" aria-label="Разделы"></nav><div id="ap" aria-label="Ходы в этом месяце"></div></div>
   <main id="main">
     <section id="stage" aria-label="Раздел">
       <div id="org"></div>

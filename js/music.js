@@ -199,7 +199,7 @@
   const b = document.getElementById('music'), nx = document.getElementById('mnext');
   const label = name => { if (!b) return; b.querySelector('span').textContent = on && name ? name : 'Музыка'; b.title = on && name ? 'Играет «' + name + '». Выключить музыку' : 'Включить музыку'; };
   onTrack = label;
-  function sync() { if (b) b.setAttribute('aria-pressed', on); if (nx) nx.hidden = !on; label(on && G.Music.track()); }
+  function sync() { if (b) b.setAttribute('aria-pressed', on); if (nx) { nx.disabled = !on; nx.classList.toggle('off', !on); nx.setAttribute('aria-hidden', !on); } label(on && G.Music.track()); }
   if (b) b.addEventListener('click', () => {
     if (on) stop(); else if (!start()) return;
     sync();

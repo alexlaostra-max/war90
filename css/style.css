@@ -200,10 +200,13 @@ code { font-family: var(--mono); color: var(--gold); }
 .pts td { vertical-align: middle; } .lv { font: 400 12px var(--mono); color: var(--gold); }
 #music, #mnext { padding: 9px 12px; font-size: 13px; color: var(--dim); flex-direction: row; gap: 6px; }
 #music .ico, #mnext .ico { width: 15px; height: 15px; flex: none; }
-#music span { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* у плеера постоянная ширина: название трека не двигает шапку */
+#music { width: 172px; justify-content: flex-start; }
+#music span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#mnext.off { visibility: hidden; }
 #music[aria-pressed="true"] { color: var(--gold); border-color: var(--gold); }
 #mnext { padding-inline: 10px; margin-left: -8px; }
-@media (max-width: 860px) { #music, #mnext { padding: 7px 10px; } #music { margin-left: auto; } #music ~ #end { margin-left: 0; } #music span { display: none; } }
+@media (max-width: 860px) { #music, #mnext { padding: 7px 10px; } #music { margin-left: auto; } #music ~ #end { margin-left: 0; } #music { width: auto; } #music span { display: none; } }
 
 /* главный экран: схема бригады */
 #org { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px 24px; }
@@ -263,7 +266,17 @@ button.link { background: none; border: 0; padding: 0; color: var(--gold); text-
 .card i.perk { font-style: normal; }
 
 /* меню разделов под шапкой */
-#menu { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; margin-top: -2px; }
+#bar { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); margin-top: -2px; }
+#menu { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 0 1 auto; }
+/* ходы — сразу после вкладок */
+#ap { flex: none; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 14px; border-left: 1px solid var(--line); }
+#ap:empty { display: none; }
+#ap span { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; }
+#ap .pips { margin-top: 0; }
+#ap b { font: 400 13px var(--mono); color: var(--dim); }
+@media (max-width: 860px) { #ap { padding: 0 2px 0 10px; } #ap span, #ap b { display: none; } }
+.info { width: 20px; height: 20px; margin-left: 4px; border-radius: 50%; border: 1px solid var(--gold); background: none; color: var(--gold); font: italic 700 12px/18px Georgia, serif; padding: 0; vertical-align: 1px; }
+.info:hover { background: var(--gold); color: var(--bg); }
 #menu button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 18px 9px; color: var(--dim); font: 400 16px var(--display); letter-spacing: .03em; white-space: nowrap; }
 #menu button:hover { color: var(--fg); }
 #menu button.on { color: var(--fg); border-bottom-color: var(--crimson-hi); }

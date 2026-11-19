@@ -91,7 +91,8 @@
       st('men', 'Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('gun', 'Стволы', p.guns) + st('car', 'Тачки', p.cars) +
       st('rep', 'Авторитет', R(p.rep)) + st('conn', 'Связи', E.conn(S, me)) +
       '<button class="st heat l' + L + '" data-go="law" title="Розыск">' + A.icon('heat') + '<div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></button>' +
-      '<div class="st ap"><div><span>Ходы</span><div class="pips">' + pips + '</div></div></div>';
+      '';
+    $('#ap').innerHTML = '<span>Ходы</span><div class="pips">' + pips + '</div><b>' + p.ap + ' из ' + E.apMax(S, me) + '</b>';
     const end = $('#end');
     end.disabled = !!p.event || !!p.over || S.done;
     if (net) { const act = E.active(S), rd = act.filter(h => S.f[h].ready).length; end.textContent = p.ready ? 'Жду остальных ' + rd + '/' + act.length + ' · отменить' : 'Готов'; end.classList.toggle('waiting', !!p.ready); }
@@ -316,7 +317,7 @@
   function paneLaw() {
     const p = P(), L = E.lawLevel(p.heat), y = E.date(S.turn).year, bc = E.bribeCost(S, me);
     const blk = p.heat < 5 ? 'вопросов нет' : p.money < bc ? 'не хватает денег' : p.ap < 1 ? 'нет ходов' : '';
-    let h = '<div class="lawhead"><div><h2>Власть</h2><p class="sub">Розыск ' + R(p.heat) + ' из 100 · ' + D.LAW[L].name + ' · связи ' + E.conn(S, me) + '</p></div>';
+    let h = '<div class="lawhead"><div><h2>Власть</h2><p class="sub">Розыск ' + R(p.heat) + ' из 100 · ' + D.LAW[L].name + ' · связи ' + E.conn(S, me) + ' <button class="info" data-a="lawinfo" aria-label="Что бывает при розыске" title="Что бывает при розыске">i</button></p></div>';
     h += '<button class="bribe" data-a="bribe"' + (blk ? ' disabled' : '') + '>' + A.icon('money') + '<span><b>Занести наверх</b><small>' + bc + ' тыс. · розыск −12 · 1 ход</small>' + (blk ? '<i>' + blk + '</i>' : '') + '</span></button></div>';
     h += '<h3>Люди во власти <span class="muted">каждого можно купить до ' + D.OFFICIAL_MAX + ' раз, покупка тратит ход</span></h3><div class="offs">';
     Object.keys(D.OFFICIALS).forEach(k => {
@@ -327,10 +328,16 @@
       h += '<div class="offwhat"><p>' + esc(O.desc || '') + '.</p><p class="fx"><span class="good">связи +' + O.w + '</span> · <span class="good">розыск −' + O.cool + ' в мес.</span> · содержание ' + O.keep + ' в мес.</p>' +
         '<button class="btn sm" data-a="hire" data-k="' + k + '"' + (lock ? ' disabled' : '') + '>Купить · ' + c + ' тыс.' + (lock ? '<small>' + lock + '</small>' : '') + '</button></div></div>';
     });
-    h += '</div><h3>Розыск</h3><ol class="ladder">';
+    return h + '</div>';
+  }
+  // памятка про розыск: открывается кнопкой «i» на странице власти
+  function showLawInfo() {
+    const p = P(), L = E.lawLevel(p.heat);
     const what = ['', 'Берут по одному-два бойца', 'Облавы: до пяти бойцов', 'Десятая часть бригады и арест счетов', 'Пятая часть бригады, счета, бизнес. На 100 придут за тобой'];
+    let h = '<p class="eyebrow">Памятка</p><h2>Розыск</h2><p class="sub">Сейчас ' + R(p.heat) + ' из 100 · ' + D.LAW[L].name + ' · ' + sign(E.heatDelta(S, me)) + ' в мес.</p><ol class="ladder">';
     D.LAW.forEach((l, i) => { if (i) h += '<li class="' + (i === L ? 'cur' : i < L ? 'past' : '') + '"><b>' + l.name + '</b><span>от ' + l.at + ' · ' + what[i] + '</span></li>'; });
-    return h + '</ol><p class="muted">Задержанных сажают, убивают при задержании или отпускают. От этого зависит авторитет. Чем больше связей, тем чаще отпускают.</p>';
+    h += '</ol><p class="muted">Задержанных сажают, убивают при задержании или отпускают. От этого зависит авторитет. Чем больше связей, тем чаще отпускают.</p><p class="muted">Сбить розыск: занести наверх, купить людей во власти, бордель на районе.</p>';
+    openModal(h + btn('Понятно', 'close', '', false, 'wide'), '', 'lawinfo');
   }
 
   let showDone = false;
@@ -496,6 +503,7 @@
     else if (a === 'car') act('buyCar', [k || 'nine']);
     else if (a === 'hire') act('hire', [k]);
     else if (a === 'bribe') act('bribe', []);
+    else if (a === 'lawinfo') showLawInfo();
     else if (a === 'truce') act('truce', [k]);
     else if (a === 'parley') { parleyWith = k; showParley(); }
     else if (a === 'talk') act('parley', [parleyWith, k, b.dataset.i != null ? +b.dataset.i : null]);
