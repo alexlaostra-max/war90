@@ -286,6 +286,172 @@
     return (cache[key] = svg('0 0 120 48', bg + carBody(kind, C0.col, (120 - len * s) / 2, 40, s), C0.name, 'car'));
   }
 
+  // ---------- крупные дела: бригада вылетает на делюгу ----------
+  // сцена 240×96, земля на y = 82. Борт, город и груз у каждого дела свои.
+  const GY = 82;
+  const sky = (id, a, b) => '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + a + '"/><stop offset="1" stop-color="' + b + '"/></linearGradient></defs>' + R(0, 0, 240, 96, 'url(#' + id + ')');
+  const stars = (seed, n, h) => { const r = rng(seed); let s = ''; for (let i = 0; i < n; i++) s += C(r() * 240, r() * (h || 40), r() < 0.3 ? 0.7 : 0.4, '#e6ddf0', 'opacity="' + f1(0.3 + r() * 0.5) + '"'); return s; };
+  const ridge = (pts, col, y) => P('M0 ' + (y || GY) + pts.map(p => 'L' + p[0] + ' ' + p[1]).join('') + 'L240 ' + (y || GY) + 'Z', col);
+  const caps = (pts, col) => pts.filter(p => p[2]).map(p => P('M' + (p[0] - p[2]) + ' ' + (p[1] + p[2] * 0.9) + 'L' + p[0] + ' ' + p[1] + 'L' + (p[0] + p[2]) + ' ' + (p[1] + p[2] * 0.9) + 'l-' + f1(p[2] * 0.6) + ' -1l-' + f1(p[2] * 0.5) + ' 1.4z', col || '#eef0f4')).join('');
+  const glowSun = (x, y, r, col) => C(x, y, r * 2.2, col, 'opacity=".12"') + C(x, y, r * 1.5, col, 'opacity=".2"') + C(x, y, r, col);
+  const tarmac = (col) => R(0, GY, 240, 14, col || '#2a2730') + [12, 52, 92, 132, 172, 212].map(x => R(x, 89, 20, 1, '#e8e2d6', 'opacity=".35"')).join('');
+  const palm = (x, s) => P('M' + x + ' ' + GY + 'q' + f1(-2 * s) + ' ' + f1(-14 * s) + ' ' + f1(3 * s) + ' ' + f1(-26 * s) + 'l' + f1(1.6 * s) + ' .4q' + f1(-4 * s) + ' ' + f1(12 * s) + ' ' + f1(-2.2 * s) + ' ' + f1(25.6 * s) + 'z', '#3b2d24') +
+    [[-12, 2], [-9, -5], [0, -8], [9, -5], [12, 3]].map(l => P('M' + f1(x + 3.6 * s) + ' ' + f1(GY - 26 * s) + 'q' + f1(l[0] * 0.5 * s) + ' ' + f1((l[1] - 6) * s) + ' ' + f1(l[0] * s) + ' ' + f1(l[1] * s) + 'q' + f1(-l[0] * 0.4 * s) + ' ' + f1(-4 * s) + ' ' + f1(-l[0] * s) + ' ' + f1(-l[1] * s) + 'z', '#2e5a3a')).join('');
+  // человек из бригады: куртка, шапка и что в руке
+  function guy(x, y, col, s, hat, hand) {
+    s = s || 1.1; let h = man(x, y, col, s);
+    if (hat === 'ush') h += R(x - 1.9 * s, y - 12.2 * s, 3.8 * s, 2 * s, '#5a4632', 'rx="1"') + R(x - 2.1 * s, y - 10.6 * s, 0.9 * s, 1.8 * s, '#5a4632');
+    if (hat === 'cap') h += P('M' + f1(x - 1.7 * s) + ' ' + f1(y - 10.4 * s) + 'q' + f1(1.7 * s) + ' ' + f1(-2.4 * s) + ' ' + f1(3.4 * s) + ' 0l' + f1(1.2 * s) + ' .4z', '#2a2730');
+    if (hand === 'case') h += R(x + 2.2 * s, y - 4.6 * s, 3 * s, 2.2 * s, '#1c1a20', 'rx=".4"');
+    if (hand === 'bag') h += R(x + 1.8 * s, y - 5.6 * s, 5 * s, 4 * s, '#d9d2c3') + L(x + 1.8 * s, y - 4.2 * s, x + 6.8 * s, y - 4.2 * s, '#c2343c', 0.5 * s) + L(x + 4.3 * s, y - 5.6 * s, x + 4.3 * s, y - 1.6 * s, '#3f6fb1', 0.5 * s);
+    if (hand === 'gun') h += L(x - 1.6 * s, y - 7.6 * s, x + 3.4 * s, y - 2.6 * s, '#141216', 0.9 * s);
+    return h;
+  }
+  const suitcase = (x, col) => R(x, GY - 5, 7, 5, col, 'rx=".6"') + P('M' + (x + 2.4) + ' ' + (GY - 5) + 'v-1.2h2.2v1.2', 'none', 'stroke="#1c1a20" stroke-width=".5"');
+  const chelnok = (x, y) => { y = y || GY; return R(x, y - 7, 10, 7, '#e2dccd', 'rx=".5"') + [1.8, 4.2].map(d => L(x, y - 7 + d, x + 10, y - 7 + d, '#c2343c', 0.6)).join('') + [2.5, 5, 7.5].map(d => L(x + d, y - 7, x + d, y, '#3f6fb1', 0.6)).join(''); };
+  const cashBox = (x, y) => R(x, y - 6, 9, 6, '#3d6b45', 'rx=".4"') + T(x + 4.5, y - 1.6, '$', 4.6, '#cfe8c8');
+  const bottles = (x, n) => { let s = crate(x, GY, 14, 6, '#6b4f32'); for (let i = 0; i < n; i++) s += R(x + 1.2 + i * 2.6, GY - 9, 1.4, 3.4, i % 2 ? '#7fa38a' : '#cfe3d6'); return s; };
+  const arms = (x, y) => R(x, y - 6, 14, 6, '#4b5a3a') + R(x, y - 6, 14, 1.4, '#3a4630') + R(x + 5, y - 4.4, 4, 2, '#2c3524');
+  const ladderUp = (x1, y1, x2, y2, col) => { let s = P('M' + f1(x1) + ' ' + f1(y1) + 'L' + f1(x2) + ' ' + f1(y2) + 'L' + f1(x2 + 3) + ' ' + f1(y2) + 'L' + f1(x1 + 3) + ' ' + f1(y1) + 'Z', col || '#6b6670'); const n = Math.round(Math.abs(y2 - y1) / 2.6); for (let i = 1; i < n; i++) { const t = i / n; s += R(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, 3, 0.6, '#3a3446'); } return s + L(x1 - 0.4, y1 - 7, x2 - 0.4, y2 - 7, '#8d8a92', 0.6) + L(x1 - 0.4, y1 - 7, x1 - 0.4, y1, '#8d8a92', 0.6); };
+  // борта: локальные координаты, земля y = 0, нос справа. Возвращают дверь в координатах сцены.
+  function airliner(x, s, body, stripe, opts) {
+    opts = opts || {};
+    const len = opts.short ? 92 : 130, k = len / 130, X = v => f1(v * k);
+    let h = '<g transform="translate(' + x + ' ' + GY + ') scale(' + s + ')">';
+    h += '<ellipse cx="' + X(66) + '" cy="-.3" rx="' + X(62) + '" ry="1.8" fill="#000" opacity=".35"/>';
+    h += R(+X(56), -18, 1.6, 15, '#55525c') + C(+X(56) + 0.8, -3, 3, '#141216') + R(+X(108), -18, 1.4, 15, '#55525c') + C(+X(108) + 0.7, -3, 2.6, '#141216');
+    h += P('M' + X(8) + ' -30L' + X(0) + ' -54L' + X(11) + ' -54L' + X(30) + ' -30Z', body) + P('M' + X(-6) + ' -54L' + X(22) + ' -54L' + X(20) + ' -51L' + X(-4) + ' -51Z', body);
+    h += P('M' + X(4) + ' -31L' + X(112) + ' -31Q' + X(125) + ' -31 ' + X(131) + ' -24.5Q' + X(126) + ' -18 ' + X(114) + ' -18L' + X(12) + ' -18Q' + X(5) + ' -18 ' + X(2) + ' -23Z', body);
+    h += P('M' + X(12) + ' -21.5L' + X(120) + ' -21.5Q' + X(127) + ' -21 ' + X(129) + ' -20.5Q' + X(124) + ' -18 ' + X(114) + ' -18L' + X(12) + ' -18Z', '#000', 'opacity=".14"');
+    h += R(+X(6), -25.6, +X(120), 2, stripe) + R(+X(5), -46, +X(9), 1.6, stripe);
+    for (let wx = 52; wx <= 108; wx += 3.6) h += R(+X(wx), -28.6, 1.5, 1.8, '#26304a');
+    h += P('M' + X(117) + ' -29.4L' + X(124) + ' -29L' + X(127.5) + ' -26.4L' + X(118) + ' -26.4Z', '#26304a');
+    h += R(+X(14), -37.4, +X(24), 7, body, 'rx="3.5"') + R(+X(14) + +X(24) - 2.4, -36.8, 2.4, 5.8, '#2a2830', 'rx="1"') + R(+X(22), -31, 6, 1.4, body) + P('M' + X(8) + ' -30L' + X(30) + ' -30L' + X(34) + ' -31H' + X(6) + 'Z', '#000', 'opacity=".1"');
+    h += P('M' + X(66) + ' -20L' + X(46) + ' -8L' + X(54) + ' -8L' + X(82) + ' -20Z', opts.wing || '#b9bcc6') + R(+X(46), -8.6, 8, 1, '#8d8a92');
+    if (opts.tail) h += T(+X(9), -38, opts.tail, 3.4, stripe, 'transform="rotate(-62 ' + X(9) + ' -38)"');
+    h += R(+X(42), -30, 4.6, 9, '#2a2830', 'rx=".6"');
+    return { svg: h + '</g>', door: [x + (+X(42) + 1) * s, GY - 21 * s], foot: [x + (+X(42) - 18) * s, GY] };
+  }
+  function bizjet(x, s, body, stripe) {
+    let h = '<g transform="translate(' + x + ' ' + GY + ') scale(' + s + ')"><ellipse cx="42" cy="-.3" rx="40" ry="1.6" fill="#000" opacity=".35"/>';
+    h += R(34, -15, 1.2, 12, '#55525c') + C(34.6, -2.6, 2.4, '#141216') + R(70, -15, 1.1, 12, '#55525c') + C(70.5, -2.4, 2.2, '#141216');
+    h += P('M6 -24L0 -42L9 -42L22 -24Z', body) + P('M-3 -42L15 -42L14 -40L-2 -40Z', body);
+    h += P('M3 -24L64 -24Q77 -24 84 -19.5Q78 -15 66 -15L10 -15Q4 -15 2 -18.6Z', body) + P('M10 -17L72 -17Q79 -16.8 81 -16.5Q76 -15 66 -15L10 -15Z', '#000', 'opacity=".12"');
+    h += R(4, -19.2, 76, 1.2, stripe) + R(3, -36, 7, 1.2, stripe);
+    for (let wx = 30; wx <= 58; wx += 5.6) h += '<ellipse cx="' + wx + '" cy="-21.4" rx=".9" ry="1.2" fill="#26304a"/>';
+    h += P('M72 -23.2L78 -22.6L81 -20.4L73 -20.4Z', '#26304a');
+    h += R(12, -30.4, 15, 5.4, body, 'rx="2.7"') + R(25, -30, 2, 4.6, '#2a2830', 'rx=".8"') + R(17, -25, 5, 1.2, body);
+    h += P('M44 -16L32 -8L38 -8L54 -16Z', '#b9bcc6');
+    h += R(63, -23, 4.4, 8, '#2a2830', 'rx=".6"');
+    return { svg: h + '</g>', door: [x + 64 * s, GY - 15 * s], foot: [x + 52 * s, GY] };
+  }
+  function heli(x, s, body) {
+    let h = '<g transform="translate(' + x + ' ' + GY + ') scale(' + s + ')"><ellipse cx="34" cy="-.3" rx="34" ry="1.6" fill="#000" opacity=".35"/>';
+    h += R(-38, -44.2, 150, 1.2, '#1c1a20') + R(33, -44.8, 5, 2.4, '#2a2830');
+    h += P('M14 -31L-30 -29L-30 -26L14 -22Z', body) + P('M-30 -29L-37 -40L-33 -40L-26 -28Z', body) + '<circle cx="-34" cy="-36" r="5" fill="none" stroke="#1c1a20" stroke-width=".7" opacity=".7"/>';
+    h += R(18, -39.6, 34, 6, body, 'rx="2.4"') + R(46, -38.8, 4, 4, '#2a2830', 'rx="1"') + R(34, -42.6, 2, 3, '#2a2830');
+    h += P('M10 -26Q10 -34 18 -34L50 -34Q62 -34 66 -26Q68 -18 60 -14L14 -14Q10 -14 10 -18Z', body) + P('M12 -17L62 -17Q60 -14 58 -14L14 -14Z', '#000', 'opacity=".15"');
+    h += P('M55 -32Q64 -31 65 -25L55 -25Z', '#26304a') + [20, 25, 30].map(wx => C(wx, -27, 1.5, '#26304a')).join('');
+    h += R(36, -30, 9, 15, '#1a1c16', 'rx=".6"') + R(20, -14, 1.2, 9, '#55525c') + C(20.6, -3, 2.6, '#141216') + R(56, -14, 1.2, 9, '#55525c') + C(56.6, -3, 2.6, '#141216');
+    return { svg: h + '</g>', door: [x + 37 * s, GY - 15 * s], foot: [x + 30 * s, GY] };
+  }
+  // бригада идёт к трапу: последние уже поднимаются
+  function boarding(pl, col, n, opts) {
+    opts = opts || {}; const d = pl.door, f = pl.foot; let h = ladderUp(f[0], f[1], d[0] - 3, d[1], opts.ladder);
+    const up = Math.min(2, n), cols = [].concat(col);
+    for (let i = 0; i < up; i++) { const t = (i + 1) / (up + 1.4); h += guy(f[0] + (d[0] - 3 - f[0]) * t + 1.5, f[1] + (d[1] - f[1]) * t, cols[i % cols.length], 1, opts.hat, opts.hand); }
+    for (let i = up; i < n; i++) h += guy(f[0] - 7 - (i - up) * 8.5, GY, cols[i % cols.length], 1.1, opts.hat, i % 2 ? opts.hand : opts.hand2 || opts.hand);
+    return h;
+  }
+  const DEAL = {
+    // Брест: колонна иномарок с перегона проходит таможню
+    cars() {
+      let h = sky('dg-cars', '#1b1630', '#5a3a4a') + stars(301, 30, 34) + C(204, 16, 6, '#e8e2d6', 'opacity=".9"') + C(206.5, 14.6, 5.4, '#2a2240');
+      h += ridge([[0, 66], [30, 62], [70, 66], [120, 60], [170, 64], [210, 59], [240, 63]], '#211c2b') + [[18, 1], [40, 1.2], [150, 1], [228, 1.3]].map(t => tree(t[0], 66, t[1] * 1.6)).join('');
+      h += R(0, 70, 240, 26, '#2a2730') + R(0, 70, 240, 1, '#3a3446') + [0, 30, 60, 90, 120, 150, 180, 210].map(x => R(x + 6, 82, 14, 1, '#e8e2d6', 'opacity=".4"')).join('');
+      h += R(150, 44, 24, 26, '#5b6b5e') + R(148, 41, 28, 4, '#3a463a') + R(154, 49, 16, 9, LIT, 'opacity=".85"') + board(150, 34, 24, 6, 'ТАМОЖНЯ', '#1d2a3c', '#e8e2d6', 4.2);
+      h += R(176, 60, 3, 12, '#777') + '<g transform="rotate(-24 177 61)">' + [0, 1, 2, 3, 4, 5].map(i => R(177 + i * 8, 60, 8, 2.4, i % 2 ? '#e8e2d6' : '#c2343c')).join('') + '</g>';
+      h += R(212, 40, 1.4, 32, '#555') + R(200, 34, 26, 8, '#2d4a6a', 'rx=".6"') + T(213, 39.6, 'BREST 3', 4.2, '#f3ede0') + lamp(110, 70, 30);
+      h += carBody('merc', '#141418', 98, 90, 0.62, 1) + carBody('bmw', '#1f2b3d', 48, 90, 0.62, 1) + carBody('audi', '#5b6470', 0, 90, 0.62, 1);
+      return h + guy(140, 90, '#1d1b22', 1.15, 'cap') + guy(147, 90, '#2c4a8a', 1.1);
+    },
+    // Владикавказ: Як-40 под горами, ящики водки
+    vodka() {
+      const M = [[0, 56], [26, 40, 5], [48, 50], [76, 30, 7], [104, 46], [132, 34, 6], [160, 52], [192, 36, 6], [220, 50], [240, 44]];
+      let h = sky('dg-vodka', '#7fb0d8', '#d8e6ee') + glowSun(40, 18, 6, '#fff3c4') + ridge(M, '#6a7488') + caps(M) + ridge([[0, 70], [60, 64], [130, 70], [200, 62], [240, 68]], '#5d7a52') + tarmac('#4a4752');
+      const pl = airliner(92, 0.9, '#e6e4de', '#3d8a5a', { short: 1, tail: 'RA-87' });
+      return h + pl.svg + boarding(pl, ['#2c4a8a', '#1d1b22', '#2c4a8a'], 5, { hand: 'bag' }) + bottles(150, 5) + bottles(166, 5) + crate(182, GY, 12, 6, '#6b4f32');
+    },
+    // Грозный: Ми-8 в ночных горах, зелёные ящики
+    guns() {
+      const M = [[0, 50], [30, 34, 5], [62, 46], [96, 26, 6], [130, 42], [168, 30, 5], [200, 46], [240, 36]];
+      let h = sky('dg-guns', '#0f0d18', '#2a2236') + stars(311, 50) + C(30, 16, 5, '#e8e2d6', 'opacity=".85"') + ridge(M, '#1e1a28') + caps(M, '#8a8696') + ridge([[0, 72], [80, 66], [160, 72], [240, 66]], '#26232c') + R(0, GY, 240, 14, '#2b2620');
+      h += C(214, 74, 10, '#ff8a3d', 'opacity=".12"') + P('M208 82l3 -8l2 4l2 -7l3 6l2 -3l2 8z', '#ff8a3d') + P('M210 82l2 -4l2 2l2 -4l2 6z', '#ffd36b');
+      const pl = heli(96, 0.95, '#4c5b3c');
+      return h + pl.svg + boarding(pl, ['#3a3d2e', '#1d1b22'], 4, { hand: 'gun', ladder: '#4a4d43' }) + arms(166, GY) + arms(181, GY) + arms(173, GY - 6);
+    },
+    // Душанбе: Ту-154 на пыльной полосе под Памиром, закат
+    drugs() {
+      const M = [[0, 48], [34, 30, 6], [70, 44], [108, 22, 8], [146, 40], [186, 28, 6], [220, 44], [240, 38]];
+      let h = sky('dg-drugs', '#3a2550', '#e0894a') + glowSun(200, 64, 9, '#ffcf6a') + ridge(M, '#5a3a4e') + caps(M, '#f0d6c8') + ridge([[0, 74], [70, 70], [150, 75], [240, 70]], '#8a5a3a') + tarmac('#6b4a34');
+      const pl = airliner(84, 0.95, '#e6e4de', '#2b5aa8', { tail: 'EY-85' });
+      return h + pl.svg + boarding(pl, ['#1d1b22', '#3a2e4a'], 4, { hand: 'case' }) + suitcase(166, '#1c1a20') + suitcase(174, '#3a2e24') + R(6, GY - 1, 40, 1.4, '#a07050', 'opacity=".6"');
+    },
+    // Лимасол: пирамида уходит в офшор, пляж и коробки с наличкой
+    pyramid() {
+      let h = sky('dg-pyr', '#4aa3e0', '#bfe4f4') + glowSun(206, 18, 7, '#fff6c8') + R(0, 58, 240, 14, '#2f7fb8') + [8, 46, 90, 140, 188].map(x => R(x, 62 + (x % 7), 18, 0.8, '#bfe4f4', 'opacity=".6"')).join('') + R(0, 70, 240, 12, '#e8d6a0') + palm(16, 1.1) + palm(34, 0.9) + palm(226, 1) + tarmac('#56535c');
+      const pl = airliner(80, 0.95, '#f0eee8', '#c2343c', { tail: 'RA-85' });
+      return h + pl.svg + boarding(pl, ['#9a1f3c', '#9a1f3c', '#1d1b22'], 4, { hand: 'case' }) + cashBox(160, GY) + cashBox(170, GY) + cashBox(165, GY - 6) + cashBox(180, GY);
+    },
+    // Никосия: бизнес-джет на закате, кейсы с бумагами
+    bank() {
+      let h = sky('dg-bank', '#2a2050', '#f08a5a') + glowSun(60, 60, 10, '#ffc46a') + R(0, 62, 240, 10, '#7a4a6a') + R(0, 62, 240, 1, '#f0b07a', 'opacity=".6"') + palm(14, 1.2) + palm(214, 1.1) + palm(230, 0.85) + R(0, 72, 240, 10, '#3a2a3a') + tarmac('#2f2a36');
+      h += R(30, 44, 10, 38, '#4a4552') + R(26, 40, 18, 6, '#26304a') + R(27, 41, 16, 3, LIT, 'opacity=".7"');
+      const pl = bizjet(106, 1.1, '#f0eee8', '#dbb45c');
+      return h + pl.svg + boarding(pl, ['#3a3d4a', '#1d1b22', '#3a3d4a'], 4, { hand: 'case' });
+    },
+    // Красноярск: зима, дымят трубы комбината, Ту-154 в снегу
+    metal() {
+      let h = sky('dg-metal', '#5a6478', '#b8c0cc') + C(46, 22, 7, '#e8eaee', 'opacity=".5"');
+      [[150, 18], [166, 12], [182, 20]].forEach(c => { h += R(c[0], c[1], 6, 66 - c[1], '#6a6470') + R(c[0], c[1] + 6, 6, 3, '#c2343c') + [0, 1, 2].map(i => C(c[0] + 3 + i * 5, c[1] - 4 - i * 4, 4 + i * 1.6, '#d8dce4', 'opacity=".55"')).join(''); });
+      h += R(120, 52, 110, 30, '#55505c') + wins(124, 56, 12, 2, 6, 3, 2.6, 4, 321, 0.55, '#f0c968') + ridge([[0, 74], [50, 70], [110, 74], [240, 72]], '#e6e9ee') + R(0, GY, 240, 14, '#cfd4dc') + [10, 70, 130, 190].map(x => R(x, 88, 30, 1, '#fff', 'opacity=".6"')).join('');
+      const pl = airliner(18, 0.95, '#e6e4de', '#2b5aa8', { tail: 'RA-85' });
+      const r = rng(333); let snow = ''; for (let i = 0; i < 70; i++) snow += C(r() * 240, r() * 90, r() < 0.3 ? 0.8 : 0.5, '#fff', 'opacity=".75"');
+      return h + pl.svg + boarding(pl, ['#3a2e24', '#1d1b22', '#4a3a2e'], 4, { hat: 'ush', hand: 'case' }) + snow;
+    },
+    // Нижневартовск: Ми-8 над тундрой, качалки и факел попутного газа
+    oil() {
+      let h = sky('dg-oil', '#2a2a48', '#e07a4a') + glowSun(40, 62, 8, '#ffb35a') + ridge([[0, 70], [80, 67], [160, 71], [240, 66]], '#3a3a36') + R(0, GY, 240, 14, '#4a4a3a');
+      const jack = (x, s) => P('M' + x + ' ' + GY + 'l' + 6 * s + ' ' + -16 * s + 'l' + 6 * s + ' ' + 16 * s, 'none', 'stroke="#1c1a20" stroke-width="' + 1.4 * s + '"') + R(x - 4 * s, GY - 19 * s, 22 * s, 2.2 * s, '#1c1a20', 'transform="rotate(-12 ' + (x + 6 * s) + ' ' + (GY - 17 * s) + ')"') + P('M' + (x - 5 * s) + ' ' + (GY - 22 * s) + 'q' + -3 * s + ' ' + 4 * s + ' 0 ' + 8 * s + 'l' + 2 * s + ' 0z', '#1c1a20') + R(x + 14 * s, GY - 6 * s, 6 * s, 6 * s, '#1c1a20');
+      h += jack(14, 1) + jack(52, 0.8) + jack(210, 1.1) + R(186, 30, 2.4, 52, '#1c1a20') + C(187, 24, 6, '#ff8a3d', 'opacity=".2"') + P('M184 30q-2 -6 3 -12q0 5 3 7q1 3 -2 5z', '#ff8a3d') + P('M185.5 30q-1 -4 1.8 -7q.4 4 1.6 5z', '#ffd36b');
+      const pl = heli(92, 0.95, '#3f5a6a');
+      return h + pl.svg + boarding(pl, ['#3a2e24', '#1d1b22'], 4, { hat: 'ush', hand: 'case', ladder: '#4a4d55' });
+    },
+    // Лондон: туман, часовая башня, частный джет
+    media() {
+      let h = sky('dg-media', '#1a1f2e', '#4a5568') + stars(341, 14, 24);
+      h += R(186, 20, 12, 62, '#2a2e3a') + P('M184 20L192 6L200 20Z', '#2a2e3a') + R(191.4, 0, 1.2, 7, '#2a2e3a') + C(192, 28, 4, '#f0d58a') + C(192, 28, 3.3, '#3a3446') + L(192, 28, 192, 25.6, '#f0d58a', 0.5) + L(192, 28, 194, 28, '#f0d58a', 0.5);
+      h += R(120, 48, 66, 34, '#262a36') + wins(124, 52, 10, 3, 4, 4, 2.4, 4, 345, 0.4) + R(200, 52, 40, 30, '#262a36') + wins(204, 56, 6, 3, 4, 4, 2.4, 4, 347, 0.35);
+      h += R(0, 60, 240, 24, '#8a93a6', 'opacity=".22"') + tarmac('#2a2d36') + R(222, 62, 7, 20, '#c2343c', 'rx=".8"') + R(223.4, 64, 4.2, 9, '#f0d58a', 'opacity=".55"');
+      const pl = bizjet(52, 1.1, '#1d2230', '#dbb45c');
+      return h + pl.svg + boarding(pl, ['#3a3d4a', '#141418', '#3a3d4a'], 4, { hand: 'case' }) + R(0, 74, 240, 10, '#8a93a6', 'opacity=".18"');
+    },
+    // Стамбул: минареты на закате, челноки с клетчатыми сумками
+    mall() {
+      let h = sky('dg-mall', '#3a2a5a', '#f0a05a') + glowSun(120, 56, 9, '#ffd27a');
+      const mosque = (x, s) => P('M' + (x - 22 * s) + ' ' + GY + 'V' + (GY - 16 * s) + 'H' + (x + 22 * s) + 'V' + GY + 'Z', '#3a2a40') + P('M' + (x - 13 * s) + ' ' + (GY - 16 * s) + 'Q' + x + ' ' + (GY - 36 * s) + ' ' + (x + 13 * s) + ' ' + (GY - 16 * s) + 'Z', '#3a2a40') + [-22, 22].map(d => R(x + d * s - 1.2 * s, GY - 40 * s, 2.4 * s, 40 * s, '#3a2a40') + P('M' + (x + d * s - 1.6 * s) + ' ' + (GY - 40 * s) + 'L' + (x + d * s) + ' ' + (GY - 47 * s) + 'L' + (x + d * s + 1.6 * s) + ' ' + (GY - 40 * s) + 'Z', '#3a2a40')).join('');
+      h += mosque(40, 1) + mosque(204, 0.8) + R(0, 72, 240, 10, '#2e2234') + tarmac('#2f2a36');
+      const pl = airliner(74, 0.95, '#e6e4de', '#c2343c', { tail: 'TC-RU' });
+      return h + pl.svg + boarding(pl, ['#2c4a8a', '#5a2e4a', '#1d1b22'], 5, { hand: 'bag' }) + chelnok(158) + chelnok(170) + chelnok(164, GY - 7) + chelnok(184);
+    }
+  };
+  function deal(id) {
+    const fn = DEAL[id]; if (!fn) return '';
+    const key = 'deal' + id; if (cache[key]) return cache[key];
+    const pr = (G.DATA.PROJECTS || []).find(p => p.id === id);
+    return (cache[key] = svg('0 0 240 96', fn(), pr ? pr.name + ': ' + pr.where : id, 'deal'));
+  }
+
   // ---------- значки шапки: 24×24, цвет берут из CSS (currentColor) ----------
   const STAR = (() => { let d = ''; for (let i = 0; i < 16; i++) { const a = Math.PI * i / 8 - Math.PI / 2, r = i % 2 ? 4.4 : 11; d += (i ? 'L' : 'M') + f1(12 + r * Math.cos(a)) + ' ' + f1(12 + r * Math.sin(a)); } return d + 'Z'; })();
   const ICONS = {
@@ -309,5 +475,5 @@
   };
   const icon = k => '<svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + ICONS[k] + '</svg>';
 
-  G.ART = { build, face, bossFace, legendFace, officialFace, vacantFace, arm, vest, car, hash, icon, ICONS };
+  G.ART = { build, face, bossFace, legendFace, officialFace, vacantFace, arm, vest, car, deal, hash, icon, ICONS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));

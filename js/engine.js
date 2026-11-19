@@ -235,7 +235,7 @@
     rows.push(['Дань с районов', dist], ['Точки и недвижимость', pts], ['Смотрящие', wt], ['Предприятия', ents]);
     let pj = 0;
     D.PROJECTS.forEach(pr => { const v = projIncome(S, fid, pr); pj += v; if (pr.kind === 'w') white += v; else black += v; });
-    rows.push(['Крупный бизнес', pj]);
+    rows.push(['Крупные дела', pj]);
     const wash = Math.round(black * fxp(S, fid, 'wash')); black -= wash; white += wash;
     const tr = post(S, fid, 'treas'), gross = dist + pts + wt + ents + pj, tv = tr ? Math.round(gross * (tr.loy <= 3 ? -0.05 : tr.wit * 0.02)) : 0;
     rows.push(['Казначей', tv]);
