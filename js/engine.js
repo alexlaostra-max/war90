@@ -104,7 +104,7 @@
     const rows = [['Двор', 2]], n = count(S, fid);
     let gyms = 0, other = 0;
     owned(S, fid).forEach(i => S.d[i].b.forEach((b, x) => { const r = (D.BUILDS[b].rec || 0) * pointLvl(S.d[i], x); if (b === 'gym') gyms += r; else other += r; }));
-    rows.push(['Спортзалы', gyms], ['ЧОПы', other], ['Районы', Math.floor(n / 3)], ['Авторитет', Math.floor(S.f[fid].rep / 20)]);
+    rows.push(['Спортзалы', gyms], ['Другие точки', other], ['Районы', Math.floor(n / 3)], ['Авторитет', Math.floor(S.f[fid].rep / 20)]);
     if (fid === 'oreh') rows.push(['Ореховские качалки', 2]);
     return { rows, total: rows.reduce((s, r) => s + r[1], 0) };
   }
@@ -137,7 +137,10 @@
   const CAR_PRICE = D.CARS.nine.price;
   const carCost = (S, fid, k) => Math.max(3, Math.round(D.CARS[k].price * (1 - fxp(S, fid, 'car'))));
   const carPrice = (S, fid) => carCost(S, fid, 'nine');
-  const pointInc = (fid, k) => D.BUILDS[k].inc + (fid === 'tush' ? 1 : 0);
+  // точка в «своём» районе (особенность района из good) приносит в полтора раза больше
+  const pointGood = (k, i) => i != null && !!D.BUILDS[k].good && D.BUILDS[k].good.some(t => D.DISTRICTS[i].t.includes(t));
+  const pointInc = (fid, k, i) => { const v = D.BUILDS[k].inc + (fid === 'tush' ? 1 : 0); return pointGood(k, i) ? Math.round(v * 1.5) : v; };
+  const traitNames = ts => ts.map(t => D.TRAITS[t].name.toLowerCase()).join(', ');
   // точки улучшаются до третьего уровня: доход и оборона умножаются на уровень
   const MAX_LVL = 3;
   const pointLvl = (d, x) => (d.l && d.l[x]) || 1;
@@ -226,7 +229,7 @@
       const base = Math.round(dd.inc * (held.includes(dd.ok) ? 2 : 1) * (1 + (cp ? cp.str * 0.05 : 0)));
       dist += base;
       let dp = 0;
-      S.d[i].b.forEach((b, x) => { const v = pointInc(fid, b) * pointLvl(S.d[i], x); dp += v; pts += v; if (D.BUILDS[b].kind === 'w') white += v; else black += v; });
+      S.d[i].b.forEach((b, x) => { const v = pointInc(fid, b, i) * pointLvl(S.d[i], x); dp += v; pts += v; if (D.BUILDS[b].kind === 'w') white += v; else black += v; });
       // смотрящий: сильный поднимает дань, умный — доход точек; ненадёжный утаивает половину дани
       if (w) { const v = w.loy <= 3 ? -Math.round(base / 2) : Math.round(dp * w.wit * 0.04 + base * w.str * 0.03); wt += v; black += v; }
       if (S.d[i].ent) { ents += dd.ent.inc; white += dd.ent.inc; }
@@ -455,6 +458,7 @@
     if (d.o !== fid) return 'Район не твой';
     if (B.from && y < B.from) return 'Доступно с ' + B.from + ' года';
     if (B.onlyMarket && !dd.m) return 'На районе нет рынка';
+    if (B.need && !B.need.some(t => dd.t.includes(t))) return 'Только там, где ' + traitNames(B.need);
     if (B.one && d.b.includes(k)) return 'Уже есть';
     if (d.b.length >= dd.slots) return 'Нет свободных мест';
     if (B.needMen && p.men < B.needMen) return 'Нужно бойцов: ' + B.needMen;
@@ -467,7 +471,7 @@
     const B = D.BUILDS[k], p = S.f[fid];
     p.money -= buildCost(S, k); S.d[i].l = S.d[i].b.map((_, j) => pointLvl(S.d[i], j)); S.d[i].b.push(k); S.d[i].l.push(1);
     if (B.heat) addHeat(S, fid, B.heat);
-    return { ok: true, msg: B.name + ': ' + D.DISTRICTS[i].name + '. +' + pointInc(fid, k) + ' в месяц' };
+    return { ok: true, msg: B.name + ': ' + D.DISTRICTS[i].name + '. +' + pointInc(fid, k, i) + ' в месяц' };
   }
   function upgrade(S, fid, i, x) {
     const e = spend(S, fid, 0); if (e) return fail(e);
@@ -478,7 +482,7 @@
     const c = upgradeCost(S, i, x);
     if (p.money < c) return fail('Не хватает денег: нужно ' + c);
     p.money -= c; d.l = d.b.map((_, j) => pointLvl(d, j)); d.l[x] = lv + 1;
-    return { ok: true, msg: D.BUILDS[k].name + ' улучшен: ' + D.DISTRICTS[i].name + '. Теперь +' + pointInc(fid, k) * (lv + 1) + ' в месяц' };
+    return { ok: true, msg: D.BUILDS[k].name + ' улучшен: ' + D.DISTRICTS[i].name + '. Теперь +' + pointInc(fid, k, i) * (lv + 1) + ' в месяц' };
   }
   function assign(S, fid, id, pos, ok) {
     const e = spend(S, fid, 0); if (e) return fail(e);
@@ -939,5 +943,5 @@
   }
 
   const ACTIONS = { battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
-  G.Engine = { TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);

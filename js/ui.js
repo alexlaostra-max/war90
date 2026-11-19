@@ -92,6 +92,7 @@
       st('rep', 'Авторитет', R(p.rep)) + st('conn', 'Связи', E.conn(S, me)) +
       '<button class="st heat l' + L + '" data-go="law" title="Розыск">' + A.icon('heat') + '<div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></button>' +
       '';
+    $('#perks').innerHTML = fxStrip(); $('#rulers').innerHTML = rulersHTML();
     $('#ap').innerHTML = '<span>Ходы</span><div class="pips">' + pips + '</div><b>' + p.ap + ' из ' + E.apMax(S, me) + '</b>';
     const end = $('#end');
     end.disabled = !!p.event || !!p.over || S.done;
@@ -111,24 +112,27 @@
     const d = S.d[i], dd = D.DISTRICTS[i], p = P();
     let h = '<h3>Точки <span class="muted">' + d.b.length + ' из ' + dd.slots + '</span></h3>';
     if (d.b.length) h += '<div class="ptiles">' + d.b.map((b, x) => {
-      const B = D.BUILDS[b], lv = E.pointLvl(d, x), c = E.upgradeCost(S, i, x), inc = E.pointInc(me, b);
-      return '<div class="ptile"><div class="pimg">' + A.build(b, lv) + '<b class="lvb">' + ROMAN[lv] + '</b></div><div class="pinfo"><b>' + B.name + '</b><span class="good">+' + inc * lv + ' в мес.</span>' + (B.perk ? '<small class="perk">' + esc(B.perk) + (lv > 1 && (B.fx || B.rec || B.def) ? ', ×' + lv : '') + '</small>' : '') + '</div>' +
+      const B = D.BUILDS[b], lv = E.pointLvl(d, x), c = E.upgradeCost(S, i, x), inc = E.pointInc(me, b, i);
+      return '<div class="ptile"><div class="pimg">' + A.build(b, lv) + '<b class="lvb">' + ROMAN[lv] + '</b></div><div class="pinfo"><b>' + B.name + '</b><span class="good">+' + inc * lv + ' в мес.' + (E.pointGood(b, i) ? ' · место +50%' : '') + '</span>' + (B.perk ? '<small class="perk">' + esc(B.perk) + (lv > 1 && (B.fx || B.rec || B.def) ? ', ×' + lv : '') + '</small>' : '') + '</div>' +
         (lv >= E.MAX_LVL ? '<p class="muted pmax">Высший уровень</p>' : '<button class="btn sm pup" data-a="upgrade" data-i="' + i + '" data-x="' + x + '"' + (p.money < c ? ' disabled' : '') + '><span class="pnext">' + A.build(b, lv + 1) + '</span><span>До ' + ROMAN[lv + 1] + ' · ' + c + ' тыс. → +' + inc * (lv + 1) + '</span></button>') + '</div>';
     }).join('') + '</div>';
     if (d.b.length >= dd.slots) return h + '<p class="muted">Свободных мест нет. Улучшай то, что стоит.</p>';
+    const rank = k => D.BUILDS[k].need && k !== 'casino' ? 0 : E.pointGood(k, i) ? 1 : 2;
+    const keys = Object.keys(D.BUILDS).filter(k => !(D.BUILDS[k].onlyMarket && !dd.m) && !(D.BUILDS[k].need && !D.BUILDS[k].need.some(t => dd.t.includes(t)))).sort((a, b) => rank(a) - rank(b));
     h += '<div class="grid">';
-    Object.keys(D.BUILDS).forEach(k => {
-      const B = D.BUILDS[k], lock = E.canBuild(S, me, i, k);
-      if (B.onlyMarket && !dd.m) return;
-      h += '<button class="card bcard" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? ' disabled' : '') + ' title="' + esc(B.desc) + '">' + A.build(k, 1) + '<b>' + B.name + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? B.cost + ' тыс.' : 'бесплатно') + ' → +' + E.pointInc(me, k) + '/мес.</span>' + (B.perk ? '<i class="perk">' + esc(B.perk) + '</i>' : '') + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
+    keys.forEach(k => {
+      const B = D.BUILDS[k], lock = E.canBuild(S, me, i, k), r = rank(k);
+      h += '<button class="card bcard' + (r === 0 ? ' special' : r === 1 ? ' fit' : '') + '" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? ' disabled' : '') + ' title="' + esc(B.desc) + '">' + A.build(k, 1) + (r === 0 ? '<em class="btag">особая</em>' : r === 1 ? '<em class="btag fit">+50% здесь</em>' : '') + '<b>' + B.name + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? B.cost + ' тыс.' : 'бесплатно') + ' → +' + E.pointInc(me, k, i) + '/мес.</span>' + (B.perk ? '<i class="perk">' + esc(B.perk) + '</i>' : '') + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
     });
     return h + '</div>';
   }
+  // особенности района: чипы с подсказкой, что это за место
+  const traitChips = dd => '<div class="traits">' + dd.t.map(t => '<span class="trait" title="' + esc(D.TRAITS[t].desc) + '">' + D.TRAITS[t].name + '</span>').join('') + '</div>';
   function paneDistrict() {
     if (sel == null) return paneDist();
     const d = S.d[sel], dd = D.DISTRICTS[sel], p = P(), mine = d.o === me, c = E.conn(S, me);
     const ids = E.okrugIds(dd.ok), have = ids.filter(i => S.d[i].o === me).length;
-    let h = '<button class="btn sm ghost back" data-a="dlist">← Все мои районы · ' + E.count(S, me) + '</button><h2>' + esc(dd.name) + '</h2><p class="sub">' + D.OKRUGS[dd.ok].name + ' · у тебя ' + have + ' из ' + ids.length + '</p>';
+    let h = '<button class="btn sm ghost back" data-a="dlist">← Все мои районы · ' + E.count(S, me) + '</button><h2>' + esc(dd.name) + '</h2><p class="sub">' + D.OKRUGS[dd.ok].name + ' · у тебя ' + have + ' из ' + ids.length + '</p>' + traitChips(dd);
     h += '<dl class="kv"><dt>Хозяин</dt><dd>' + (mine ? 'Ты' : d.o ? '<i class="dot" style="background:' + fd(d.o).color + '"></i>' + who(d.o) : 'Местная шпана') + '</dd><dt>Оборона</dt><dd>' + E.districtDef(S, sel) + '</dd>' + (mine ? (() => { const cp = E.crew(S, me).find(x => x.pos === 'capo' && x.ok === dd.ok); return '<dt>Бригадир</dt><dd>' + (cp ? '<button class="link" data-a="person" data-id="' + cp.id + '">' + esc(E.cname(cp)) + '</button>' : '<button class="link" data-a="slot" data-pos="capo" data-ok="' + dd.ok + '">нет, назначить</button>') + '</dd>'; })() : '') + '<dt>Дань</dt><dd>' + dd.inc + ' в мес.</dd>' + (dd.m ? '<dt>Рынок</dt><dd>есть</dd>' : '') + '</dl>';
     if (dd.ent) {
       const e = dd.ent;
@@ -351,7 +355,7 @@
     const free = i => D.DISTRICTS[i].slots - S.d[i].b.length;
     const ups = i => S.d[i].b.map((b, x) => x).filter(x => E.pointLvl(S.d[i], x) < E.MAX_LVL);
     const build = own.filter(i => free(i) > 0), up = own.filter(i => !free(i) && ups(i).length), done = own.filter(i => !free(i) && !ups(i).length);
-    let h = '<h2>Мои районы <span class="muted">' + own.length + ' из 102</span></h2><p class="sub">Нажми на район в списке или на карте, чтобы открыть его точки. Стройка и улучшения стоят только денег, ходы не тратят.</p>' + fxSummary();
+    let h = '<h2>Мои районы <span class="muted">' + own.length + ' из 102</span></h2><p class="sub">Нажми на район в списке или на карте, чтобы открыть его точки. Стройка и улучшения стоят только денег, ходы не тратят.</p>';
     h += distGroup('Есть свободные места', 'можно строить новые точки', build, i => 'свободно ' + free(i));
     h += distGroup('Можно улучшить', 'все места заняты, но не всё на III уровне', up, i => { const c = Math.min(...ups(i).map(x => E.upgradeCost(S, i, x))); return 'улучшить ' + ups(i).length + ' · от ' + c + ' тыс.'; });
     h += '<div class="dgroup done"><button class="dgh" data-a="dshow" aria-expanded="' + showDone + '"><h3>Прокачано полностью <span class="muted">' + done.length + ' · ' + sign(done.reduce((a, i) => a + distInc(i), 0)) + ' в мес.</span></h3><i>' + (done.length ? (showDone ? 'скрыть' : 'показать') : '') + '</i></button>';
@@ -361,7 +365,7 @@
   }
   function distInc(i) {
     const d = S.d[i], dd = D.DISTRICTS[i];
-    return dd.inc * (E.okrugsHeld(S, me).includes(dd.ok) ? 2 : 1) + d.b.reduce((s, b, x) => s + E.pointInc(me, b) * E.pointLvl(d, x), 0) + (d.ent ? dd.ent.inc : 0);
+    return dd.inc * (E.okrugsHeld(S, me).includes(dd.ok) ? 2 : 1) + d.b.reduce((s, b, x) => s + E.pointInc(me, b, i) * E.pointLvl(d, x), 0) + (d.ent ? dd.ent.inc : 0);
   }
   function distGroup(title, note, ids, tag) {
     let h = '<div class="dgroup"><h3>' + title + ' <span class="muted">' + ids.length + (ids.length ? ' · ' + sign(ids.reduce((a, i) => a + distInc(i), 0)) + ' в мес.' : '') + '</span></h3>';
@@ -370,15 +374,22 @@
   }
   function distRow(i, tag) {
     const d = S.d[i], dd = D.DISTRICTS[i], w = E.watcherOf(S, me, i, true);
-    return '<div class="drow"><button class="dhead" data-a="goto" data-i="' + i + '"><b>' + esc(dd.name) + '</b><span>' + D.OKRUGS[dd.ok].short + ' · точек ' + d.b.length + '/' + dd.slots + (dd.ent ? ' · ' + (d.ent ? 'предприятие взято' : 'предприятие не взято') : '') + (w ? ' · смотрит «' + esc(w.nick) + '»' : ' · без смотрящего') + '</span><em>+' + distInc(i) + '</em><i>' + tag + '</i></button></div>';
+    return '<div class="drow"><button class="dhead" data-a="goto" data-i="' + i + '"><b>' + esc(dd.name) + '</b><span>' + D.OKRUGS[dd.ok].short + ' · ' + E.traitNames(dd.t) + ' · точек ' + d.b.length + '/' + dd.slots + (dd.ent ? ' · ' + (d.ent ? 'предприятие взято' : 'предприятие не взято') : '') + (w ? ' · смотрит «' + esc(w.nick) + '»' : ' · без смотрящего') + '</span><em>+' + distInc(i) + '</em><i>' + tag + '</i></button></div>';
   }
   const FXL = [['car', 'Тачки дешевле', '%'], ['gun', 'Стволы дешевле', '%'], ['upkeep', 'Содержание бойцов дешевле', '%'], ['med', 'Потери в бою меньше', '%'], ['talk', 'Переговоры и стрелки', '%', '+'], ['hide', 'При облавах берут меньше', '%'], ['wash', 'Чёрного дохода отмывается', '%'], ['kid', 'Похищения удачнее', '%', '+'], ['cool', 'Розыск в месяц', '', '−'], ['conn', 'Связи', '', '+'], ['cap', 'Бригада больше', ' чел.', '+']];
-  function fxSummary() {
+  // плюшки империи — строкой под меню: что дают все точки вместе
+  function fxStrip() {
     const rows = FXL.map(f => [f, E.fx(S, me, f[0])]).filter(r => r[1]);
-    const recr = E.inflow(S, me).rows.filter(r => r[0] === 'Спортзалы' || r[0] === 'ЧОПы').reduce((a, r) => a + r[1], 0);
-    if (recr) rows.push([['rec', 'Новобранцев в месяц', '', '+'], recr]);
-    if (!rows.length) return '<div class="box"><h3>Что дают точки империи</h3><p class="muted">Пока ничего. Автосервис удешевляет тачки, спортзал даёт людей, бордель сбивает розыск, казино отмывает деньги. Польза растёт с уровнем точки.</p></div>';
-    return '<div class="box"><h3>Что дают точки империи</h3><div class="fxgrid">' + rows.map(r => { const cap = W90.DATA.FX_CAP[r[0][0]]; return '<div><span>' + r[0][1] + '</span><b class="good">' + (r[0][3] || '') + r[1] + r[0][2] + (cap && r[1] >= cap ? ' · потолок' : '') + '</b></div>'; }).join('') + '</div></div>';
+    const recr = E.inflow(S, me).rows.filter(r => r[0] === 'Спортзалы' || r[0] === 'Другие точки').reduce((a, r) => a + r[1], 0);
+    if (recr) rows.push([['rec', 'Новобранцы', '/мес.', '+'], recr]);
+    const chips = rows.map(r => { const cap = W90.DATA.FX_CAP[r[0][0]]; return '<span class="perk' + (cap && r[1] >= cap ? ' max' : '') + '" title="' + (cap && r[1] >= cap ? 'Потолок' : '') + '">' + r[0][1] + ' <b>' + (r[0][3] || '') + r[1] + r[0][2] + '</b></span>'; }).join('');
+    return '<span class="slabel">Плюшки империи</span>' + (chips || '<span class="muted">пока нет: строй точки на районах</span>');
+  }
+  // кто сейчас президент и мэр
+  function rulersHTML() {
+    const dt = E.date(S.turn), now = dt.year * 12 + dt.month, who = list => list.filter(r => r.from[0] * 12 + r.from[1] <= now).pop();
+    const p = who(D.RULERS.pres), m = who(D.RULERS.mayor);
+    return '<span>Президент <b>' + p.name + '</b>' + (p.note ? ' <i>' + p.note + '</i>' : '') + '</span><span>Мэр Москвы <b>' + m.name + '</b>' + (m.note ? ' <i>«' + m.note + '»</i>' : '') + '</span>';
   }
   function bizBig() {
     const p = P();

@@ -102,13 +102,53 @@
     'Марьина Роща': ['Швейные цеха Марьиной Рощи', 18, 2, 100, 20]
   };
 
+  // Особенности районов: что за место на карте Москвы и какой бизнес туда просится
+  const TRAITS = {
+    center: { name: 'Центр', desc: 'Банки, офисы, иностранцы и большие деньги' },
+    elite: { name: 'Престижный', desc: 'Номенклатурные дома, дачи, дорогие машины во дворах' },
+    tourist: { name: 'Туристы', desc: 'Гостиницы, выставки, иностранцы с валютой' },
+    station: { name: 'Вокзал', desc: 'Приезжие, носильщики, бомбилы и напёрстки' },
+    students: { name: 'Студенты', desc: 'Институты и общаги: молодые, голодные, на всё согласные' },
+    sleep: { name: 'Спальный', desc: 'Панельки, ларьки у метро, пацаны во дворах' },
+    industry: { name: 'Промзона', desc: 'Заводы встали, цеха и склады ищут хозяина' },
+    river: { name: 'У реки', desc: 'Причалы, баржи и склады у воды' },
+    park: { name: 'Парк и лес', desc: 'Шашлычные, тиры, тихие места для разговора' },
+    highway: { name: 'МКАД и трассы', desc: 'Фуры, заправки, авторынки на выезде' },
+    cemetery: { name: 'Кладбище', desc: 'Места, памятники и похороны — свой тихий бизнес' }
+  };
+  const DT = {
+    'Китай-город': 'center tourist', 'Арбат': 'center elite tourist', 'Басманный': 'center station students', 'Замоскворечье': 'center station',
+    'Красносельский': 'center station', 'Мещанский': 'center station', 'Пресненский': 'center elite cemetery', 'Таганский': 'center river',
+    'Тверской': 'center elite station', 'Хамовники': 'center elite cemetery', 'Якиманка': 'center elite river',
+    'Аэропорт': 'elite', 'Беговой': 'elite tourist', 'Бескудниково': 'industry sleep', 'Войковский': 'industry river', 'Головинский': 'cemetery river industry',
+    'Дегунино': 'industry sleep', 'Коптево': 'industry sleep', 'Левобережный': 'river park', 'Савёловский': 'station industry', 'Сокол': 'elite',
+    'Тимирязевский': 'students park', 'Ховрино': 'sleep highway', 'Хорошёвский': 'elite industry',
+    'Алексеевский': 'tourist', 'Алтуфьево': 'sleep highway', 'Бабушкинский': 'sleep', 'Бибирево': 'sleep', 'Бутырский': 'industry',
+    'Лианозово': 'industry highway', 'Лосиноостровский': 'park highway', 'Марфино': 'park industry', 'Марьина Роща': 'industry sleep',
+    'Медведково': 'sleep park', 'Останкино': 'tourist park', 'Отрадное': 'sleep', 'Ростокино': 'park river', 'Свиблово': 'sleep river', 'Ярославский': 'sleep park',
+    'Богородское': 'industry park', 'Вешняки': 'sleep highway', 'Гольяново': 'sleep station highway', 'Ивановское': 'sleep highway', 'Измайлово': 'park tourist',
+    'Метрогородок': 'park industry', 'Новогиреево': 'sleep', 'Перово': 'sleep industry', 'Преображенское': 'cemetery industry', 'Соколиная Гора': 'industry', 'Сокольники': 'park tourist',
+    'Выхино': 'sleep highway', 'Капотня': 'industry river highway', 'Кузьминки': 'park cemetery sleep', 'Лефортово': 'students industry park', 'Люблино': 'sleep industry',
+    'Марьино': 'sleep river', 'Нижегородский': 'industry', 'Печатники': 'industry river', 'Рязанский': 'industry sleep', 'Текстильщики': 'industry sleep', 'Южнопортовый': 'industry river',
+    'Бирюлёво': 'sleep industry highway', 'Братеево': 'sleep river', 'Даниловский': 'industry cemetery river', 'Донской': 'cemetery park', 'Зябликово': 'sleep',
+    'Москворечье': 'sleep cemetery river', 'Нагатино': 'sleep river', 'Нагатинский Затон': 'river park', 'Нагорный': 'industry sleep', 'Орехово-Борисово': 'sleep park',
+    'Царицыно': 'park sleep', 'Чертаново': 'sleep park',
+    'Академический': 'elite students', 'Бутово': 'sleep highway', 'Гагаринский': 'elite students', 'Зюзино': 'sleep', 'Коньково': 'sleep park', 'Котловка': 'industry sleep',
+    'Ломоносовский': 'students elite', 'Обручевский': 'students sleep', 'Тёплый Стан': 'sleep highway park', 'Черёмушки': 'sleep', 'Ясенево': 'sleep park highway',
+    'Дорогомилово': 'station river elite', 'Крылатское': 'elite river park', 'Кунцево': 'cemetery park highway', 'Можайский': 'highway industry',
+    'Очаково-Матвеевское': 'industry cemetery sleep', 'Проспект Вернадского': 'students elite', 'Раменки': 'students elite', 'Солнцево': 'sleep highway',
+    'Тропарёво-Никулино': 'sleep students park', 'Филёвский Парк': 'park river industry', 'Фили-Давыдково': 'elite sleep',
+    'Митино': 'sleep cemetery highway', 'Покровское-Стрешнево': 'park river elite', 'Строгино': 'sleep river', 'Северное Тушино': 'sleep highway river',
+    'Южное Тушино': 'sleep industry river', 'Хорошёво-Мнёвники': 'river park elite', 'Щукино': 'river sleep'
+  };
+
   function hash(s) { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973; return h; }
 
   const DISTRICTS = RAW.map((r, i) => {
     const center = r[1] === 'CAO';
     const e = ENT[r[0]];
     return {
-      id: i, name: r[0], ok: r[1], lat: r[2], lon: r[3], m: !!r[4],
+      id: i, name: r[0], ok: r[1], lat: r[2], lon: r[3], m: !!r[4], t: (DT[r[0]] || 'sleep').split(' '),
       inc: (center ? 7 : 3) + hash(r[0]) % 3,
       slots: center ? 5 : 4,
       ent: e ? { name: e[0], men: e[1], conn: e[2], cost: e[3], inc: e[4] } : null
@@ -131,19 +171,34 @@
   // Точки на районе. kind: w — белый, g — серый, b — чёрный.
   // fx — польза для империи, умножается на уровень точки и суммируется по всем районам (caps — потолки в FX)
   const BUILDS = {
-    kiosk: { name: 'Ларёк', cost: 10, inc: 2, kind: 'g', fx: { kid: 5 }, perk: 'Уши на улице: похищения удачнее на 5%', desc: 'Сникерсы, спирт «Рояль», сигареты. Продавцы видят, кто при деньгах' },
+    kiosk: { name: 'Ларёк', cost: 10, inc: 2, kind: 'g', good: ['station', 'sleep', 'students'], fx: { kid: 5 }, perk: 'Уши на улице: похищения удачнее на 5%', desc: 'Сникерсы, спирт «Рояль», сигареты. Продавцы видят, кто при деньгах' },
     market: { name: 'Крыша рынка', cost: 0, inc: 6, kind: 'b', needMen: 8, heat: 2, onlyMarket: true, one: true, fx: { upkeep: 10 }, perk: 'Свой провиант: содержание бойцов −10%', desc: 'Нужен рынок на районе и 8 бойцов' },
-    gym: { name: 'Спортзал', cost: 20, inc: 1, kind: 'w', rec: 3, one: true, perk: 'Качалка: +3 новобранца в месяц', desc: 'Качалка и секция борьбы' },
-    service: { name: 'Автосервис', cost: 25, inc: 4, kind: 'g', fx: { car: 15 }, perk: 'Тачки дешевле на 15%', desc: 'Ремонт и разбор угнанных' },
-    gunshop: { name: 'Охотничий магазин', cost: 40, inc: 3, kind: 'w', from: 1992, one: true, fx: { gun: 15 }, perk: 'Стволы дешевле на 15%', desc: 'Лицензия на нарезное, а в подсобке армейское' },
+    gym: { name: 'Спортзал', cost: 20, inc: 1, kind: 'w', good: ['sleep', 'students'], rec: 3, one: true, perk: 'Качалка: +3 новобранца в месяц', desc: 'Качалка и секция борьбы' },
+    service: { name: 'Автосервис', cost: 25, inc: 4, kind: 'g', good: ['highway', 'industry'], fx: { car: 15 }, perk: 'Тачки дешевле на 15%', desc: 'Ремонт и разбор угнанных' },
+    gunshop: { name: 'Охотничий магазин', cost: 40, inc: 3, kind: 'w', good: ['park', 'highway'], from: 1992, one: true, fx: { gun: 15 }, perk: 'Стволы дешевле на 15%', desc: 'Лицензия на нарезное, а в подсобке армейское' },
     clinic: { name: 'Подпольный врач', cost: 35, inc: 1, kind: 'g', one: true, fx: { med: 15 }, perk: 'Потери в бою −15%, раненые встают быстрее', desc: 'Хирург из Склифа, шьёт без вопросов и без протокола' },
-    rest: { name: 'Ресторан', cost: 45, inc: 6, kind: 'w', fx: { talk: 5 }, perk: 'Стрелки и переговоры: шанс договориться +5%', desc: 'Место для стрелок и банкетов' },
-    bordel: { name: 'Бордель', cost: 50, inc: 8, kind: 'b', from: 1992, heat: 1, one: true, fx: { cool: 1 }, perk: 'Менты отдыхают бесплатно: розыск −1 в месяц', desc: 'Вывеска «Сауна», девочки по вызову, компромат на гостей' },
-    flat: { name: 'Квартиры', cost: 30, inc: 2, kind: 'w', from: 1992, fx: { hide: 10 }, perk: 'Явочные квартиры: при облавах берут на 10% меньше', desc: 'Приватизация жилья у алкашей и стариков' },
-    prem: { name: 'Помещения', cost: 70, inc: 6, kind: 'w', from: 1992, fx: { cap: 3 }, perk: 'Общаги и склады: бригада больше на 3 человека', desc: 'Приватизация первых этажей под аренду' },
-    chop: { name: 'ЧОП', cost: 90, inc: 3, kind: 'w', from: 1993, def: 8, rec: 1, one: true, perk: 'Легальные стволы: оборона района +8, +1 новобранец в месяц', desc: 'Охранное агентство с лицензией' },
-    casino: { name: 'Казино', cost: 130, inc: 18, kind: 'g', from: 1993, heat: 1, one: true, fx: { wash: 10 }, perk: 'Отмывка: 10% чёрного дохода становится белым', desc: 'Рулетка и автоматы' },
-    land: { name: 'Земля', cost: 160, inc: 12, kind: 'w', from: 1993, needConn: 2, fx: { conn: 1 }, perk: 'Свои люди в префектуре: связи +1', desc: 'Приватизация участка. Нужны связи: 2' }
+    rest: { name: 'Ресторан', cost: 45, inc: 6, kind: 'w', good: ['center', 'elite', 'tourist'], fx: { talk: 5 }, perk: 'Стрелки и переговоры: шанс договориться +5%', desc: 'Место для стрелок и банкетов' },
+    bordel: { name: 'Бордель', cost: 50, inc: 8, kind: 'b', good: ['station', 'tourist'], from: 1992, heat: 1, one: true, fx: { cool: 1 }, perk: 'Менты отдыхают бесплатно: розыск −1 в месяц', desc: 'Вывеска «Сауна», девочки по вызову, компромат на гостей' },
+    flat: { name: 'Квартиры', cost: 30, inc: 2, kind: 'w', good: ['sleep', 'center'], from: 1992, fx: { hide: 10 }, perk: 'Явочные квартиры: при облавах берут на 10% меньше', desc: 'Приватизация жилья у алкашей и стариков' },
+    prem: { name: 'Помещения', cost: 70, inc: 6, kind: 'w', good: ['center', 'industry'], from: 1992, fx: { cap: 3 }, perk: 'Общаги и склады: бригада больше на 3 человека', desc: 'Приватизация первых этажей под аренду' },
+    chop: { name: 'ЧОП', cost: 90, inc: 3, kind: 'w', good: ['industry', 'elite'], from: 1993, def: 8, rec: 1, one: true, perk: 'Легальные стволы: оборона района +8, +1 новобранец в месяц', desc: 'Охранное агентство с лицензией' },
+    casino: { name: 'Казино', cost: 130, inc: 18, kind: 'g', good: ['center', 'tourist'], need: ['center', 'elite', 'tourist', 'station'], from: 1993, heat: 1, one: true, fx: { wash: 10 }, perk: 'Отмывка: 10% чёрного дохода становится белым', desc: 'Рулетка и автоматы' },
+    // особые точки: строятся только там, где к месту (need — нужна хотя бы одна из особенностей района)
+    vokzal: { name: 'Вокзальная крыша', cost: 30, inc: 7, kind: 'b', need: ['station'], heat: 1, one: true, rec: 2, perk: 'Вокзальная шпана: +2 новобранца в месяц', desc: 'Носильщики, бомбилы, напёрстки и камеры хранения' },
+    exchange: { name: 'Обменник', cost: 40, inc: 6, kind: 'g', need: ['center', 'station', 'tourist'], from: 1992, fx: { wash: 5 }, perk: 'Валюта мимо кассы: 5% чёрного дохода отмывается', desc: 'Будка «Обмен валют»: курс свой, кидалово на сдаче' },
+    hotel: { name: 'Гостиница', cost: 120, inc: 14, kind: 'g', need: ['center', 'tourist'], from: 1992, one: true, fx: { conn: 1 }, perk: 'Чиновники гуляют в номерах: связи +1', desc: 'Номера для иностранцев, валютные девочки, банкеты для начальства' },
+    club: { name: 'Ночной клуб', cost: 80, inc: 10, kind: 'g', need: ['center', 'elite', 'students'], from: 1994, heat: 1, one: true, fx: { kid: 5 }, perk: 'Сынки богатых папаш на виду: похищения удачнее на 5%', desc: 'Дискотека до утра, фейсконтроль, вип-ложа' },
+    boutique: { name: 'Бутик', cost: 90, inc: 11, kind: 'w', need: ['elite', 'center'], from: 1995, perk: 'Белые деньги: весь доход легальный', desc: 'Итальянские шмотки для жён и подруг. Касса чистая' },
+    dorm: { name: 'Общага', cost: 15, inc: 2, kind: 'w', need: ['students'], one: true, rec: 2, perk: 'Голодные студенты: +2 новобранца в месяц', desc: 'Комнаты сдаются, студенты подрабатывают кем скажут' },
+    video: { name: 'Видеосалон', cost: 15, inc: 3, kind: 'g', need: ['sleep', 'students'], one: true, rec: 1, perk: 'Пацаны с района: +1 новобранец в месяц', desc: 'Боевики с гнусавым переводом, три сеанса за вечер' },
+    factory: { name: 'Подпольный цех', cost: 35, inc: 8, kind: 'b', need: ['industry'], heat: 1, perk: 'Чистая прибыль, но розыск +1 при открытии', desc: 'Палёная водка, джинсы «Монтана», кроссовки «Абибас»' },
+    warehouse: { name: 'Оптовый склад', cost: 45, inc: 5, kind: 'w', need: ['industry', 'highway', 'river'], fx: { cap: 2 }, perk: 'Ночлег для пацанов: бригада больше на 2 человека', desc: 'Фуры с ширпотребом, крыша над оптом' },
+    scrap: { name: 'Цветмет', cost: 30, inc: 6, kind: 'b', need: ['industry', 'river'], from: 1992, heat: 1, fx: { car: 10 }, perk: 'Угнанные разбирают на металл: тачки дешевле на 10%', desc: 'Приём меди и алюминия. Провода снимают по всей области' },
+    fuel: { name: 'Бензоколонка', cost: 60, inc: 7, kind: 'g', need: ['highway'], from: 1992, fx: { upkeep: 5 }, perk: 'Бензин бригаде бесплатно: содержание бойцов −5%', desc: 'Колонка на выезде: бодяжный бензин и касса наликом' },
+    port: { name: 'Причал', cost: 50, inc: 8, kind: 'b', need: ['river'], from: 1992, heat: 1, one: true, fx: { gun: 10 }, perk: 'Баржи без досмотра: стволы дешевле на 10%', desc: 'Свои баржи и склады у воды: груз никто не досматривает' },
+    ritual: { name: 'Ритуальные услуги', cost: 40, inc: 7, kind: 'g', need: ['cemetery'], one: true, fx: { cool: 1 }, perk: 'Концы в землю: розыск −1 в месяц', desc: 'Места на кладбище, памятники, похороны «по понятиям»' },
+    tir: { name: 'Тир и шашлычная', cost: 25, inc: 4, kind: 'g', need: ['park'], one: true, fx: { med: 5 }, perk: 'Пацаны пристреляны: потери в бою −5%', desc: 'Тир в парке, шашлык и пиво, бойцы тренируются по ночам' },
+    land: { name: 'Земля', cost: 160, inc: 12, kind: 'w', good: ['park', 'highway', 'river'], from: 1993, needConn: 2, fx: { conn: 1 }, perk: 'Свои люди в префектуре: связи +1', desc: 'Приватизация участка. Нужны связи: 2' }
   };
   // потолки бонусов в процентах
   const FX_CAP = { kid: 20, upkeep: 50, car: 60, gun: 60, med: 50, talk: 25, hide: 50, wash: 60 };
@@ -252,5 +307,11 @@
     mavr: { name: 'Сергей Мавриди', nick: 'Мавр', age: 38, bio: 'Отец всех пирамид. Очки, свитер и миллионы обманутых вкладчиков', str: 2, wit: 9, loy: 3, look: { hair: 'side', glasses: 1, cloth: 'sweater', beard: 'none' } }
   };
 
-  G.DATA = { FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };
+  // Кто у власти: с какого месяца. Имена изменены, как у остальных легенд эпохи
+  const RULERS = {
+    pres: [{ from: [1991, 12], name: 'Борис Ельцов' }, { from: [2000, 1], name: 'Владимир Путилин', note: 'и. о.' }, { from: [2000, 5], name: 'Владимир Путилин' }],
+    mayor: [{ from: [1991, 6], name: 'Гавриил Попков' }, { from: [1992, 6], name: 'Юрий Лужин', note: 'Кепка' }]
+  };
+
+  G.DATA = { RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));
