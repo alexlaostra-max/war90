@@ -618,3 +618,4 @@ svg.art.face { aspect-ratio: 1; }
 .recs td small { font-size: 11px; }
 #sfx { padding: 9px 10px; color: var(--dim); } #sfx .ico { width: 16px; height: 16px; } #sfx[aria-pressed="true"] { color: var(--gold); } #sfx.off .w { opacity: .15; }
 @media (max-width: 860px) { #sfx { padding: 6px 8px; } }
+.box.install { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; border-color: #5a4a2a; } .box.install p { margin: 0 0 6px; }

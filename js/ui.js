@@ -555,6 +555,7 @@
     if (a === 'refresh') { showStart(); return; }
     if (a === 'scen') { scen = k; try { localStorage.setItem('war90.scen', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=scen]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#scennote').textContent = D.SCENARIOS[k].desc; return; }
     if (a === 'records') { showRecords(); return; }
+    if (a === 'install') { if (installEv) { installEv.prompt(); installEv.userChoice.finally(() => { installEv = null; const bx = $('#installbox'); if (bx) bx.hidden = true; }); } return; }
     if (a === 'menu0') { showStart(); return; }
     if (a === 'sendscore') { const nk = ($('#scorenick') || {}).value || ''; const o = P().over; try { localStorage.setItem('war90.nick', nk.trim()); } catch (er) { /* ignore */ } Net.post('score', { nick: nk, fid: me, title: o.title, score: o.score || E.scoreOf(S, me), date: E.date(S.turn).label, scen: S.scen || 's91', diff: S.diff }).then(r => { if (r.ok) { P().scoreSent = true; save(); toast('Ты в таблице рекордов: ' + r.place + '-е место'); const box = $('#scorebox'); if (box) box.innerHTML = '<p class="good">Записано: ' + r.place + '-е место в зале славы.</p>'; } else toast(r.err || 'Не вышло', true); }); return; }
     if (a === 'diff') { diff = k; try { localStorage.setItem('war90.diff', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=diff]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#diffnote').textContent = DIFF_NOTE[k]; return; }
@@ -769,10 +770,15 @@
       box.innerHTML = list.length ? '<table class="tbl recs"><tr><th>#</th><th>Игрок</th><th>Концовка</th><th>Счёт</th></tr>' + list.map((x, i) => '<tr><td>' + (i + 1) + '</td><td><i class="dot" style="background:' + fd(x.fid).color + '"></i>' + esc(x.nick) + '<br><small class="muted">' + fd(x.fid).name + ' · ' + esc(x.date) + '</small></td><td>' + esc(x.title) + '</td><td>' + x.score + '</td></tr>').join('') + '</table>' : '<p class="muted">Пока пусто. Закончи партию и впиши своё имя первым.</p>';
     }).catch(() => { const box = $('#records'); if (box) box.innerHTML = '<p class="muted">Таблица рекордов работает, когда игра открыта с сервера.</p>'; });
   }
+  // установка на телефон: Android/Chrome отдают событие, на iPhone — подсказка
+  let installEv = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; const b = $('#installbox'); if (b) b.hidden = false; });
+  const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const installHTML = () => standalone() ? '' : '<div class="box install" id="installbox"' + (installEv || /iPhone|iPad/.test(navigator.userAgent) ? '' : ' hidden') + '><b>Игра на телефоне как приложение</b><p class="muted">' + (/iPhone|iPad/.test(navigator.userAgent) ? 'В Safari нажми «Поделиться» и выбери «На экран „Домой“».' : 'Иконка на рабочем столе, запуск на весь экран, одиночная игра без интернета.') + '</p>' + (/iPhone|iPad/.test(navigator.userAgent) ? '' : btn('Установить', 'install', '', false, 'primary')) + '</div>';
   const savedNick = () => { try { return localStorage.getItem('war90.nick') || ''; } catch (e) { return ''; } };
   function showStart() {
     const sv = load();
-    let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + diffHTML() + scenHTML() + '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button>';
+    let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + diffHTML() + scenHTML() + '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button>' + installHTML();
     h += '<div class="modes"><section><h3>Онлайн</h3><div id="online"><p class="muted">Ищу сервер…</p></div></section><section><h3>Одиночная игра</h3>';
     if (sv) h += '<button class="btn primary wide" data-a="continue">Продолжить: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
     h += '<p class="muted">Выбери бригаду. Остальных ведут боты.</p><div class="factions">';
