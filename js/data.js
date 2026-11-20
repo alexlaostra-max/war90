@@ -322,6 +322,14 @@
     bab: { name: 'Борис Брезгин', nick: 'БАБ', age: 48, bio: 'Математик, торговец машинами, серый кардинал Кремля. Продаёт воздух дороже нефти', str: 2, wit: 10, loy: 2, look: { hair: 'bald', fringe: 1, cloth: 'suit', glasses: 0 } },
     cap: { name: 'Юрий Лужин', nick: 'Кепка', age: 58, bio: 'Хозяин Москвы в кепке. Стройки, рынки и подряды идут через его кабинет', str: 5, wit: 8, loy: 4, look: { hair: 'bald', cap: 1, cloth: 'suit' } },
     gen: { name: 'Александр Коржин', nick: 'Генерал', age: 46, bio: 'Начальник охраны президента. Ходит в теннис с первым лицом и решает, кого пустить', str: 7, wit: 6, loy: 3, look: { hair: 'short', cloth: 'general', wide: 1 } },
+    // свои люди: приходят в семью через случайные события
+    malaya: { name: 'Маля', nick: 'Малая', age: 23, join: true, bio: 'Самая младшая за столом и самая опасная на переговорах. Считает быстрее любого казначея и никогда не повышает голос', str: 4, wit: 9, loy: 8, look: { fem: 1, hair: 'long', hairC: '#2a1a14', beard: 'none', glasses: 0, cloth: 'leather' } },
+    chernysh: { name: 'Дашка', nick: 'Черныш', age: 27, join: true, bio: 'Держит рынок у метро. С ней не спорят даже оптовики с Черкизона: один раз попробовали', str: 6, wit: 7, loy: 7, look: { fem: 1, hair: 'long', hairC: '#141016', beard: 'none', glasses: 0, cloth: 'raspberry' } },
+    medved: { name: 'Кирюха', nick: 'Медведь', age: 31, join: true, bio: 'Двухметровый борец из Сокольников. Когда он заходит в комнату, разговор обычно заканчивается', str: 10, wit: 4, loy: 8, look: { hair: 'buzz', wide: 1, beard: 'stubble', cloth: 'tracksuit' } },
+    kosoy: { name: 'Глеб', nick: 'Косой', age: 29, join: true, bio: 'Стреляет с левой, смотрит мимо. Кто думал, что он промажет, ошибался последний раз', str: 8, wit: 5, loy: 6, look: { hair: 'short', beard: 'none', scar: 1, cloth: 'leather' } },
+    lobster: { name: 'Саня', nick: 'Лобстер', age: 33, join: true, bio: 'Краснеет на солнце и в бане. Держит рыбные рестораны и знает всех поваров, официантов и кто с кем ужинал', str: 5, wit: 7, loy: 7, look: { hair: 'side', skin: '#e0a090', beard: 'none', cloth: 'suit' } },
+    pyatigor: { name: 'Самик', nick: 'Пятигорский', age: 36, join: true, bio: 'Приехал из Пятигорска с одной сумкой. Теперь у него автосервис, два рынка и пол-ЮАО в должниках', str: 6, wit: 8, loy: 5, look: { hair: 'short', beard: 'beard', brows: 'heavy', cloth: 'leather' } },
+    bordur: { name: 'Володя', nick: 'Бордюр', age: 41, join: true, bio: 'Кладёт плитку и бордюры по всей Москве. Подряды мэрии идут через его бригаду, а лишний бетон — через его гараж', str: 6, wit: 6, loy: 7, look: { hair: 'bald', fringe: 1, beard: 'mustache', cloth: 'sweater' } },
     mavr: { name: 'Сергей Мавриди', nick: 'Мавр', age: 38, bio: 'Отец всех пирамид. Очки, свитер и миллионы обманутых вкладчиков', str: 2, wit: 9, loy: 3, look: { hair: 'side', glasses: 1, cloth: 'sweater', beard: 'none' } }
   };
 
@@ -394,5 +402,15 @@
       how: 'Слетай на первую поездку по крупному делу.' }
   ];
 
-  G.DATA = { QUESTS, PHOTOS, RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };
+  // Статус: большие разовые покупки для поздней игры, у каждой постоянный эффект
+  const STATUS = [
+    { id: 'mansion', name: 'Особняк на Рублёвке', from: 1994, cost: 1200, rep: 8, perk: 'Облавы забирают на четверть меньше людей. Авторитет +8', desc: 'Три этажа, забор в два роста, охрана на воротах. Соседи — министры и банкиры' },
+    { id: 'duma', name: 'Своя партия и место в Думе', from: 1995, cost: 2500, needConn: 8, perk: 'Связи +5. Неприкосновенность: розыск не поднимается выше 79', desc: 'Списки, плакаты, депутатский значок на лацкане' },
+    { id: 'charity', name: 'Благотворительный фонд', from: 1996, cost: 900, perk: 'Розыск −2 в месяц, чёрного дохода отмывается на 10% больше', desc: 'Детские дома, ветераны, фото в газетах. Через фонд идут и другие деньги' },
+    { id: 'church', name: 'Храм на районе', from: 1997, cost: 700, rep: 6, perk: 'Верность всех своих людей +1, авторитет +6', desc: 'Золотые купола и батюшка, который всё понимает' },
+    { id: 'yacht', name: 'Яхта на Лазурке', from: 1997, cost: 1800, rep: 5, perk: 'Переговоры +5%. Если розыск дойдёт до 80 — один раз уплыть и переждать: розыск падает до 40', desc: 'Сорок метров, вертолётная площадка, шампанское для нужных людей' },
+    { id: 'jet', name: 'Частный самолёт', from: 2000, cost: 3500, rep: 5, perk: 'Поездки по крупным делам бесплатно. Авторитет +5', desc: 'Свой борт во Внукове-3, без досмотра и очередей' }
+  ];
+
+  G.DATA = { STATUS, QUESTS, PHOTOS, RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));

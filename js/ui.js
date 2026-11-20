@@ -91,7 +91,7 @@
     const st = (k, l, v, x, cls) => '<button class="st s-' + k + ' ' + (cls || '') + '" data-go="' + GO[k] + '" title="' + l + '">' + A.icon(k) + '<div><span>' + l + '</span><b>' + v + '</b>' + (x ? '<i>' + x + '</i>' : '') + '</div></button>';
     let pips = ''; for (let i = 0; i < E.apMax(S, me); i++) pips += '<u class="' + (i < p.ap ? 'on' : '') + '"></u>';
     $('#stats').innerHTML =
-      st('money', 'Касса, тыс. $', R(p.money), 'бел. ' + E.cash(p).white + ' · ' + sign(inc.total) + '/мес', p.money < 0 ? 'bad' : '') +
+      st('money', 'Касса, тыс. $', R(p.money), 'бел. ' + E.cash(p).white + ' · $ ' + E.cur(p).usd + ' · ' + sign(inc.total) + '/мес', p.money < 0 ? 'bad' : '') +
       st('men', 'Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('gun', 'Стволы', p.guns) + st('car', 'Тачки', p.cars) +
       st('rep', 'Авторитет', R(p.rep)) + st('conn', 'Связи', E.conn(S, me)) +
       '<button class="st heat l' + L + '" data-go="law" title="Розыск">' + A.icon('heat') + '<b class="hnum">' + R(p.heat) + '</b><div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></button>' +
@@ -173,9 +173,12 @@
   function paneBoss() {
     const p = P(), inc = E.income(S, me), cap = E.menCap(S, me);
     let h = '<p class="eyebrow">Глава · общак</p><h2>' + fd(me).name + '</h2><p class="sub">' + esc(fd(me).perk) + '</p>';
-    h += '<dl class="kv"><dt>Сила бригады</dt><dd>' + R(E.power(p)) + '</dd><dt>Касса</dt><dd>' + R(p.money) + ' тыс. $</dd><dt>Белый нал</dt><dd class="good">' + E.cash(p).white + '</dd><dt>Чёрный нал</dt><dd>' + E.cash(p).black + '</dd><dt>Авторитет</dt><dd>' + R(p.rep) + '</dd><dt>Бойцы</dt><dd>' + p.men + ' из ' + cap + '</dd><dt>Районы</dt><dd>' + E.count(S, me) + ' из 102</dd></dl>';
+    h += '<dl class="kv"><dt>Сила бригады</dt><dd>' + R(E.power(p)) + '</dd><dt>Касса</dt><dd>' + R(p.money) + ' тыс. $</dd><dt>Белый нал</dt><dd class="good">' + E.cash(p).white + '</dd><dt>Чёрный нал</dt><dd>' + E.cash(p).black + '</dd><dt>В долларах</dt><dd class="good">' + E.cur(p).usd + '</dd><dt>В рублях</dt><dd>' + E.cur(p).rub + '</dd><dt>Авторитет</dt><dd>' + R(p.rep) + '</dd><dt>Бойцы</dt><dd>' + p.men + ' из ' + cap + '</dd><dt>Районы</dt><dd>' + E.count(S, me) + ' из 102</dd></dl>';
     h += '<h3>Касса за месяц</h3><table class="tbl">' + inc.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="' + (r[1] < 0 ? 'bad' : 'good') + '">' + sign(r[1]) + '</td></tr>').join('') + '<tr class="sum"><td>Итого</td><td>' + sign(inc.total) + '</td></tr></table>';
     const tot = inc.white + inc.black;
+    const k = p.usdK || 0, fee = R(E.exchangeFee(S, me) * 100), inf = E.inflation(S) * 100;
+    h += '<h3>Рубли и доллары</h3><p class="muted">Доход приходит в рублях, траты идут сначала из рублей. Рубли дешевеют: сейчас инфляция ' + (Math.round(inf * 10) / 10) + '% в месяц, а в августе 1998-го дефолт сожжёт 70% рублёвой кассы. Доллары не дешевеют и дефолта не боятся, но обмен стоит ' + fee + '%' + (fee < 3 ? ' (обменники на районах снижают комиссию)' : '; обменники на районах снижают комиссию') + '.</p>';
+    h += '<div class="seg" role="group" aria-label="Доля кассы в долларах">' + [[0, 'Всё в рублях'], [0.5, 'Половина в $'], [0.8, '80% в $']].map(o => '<button class="btn sm' + (k === o[0] ? ' on' : '') + '" data-a="usd" data-k="' + o[0] + '" aria-pressed="' + (k === o[0]) + '">' + o[1] + '</button>').join('') + '</div><p class="muted">Каждый месяц касса сама меняется до выбранной доли.</p>';
     h += '<p class="muted">Белый нал лежит на счетах: облавы его не трогают. Чёрный хранится наличкой, и при розыске от 60 его изымают. Траты идут сначала из чёрного. Белый приходит с белых точек, предприятий, легальных дел и через отмывку: казино и обменники.</p>';
     if (tot) h += '<p class="muted">Белый доход: ' + R(inc.white / tot * 100) + '%. К 2007 году выживут те, кто успел легализоваться.</p>';
     if (p.later.length) h += '<h3>Вложения и долги</h3><table class="tbl">' + p.later.map(l => '<tr><td>' + esc(l.why) + '<br><span class="muted">' + E.date(l.t).label + '</span></td><td class="' + (l.amt < 0 ? 'bad' : 'good') + '">' + sign(l.amt) + '</td></tr>').join('') + '</table>';
@@ -376,7 +379,17 @@
   }
 
   let showDone = false;
-  const paneBig = () => '<h2>Крупные дела</h2>' + bizBig();
+  const paneBig = () => '<h2>Крупные дела</h2>' + bizBig() + statusHTML();
+  // статус: большие разовые покупки для поздней игры
+  function statusHTML() {
+    let h = '<h2 class="sth">Статус и большие покупки</h2><p class="sub">Разовые покупки с постоянным эффектом. Ходов не тратят.</p><div class="stgrid">';
+    D.STATUS.forEach(X => {
+      const own = E.has(S, me, X.id), l = own ? null : E.statusLock(S, me, X);
+      h += '<div class="box stat' + (own ? ' own' : '') + '"><h3>' + X.name + '</h3><p class="muted">' + X.desc + '.</p><p class="good">' + X.perk + '.</p>' +
+        (own ? '<p class="owned">✓ Твоё</p>' : btn('Купить · ' + X.cost + ' тыс.', 'status', 'data-k="' + X.id + '"', l || false, 'wide')) + '</div>';
+    });
+    return h + '</div>';
+  }
   // Районы делятся на три группы: где есть место под стройку, где есть что улучшать и где всё прокачано
   function paneDist() {
     const own = E.owned(S, me);
@@ -494,7 +507,7 @@
     $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + v[1] + '</button>').join('');
     $('#tabbar').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(TABS[v[0]][0]) + '<span>' + TABS[v[0]][1] + '</span></button>').join('');
     if (section !== 'gang' && section !== 'map') sheet = false;
-    $('#main').classList.toggle('sheet', sheet);
+    $('#main').classList.toggle('msheet', sheet);
     $('#sheettitle').textContent = section === 'map' ? (sel == null ? 'Мои районы' : D.DISTRICTS[sel].name) : focus && focus.view ? { boss: 'Общак', men: 'Бойцы', arms: 'Арсенал', cars: 'Гараж' }[focus.view] : 'Досье';
     $('#strip').classList.toggle('open', perksOpen);
     const split = section === 'gang' || section === 'map';
@@ -568,6 +581,8 @@
     else if (a === 'car') act('buyCar', [k || 'nine']);
     else if (a === 'repair') act('repairCar', [k]);
     else if (a === 'quest') act('quest', [0]);
+    else if (a === 'status') act('buyStatus', [k]);
+    else if (a === 'usd') act('setUsd', [+k]);
     else if (a === 'retire1') { confirmRetire = true; render(); }
     else if (a === 'retire0') { confirmRetire = false; render(); }
     else if (a === 'retire2') { confirmRetire = false; act('retire', []); }
@@ -619,6 +634,7 @@
     if (rp) {
       h += '<div class="report"><span>За прошлый месяц касса ' + sign(rp.money) + ' тыс. $</span>';
       if (rp.law) h += '<span class="bad">' + esc(rp.law) + '</span>';
+      if (rp.infl) h += '<span class="bad">Инфляция съела ' + rp.infl + ' тыс. рублёвой кассы' + (rp.fx ? ', обмен в доллары: −' + rp.fx : '') + '</span>';
       if (rp.lost && rp.lost.length) h += '<span class="bad">Потеряны районы: ' + esc(rp.lost.join(', ')) + '</span>';
       h += '</div>';
     }

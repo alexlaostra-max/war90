@@ -530,7 +530,7 @@ svg.art.face { aspect-ratio: 1; }
   /* схема и карта — на весь экран, подробности выезжают снизу */
   main, main.wide { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 0; }
   #side, #side[hidden] { display: flex; position: fixed; z-index: 45; left: 0; right: 0; top: 8vh; bottom: calc(58px + env(safe-area-inset-bottom, 0px)); border-radius: 14px 14px 0 0; border-bottom: 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, .65); transform: translateY(110%); visibility: hidden; transition: transform .22s ease, visibility 0s .22s; }
-  main.sheet #side { transform: none; visibility: visible; transition: transform .22s ease; }
+  main.msheet #side { transform: none; visibility: visible; transition: transform .22s ease; }
   main.wide #side { display: none; }
   #sheethead { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
   #sheethead b { font: 400 16px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -596,3 +596,14 @@ svg.art.face { aspect-ratio: 1; }
 .donate .btn { font: 400 18px var(--mono); color: var(--gold); border-color: var(--gold); }
 .donate .btn small { font: 11px var(--body); color: var(--dim); }
 .box.rec { margin: 8px 0 14px; } .box.rec p { margin: 0 0 4px; font-size: 13px; color: var(--dim); }
+
+/* статус */
+.sth { margin-top: 28px; }
+.stgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; margin-top: 10px; }
+.box.stat { margin: 0; display: flex; flex-direction: column; }
+.box.stat h3 { margin-top: 2px; }
+.box.stat p { font-size: 13px; margin: 6px 0 0; }
+.box.stat .btn { margin-top: auto; } .box.stat p.good { margin-bottom: 10px; }
+.box.stat.own { border-color: var(--gold); background: #2b2418; }
+.box.stat .owned { color: var(--gold); font: 400 15px var(--display); margin-top: auto; }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 2px; } .seg .btn.on { border-color: var(--gold); color: var(--gold); background: #2b2418; }

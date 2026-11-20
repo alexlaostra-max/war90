@@ -300,6 +300,8 @@
     if (cloth === 'prison') s += [-12, -6, 6, 12].map(o => L(32 + o, 50, 32 + o, 64, '#55585f', 1.2)).join('');
     const chain = look.chain || (/tracksuit|leather|raspberry/.test(cloth) && r() < 0.45);
     if (chain) s += P('M' + f1(32 - nw + 0.5) + ' 44Q32 ' + (51 + str * 0.2) + ' ' + f1(32 + nw - 0.5) + ' 44', 'none', 'stroke="#e3b341" stroke-width="1.1" stroke-dasharray="1.2 .5"');
+    // длинные волосы за спиной
+    if (look.hair === 'long') s += P('M' + f1(32 - hw - 3) + ' 24Q32 2 ' + f1(32 + hw + 3) + ' 24L' + f1(32 + hw + 4.5) + ' 49Q32 53 ' + f1(32 - hw - 4.5) + ' 49Z', hairC);
     // уши и голова
     s += '<ellipse cx="' + f1(32 - hw + 0.4) + '" cy="29" rx="2.2" ry="3.4" fill="' + skin + '"/><ellipse cx="' + f1(32 + hw - 0.4) + '" cy="29" rx="2.2" ry="3.4" fill="' + skin + '"/>';
     const head = 'M' + f1(32 - hw) + ' 27C' + f1(32 - hw) + ' 11 ' + f1(32 + hw) + ' 11 ' + f1(32 + hw) + ' 27L' + f1(32 + jaw) + ' 37Q32 ' + f1(chin + 3) + ' ' + f1(32 - jaw) + ' 37Z';
@@ -317,6 +319,7 @@
     if (hair === 'buzz') s += P(top + 'L' + f1(32 + hw - 1) + ' 22Q32 16.4 ' + f1(32 - hw + 1) + ' 22Z', hairC, 'opacity=".78"');
     if (hair === 'short' || hair === 'mullet' || hair === 'side') s += P(top + 'L' + f1(32 + hw - 0.6) + ' 23Q' + f1(32 + hw - 3) + ' 19 ' + f1(32 + 3) + ' 18.6Q' + (hair === 'side' ? '27 17.4 ' + f1(32 - hw + 1) + ' 22' : '32 19.6 ' + f1(32 - hw + 0.6) + ' 23') + 'Z', hairC);
     if (hair === 'side') s += L(26.6, 13.6, 25.6, 19, '#000', 0.5, 'opacity=".35"');
+    if (hair === 'long') s += P(top + 'L' + f1(32 + hw - 0.4) + ' 26Q' + f1(32 + 4) + ' 14.6 ' + f1(32 - hw + 0.8) + ' 23Z', hairC);
     if (hair === 'mullet') s += P('M' + f1(32 - hw - 0.4) + ' 24L' + f1(32 - hw - 1.4) + ' 37L' + f1(32 - hw + 1.6) + ' 34L' + f1(32 - hw + 1) + ' 26ZM' + f1(32 + hw + 0.4) + ' 24L' + f1(32 + hw + 1.4) + ' 37L' + f1(32 + hw - 1.6) + ' 34L' + f1(32 + hw - 1) + ' 26Z', hairC);
     if (hair === 'bald') s += '<ellipse cx="' + f1(32 - hw * 0.35) + '" cy="15.5" rx="3.2" ry="1.6" fill="#fff" opacity=".22"/>' + (look.fringe || r() < 0.6 ? P('M' + f1(32 - hw - 0.3) + ' 27Q' + f1(32 - hw) + ' 21 ' + f1(32 - hw + 2.4) + ' 20L' + f1(32 - hw + 2) + ' 27ZM' + f1(32 + hw + 0.3) + ' 27Q' + f1(32 + hw) + ' 21 ' + f1(32 + hw - 2.4) + ' 20L' + f1(32 + hw - 2) + ' 27Z', hairC) : '');
     // глаза, брови, нос, рот
@@ -330,6 +333,7 @@
     s += P('M32 ' + (ey + 0.5) + 'L' + f1(30.6 - nb) + ' ' + f1(ey + nl) + 'Q32 ' + f1(ey + nl + 1.4) + ' 33.6 ' + f1(ey + nl), 'none', 'stroke="rgba(80,40,30,.55)" stroke-width=".8" stroke-linejoin="round"');
     const my = ey + nl + 3.6, sm = (r() - 0.5) * 1.6 + (loy >= 7 ? 0.5 : 0);
     s += P('M29 ' + f1(my) + 'Q32 ' + f1(my + sm) + ' 35 ' + f1(my - (sm > 0.6 ? 0.4 : 0)), 'none', 'stroke="#7a3a32" stroke-width="1" stroke-linecap="round"');
+    if (look.fem) s += P('M29.2 ' + f1(my) + 'Q32 ' + f1(my - 1.3) + ' 34.8 ' + f1(my) + 'Q32 ' + f1(my + 1.9) + ' 29.2 ' + f1(my) + 'Z', '#b84a5a');
     if (age > 38) s += L(28.4, 18.6, 35.6, 18.6, 'rgba(80,40,30,.3)', 0.5) + (age > 46 ? L(29, 20.2, 35, 20.2, 'rgba(80,40,30,.3)', 0.5) + P('M28.6 ' + f1(ey + nl - 0.6) + 'q-1 2 -0.6 4M35.4 ' + f1(ey + nl - 0.6) + 'q1 2 0.6 4', 'none', 'stroke="rgba(80,40,30,.3)" stroke-width=".5"') : '');
     // шрам, очки, кепка
     if (look.scar || c.nick === 'Шрам' || r() < 0.1) s += L(36.4, 23.4, 39.4, 33.4, '#a0604f', 1, 'stroke-linecap="round"') + [26, 29, 32].map(y => L(37.2, y, 38.8, y - 0.4, '#a0604f', 0.5)).join('');
