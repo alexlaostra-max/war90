@@ -281,7 +281,7 @@
   const VEST = { name: 'Бронежилет', alt: 'армейский, второй класс', price: 6, pack: 5, from: 1993, desc: 'Потери в бою ниже до 35%, если броники есть у всех, кто едет' };
   // Гараж: seats — мест на разборку, q — сколько добавляет к силе каждый боец на колёсах
   const CARS = {
-    nine: { name: 'Девятка', alt: 'ВАЗ-2109', seats: 4, q: 0.5, price: 8, from: 1991, col: '#7a2430', desc: 'Тонировка в круг. Классика района' },
+    nine: { name: 'Девятка', alt: 'ВАЗ-21099', seats: 4, q: 0.5, price: 8, from: 1991, col: '#7a2430', desc: 'Тонировка в круг. Классика района' },
     uaz: { name: 'Буханка', alt: 'УАЗ-452', seats: 8, q: 0.4, price: 14, from: 1991, col: '#4c5b3c', desc: 'Восемь мест. Пройдёт там, где «Мерседес» застрянет' },
     audi: { name: 'Ауди-бочка', alt: 'Audi 100 из Германии', seats: 4, q: 0.6, price: 14, from: 1991, col: '#5b6470', desc: 'Пригнали через Брест. Чуть быстрее «девятки»' },
     bmw: { name: 'Бэха', alt: 'BMW 525', seats: 4, q: 0.8, price: 26, from: 1992, rep: 1, col: '#1f2b3d', desc: 'Быстрая, злая, все знают, чья' },
@@ -328,6 +328,8 @@
     'arm-aks': { src: 'img/arm-aks.jpg', author: 'Vitaly V. Kuzmin', license: 'CC BY-SA 4.0', url: W + 'AKS74U_(noBG).jpg' },
     'arm-svd': { src: 'img/arm-svd.jpg', author: 'Hokos', license: 'CC BY-SA 4.0', url: W + 'SVD_Dragunov.jpg' },
     'arm-rpg': { src: 'img/arm-rpg.jpg', author: 'Michal Maňas', license: 'CC BY 2.5', url: W + 'RPG-7_detached.jpg' },
+    'car-nine': { src: 'img/car-nine.jpg', author: 'Throwawayacc222', license: 'CC0', url: W + '2003_VAZ_21099_blue_front.jpg' },
+    'car-gelik': { src: 'img/car-gelik.jpg', author: 'Alexander Migl', license: 'CC BY-SA 4.0', url: W + 'Mercedes-Benz_W463_Cabriolet_300_GE_1X7A0244.jpg' },
     'car-uaz': { src: 'img/car-uaz.jpg', author: 'Nikolai Bulykin', license: 'CC BY-SA 4.0', url: W + 'Бишкек,_УАЗ-452_на_Турусбекова.jpg' },
     'car-audi': { src: 'img/car-audi.jpg', author: 'Preiselbeere', license: 'CC BY-SA 3.0', url: W + 'Audi_100_C3,_BJ_1987.JPG' },
     'car-bmw': { src: 'img/car-bmw.jpg', author: 'Elveres', license: 'CC BY-SA 4.0', url: W + '1991_BMW_E34.jpg' },
