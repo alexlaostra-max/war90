@@ -476,7 +476,7 @@
       hist: p.hist || [], log: S.log.filter(l => !l.to || l.to === me), state: S };
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
-    a.download = 'peredel-' + me + '-' + E.date(S.turn).label.replace(/\s+/g, '-') + '.json';
+    const dt = E.date(S.turn); a.download = 'peredel-' + me + '-' + dt.year + '-' + String(dt.month).padStart(2, '0') + '.json';
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
     toast('Запись партии сохранена: ' + a.download);
   }
