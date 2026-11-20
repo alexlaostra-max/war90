@@ -621,6 +621,52 @@
       return h + pl.svg + boarding(pl, ['#141418', '#3a3d4a', '#9a1f3c'], 4, { hand: 'case' });
     }
   });
+  // ---------- анимированные сцены событий: 240×80, движение задают CSS-классы an-* ----------
+  const EVS = {
+    // история: Кремль ночью, снег, мерцание как в старом телевизоре
+    history(r) {
+      let h = sky('ev-h', '#0f1424', '#2a2840') + stars(511, 20, 30);
+      h += R(0, 52, 240, 28, '#3a1a20') + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => R(i * 20 + 2, 49, 8, 4, '#3a1a20')).join('');
+      [[30, 20], [90, 10], [150, 16], [205, 24]].forEach(t => { h += R(t[0], 52 - t[1] - 14, 14, t[1] + 14, '#4a2026') + P('M' + t[0] + ' ' + (38 - t[1]) + 'L' + (t[0] + 7) + ' ' + (22 - t[1]) + 'L' + (t[0] + 14) + ' ' + (38 - t[1]) + 'Z', '#2e3a30') + P('M' + (t[0] + 7) + ' ' + (17 - t[1]) + 'l2 3h-4z', '#ff4d4d', 'class="an-glow"'); });
+      h += R(0, 70, 240, 10, '#d8dce4', 'opacity=".25"');
+      let sn = ''; for (let i = 0; i < 40; i++) sn += C(r() * 240, r() * 80, r() < 0.3 ? 0.9 : 0.5, '#fff', 'opacity=".8"');
+      return h + '<g class="an-snow">' + sn + '</g><g class="an-snow an-d2">' + sn + '</g>' + '<g class="an-scan">' + [...Array(20)].map((_, i) => R(0, i * 4, 240, 1, '#fff', 'opacity=".04"')).join('') + '</g>';
+    },
+    // власть: машина с мигалками у подъезда
+    law(r) {
+      let h = sky('ev-l', '#0c0b14', '#1c1a28') + stars(521, 12, 26);
+      let x = 6; while (x < 240) { const w = 26 + r() * 20, hh = 26 + r() * 30; h += R(x, 66 - hh, w, hh, '#1f1b28') + wins(x + 3, 70 - hh, Math.floor((w - 4) / 6), Math.floor(hh / 8), 3.4, 3.4, 2.6, 4.4, Math.floor(r() * 999), 0.3); x += w + 2; }
+      h += R(0, 66, 240, 14, '#2a2730') + R(0, 66, 240, 1, '#3a3446');
+      h += '<g class="an-beam-r">' + P('M126 44L60 80H120Z', '#ff3b4f', 'opacity=".22"') + '</g><g class="an-beam-b">' + P('M140 44L206 80H146Z', '#3b7bff', 'opacity=".22"') + '</g>';
+      h += carBody('nine', '#e8e6e0', 100, 76, 0.75) + R(108, 63, 30, 2.4, '#2b5aa8') + R(124, 43.4, 6, 2.6, '#ff3b4f', 'class="an-blink-r"') + R(131, 43.4, 6, 2.6, '#3b7bff', 'class="an-blink-b"');
+      return h + man(70, 76, '#2a3442', 1.4) + man(176, 76, '#2a3442', 1.4) + C(176, 61, 1.3, '#d9e2ea');
+    },
+    // внутри семьи: качающаяся лампа над столом, дым
+    crew() {
+      let h = R(0, 0, 240, 80, '#0d0b10') + P('M70 80L120 30L170 80Z', '#f0c968', 'opacity=".08"');
+      h += '<g class="an-sway">' + L(120, 0, 120, 26, '#5a5560', 0.8) + P('M110 32L120 24L130 32Z', '#3a3446') + C(120, 32, 2.4, '#ffe9a0') + P('M108 33L72 80H168L132 33Z', '#f0c968', 'opacity=".12"') + '</g>';
+      h += R(70, 58, 100, 5, '#4a3324') + R(76, 63, 3, 17, '#3a2818') + R(161, 63, 3, 17, '#3a2818') + R(110, 54, 22, 4, '#e8e2d6', 'opacity=".8"') + R(136, 55, 10, 3, '#1c1a20');
+      h += P('M40 80V50Q40 44 46 44H56Q62 44 62 50V80Z', '#1c1a20') + C(51, 38, 5, '#2a2530') + P('M178 80V50Q178 44 184 44H194Q200 44 200 50V80Z', '#1c1a20') + C(189, 38, 5, '#2a2530');
+      return h + C(147, 55, 0.8, '#ff6a3d') + '<g class="an-smoke">' + P('M147 54q-3 -6 1 -11q4 -5 0 -11', 'none', 'stroke="#d0c6da" stroke-width=".8" opacity=".5"') + '</g>';
+    },
+    // улица: дождь, неон, проезжающая машина
+    street(r) {
+      let h = sky('ev-s', '#120f1a', '#22202e');
+      let x = -4; while (x < 244) { const w = 22 + r() * 22, hh = 30 + r() * 34; h += R(x, 68 - hh, w, hh, '#1e1a26') + wins(x + 3, 72 - hh, Math.floor((w - 4) / 6), Math.floor(hh / 8), 3.4, 3.4, 2.6, 4.4, Math.floor(r() * 999), 0.4); x += w + 1; }
+      h += R(150, 28, 30, 9, '#0c0810', 'rx="1"') + '<g class="an-flicker">' + NEON(165, 35, 'БАР', 7, '#ff4fa3') + '</g>';
+      h += R(0, 68, 240, 12, '#26222e') + R(0, 68, 240, 0.8, '#3a3446') + R(0, 74, 240, 6, '#6b5a8a', 'opacity=".08"');
+      h += '<g class="an-drive">' + P('M0 70L-60 66V74Z', '#ffe9a0', 'opacity=".25"') + carBody('bmw', '#141418', 0, 76, 0.5, 1) + '</g>';
+      let rain = ''; for (let i = 0; i < 60; i++) { const rx = r() * 260, ry = r() * 80; rain += L(rx, ry, rx - 2, ry + 6, '#9fb3c8', 0.5, 'opacity=".45"'); }
+      return h + '<g class="an-rain">' + rain + '</g><g class="an-rain an-d2">' + rain + '</g>';
+    }
+  };
+  function eventScene(kind, seed) {
+    const fn = EVS[kind] || EVS.street;
+    return '<svg class="art evsc" viewBox="0 0 240 80" preserveAspectRatio="xMidYMax slice" aria-hidden="true">' + fn(rng(hash(seed || kind))) + '</svg>';
+  }
+  // деньги сыплются: для итогов события с прибылью
+  const moneyRain = () => '<svg class="art cash" viewBox="0 0 240 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' + [...Array(14)].map((_, i) => '<g class="an-fall" style="animation-delay:' + (i * 0.13).toFixed(2) + 's;--x:' + (8 + i * 16.5).toFixed(0) + 'px">' + R(-6, -10, 12, 6, '#5aa867', 'rx=".6"') + C(0, -7, 1.6, '#3d6b45') + '</g>').join('') + '</svg>';
+
   function deal(id) {
     const fn = DEAL[id]; if (!fn) return '';
     const key = 'deal' + id; if (cache[key]) return cache[key];
@@ -657,5 +703,5 @@
   };
   const icon = k => '<svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + ICONS[k] + '</svg>';
 
-  G.ART = { build, face, bossFace, legendFace, officialFace, rulerFace, vacantFace, arm, vest, car, deal, hash, icon, ICONS };
+  G.ART = { eventScene, moneyRain, build, face, bossFace, legendFace, officialFace, rulerFace, vacantFace, arm, vest, car, deal, hash, icon, ICONS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));

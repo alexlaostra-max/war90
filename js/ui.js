@@ -5,6 +5,7 @@
   let S = null, me = null, sel = null, section = 'gang', confirmNew = false;
   // телефон: подробности (досье, район) выезжают поверх экрана отдельной панелью
   const mobile = () => matchMedia('(max-width: 860px)').matches;
+  const DONATE = '+79936338436', DONATE_SHOW = '+7 993 633-84-36'; // донат автору: Т-Банк по номеру
   let sheet = false, perksOpen = false;
   let net = null;          // онлайн: { room, token, lobby }
   let modalKey = '';       // что сейчас в модальном окне
@@ -529,6 +530,7 @@
     if (a === 'slot') { netCall('slot', { fid: k, mode: b.dataset.m }); return; }
     if (a === 'go') { netCall('start'); return; }
     if (a === 'leave') { netCall('leave').then(r => { if (r.ok) { forget(net.room); leaveToMenu(); } }); return; }
+    if (a === 'copyphone') { (navigator.clipboard ? navigator.clipboard.writeText(DONATE) : Promise.reject()).then(() => toast('Номер скопирован. Спасибо!'), () => toast(DONATE_SHOW)); return; }
     if (a === 'copy') { const t = location.origin + location.pathname + '#room-' + net.room; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Ссылка скопирована'), () => toast(t)); return; }
     if (!S) return;
     const di = b.dataset.i != null ? +b.dataset.i : sel;
@@ -592,7 +594,8 @@
   function showEvent() {
     const p = P(), ev = E.currentEvent(S, me); if (!ev) return;
     const key = 'ev:' + S.turn + ':' + ev.id + ':' + R(p.money); if (modalKey === key) return;
-    let h = '<p class="eyebrow">' + E.date(S.turn).label + (ev.date ? ' · история' : ev.extra === 'law' ? ' · пришли из власти' : ev.extra === 'crew' ? ' · внутри семьи' : '') + '</p>';
+    const kind = ev.extra === 'law' ? 'law' : ev.extra === 'crew' ? 'crew' : ev.date ? 'history' : 'street';
+    let h = '<div class="evscene">' + A.eventScene(kind, ev.id) + '</div><p class="eyebrow">' + E.date(S.turn).label + (ev.date ? ' · история' : ev.extra === 'law' ? ' · пришли из власти' : ev.extra === 'crew' ? ' · внутри семьи' : '') + '</p>';
     const rp = !ev.extra && p.report;
     if (rp) {
       h += '<div class="report"><span>За прошлый месяц касса ' + sign(rp.money) + ' тыс. $</span>';
@@ -665,8 +668,8 @@
     if (d.gone) ch += '<span class="bad">Ушёл: ' + esc(d.gone) + '</span>';
     if (d.dead) ch += '<span class="bad">Казнён: ' + esc(d.dead) + '</span>';
     if (d.demote) ch += '<span class="bad">Снят в резерв: ' + esc(d.demote) + '</span>';
-    const wc = r.who != null && E.crew(S, me).find(c => c.id === r.who);
-    openModal('<p class="eyebrow">' + esc(r.title) + '</p>' + (wc ? '<div class="evwho"><span class="ava">' + A.face(wc) + '</span><div><b>' + esc(E.cname(wc)) + '</b><small>' + (wc.st === 'hurt' ? 'ранен' : wc.st === 'jail' ? 'сидит' : 'сила ' + wc.str + ', ум ' + wc.wit + ', верность ' + wc.loy) + '</small></div></div>' : '') + '<p class="lead">' + esc(r.msg) + '</p><p class="deltas">' + (ch || '<span>Без последствий</span>') + '</p><button class="btn primary wide" data-a="close">Дальше</button>', 'event', 'result');
+    const wc = r.who != null && E.crew(S, me).find(c => c.id === r.who), rain = d.money > 0 ? '<div class="cashrain">' + A.moneyRain() + '</div>' : '';
+    openModal(rain + '<p class="eyebrow">' + esc(r.title) + '</p>' + (wc ? '<div class="evwho"><span class="ava">' + A.face(wc) + '</span><div><b>' + esc(E.cname(wc)) + '</b><small>' + (wc.st === 'hurt' ? 'ранен' : wc.st === 'jail' ? 'сидит' : 'сила ' + wc.str + ', ум ' + wc.wit + ', верность ' + wc.loy) + '</small></div></div>' : '') + '<p class="lead">' + esc(r.msg) + '</p><p class="deltas">' + (ch || '<span>Без последствий</span>') + '</p><button class="btn primary wide" data-a="close">Дальше</button>', 'event', 'result');
     if (!net) renderTop();
   }
   function showOver() {
@@ -677,6 +680,7 @@
       h += '<h3>Игроки</h3><table class="tbl">' + S.humans.map(f => { const x = S.f[f]; return '<tr><td><i class="dot" style="background:' + fd(f).color + '"></i>' + who(f) + '</td><td>' + (x.over ? esc(x.over.title) + (x.over.score ? ' · ' + x.over.score : '') : 'ещё играет') + '</td></tr>'; }).join('') + '</table>';
       if (!S.done) h += '<p class="muted">Остальные доигрывают. Итоги обновятся здесь.</p>';
     }
+    h += '<div class="donate"><p>Понравилась игра? Поддержи автора — каждый перевод идёт на новые районы, события и музыку.</p><div class="drow"><span><b>Т-Банк</b><small>перевод по номеру телефона</small></span><button class="btn" data-a="copyphone" title="Скопировать номер">' + DONATE_SHOW + '<small>нажми, чтобы скопировать</small></button></div></div>';
     openModal(h + '<button class="btn primary wide" data-a="menu">В меню</button>', 'event', key);
   }
 
