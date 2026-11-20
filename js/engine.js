@@ -1331,7 +1331,7 @@
     const dn = o.i != null ? D.DISTRICTS[o.i].name : '', byr = fdef(o.kind === 'sell' ? o.to : o.from).name;
     const s2 = 'Сделка ' + A + ' и ' + B + ': ' + { truce: 'мир на ' + months(o.x), pay: A + ' передали ' + o.x + ' тыс. $', ask: B + ' передали ' + o.x + ' тыс. $', sell: dn + ' перешёл к ' + byr + ' за ' + o.x + ' тыс. $', buy: dn + ' перешёл к ' + byr + ' за ' + o.x + ' тыс. $' }[o.kind] + '.';
     log(S, s2, 'good', o.from); log(S, s2, 'good', o.to);
-    return { ok: true, msg: 'По рукам' };
+    return { ok: true, msg: 'По рукам', deal: s2 };
   }
 
   // ---------- онлайн: бригаду ушедшего игрока ведёт бот ----------

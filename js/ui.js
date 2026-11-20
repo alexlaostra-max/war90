@@ -21,7 +21,7 @@
     let y0 = null, dy = 0, t0 = 0, armed = false;
     side.addEventListener('touchstart', e => {
       if (!sheet || e.touches.length !== 1 || e.target.closest('.xclose, input, select, textarea')) return;
-      const head = e.target.closest('#sheethead'); armed = !!head || pane.scrollTop <= 0;
+      const head = e.target.closest('#sheethead'); armed = !!head || pane.scrollTop <= 1;
       if (!armed) return; y0 = e.touches[0].clientY; dy = 0; t0 = Date.now();
     }, { passive: true });
     side.addEventListener('touchmove', e => {
@@ -554,7 +554,7 @@
   function chatLogHTML() {
     const L = net.lobby, list = L.chat || [], my = L.me && L.me.cid;
     if (!list.length) return '<p class="muted">Тишина. Напиши первым.</p>';
-    return list.map(m => { const f = m.f && D.FACTIONS.find(x => x.id === m.f); return '<p class="' + (m.c === my ? 'me' : '') + '"><b' + (f ? ' style="color:' + f.color + '"' : '') + '>' + esc(m.n) + '</b>' + (f ? ' <small>' + f.name + '</small>' : '') + ' <time>' + hhmm(m.t) + '</time><br>' + esc(m.x) + '</p>'; }).join('');
+    return list.map(m => { if (m.sys) return '<p class="sys">' + esc(m.x) + ' <time>' + hhmm(m.t) + '</time></p>'; const f = m.f && D.FACTIONS.find(x => x.id === m.f); return '<p class="' + (m.c === my ? 'me' : '') + '"><b' + (f ? ' style="color:' + f.color + '"' : '') + '>' + esc(m.n) + '</b>' + (f ? ' <small>' + f.name + '</small>' : '') + ' <time>' + hhmm(m.t) + '</time><br>' + esc(m.x) + '</p>'; }).join('');
   }
   function chatHTML() {
     if (!net || !net.lobby) return '';
@@ -571,12 +571,12 @@
   function chatNews(prev) {
     const L = net.lobby, list = L.chat || [], my = L.me && L.me.cid;
     if (net.seenT == null) { chatSeen(); return; } // история при входе непрочитанной не считается
-    const fresh = list.filter(m => m.t > (prev || 0) && m.c !== my);
+    const fresh = list.filter(m => m.t > (prev || 0) && m.c !== my && !m.sys);
     const shown = (!S && modalKey === 'lobby') || (S && section === 'log');
     if (shown) { chatSeen(); return; }
     if (!fresh.length) return;
     net.unread = (net.unread || 0) + fresh.length;
-    const m = fresh[fresh.length - 1]; toast('💬 ' + m.n + ': ' + m.x.slice(0, 80)); haptic('light'); if (G.Sfx) G.Sfx.play('msg');
+    const m = fresh[fresh.length - 1]; toast('💬 ' + m.n + ': ' + m.x.slice(0, 80) + ' · открыть'); chatToast = true; haptic('light'); if (G.Sfx) G.Sfx.play('msg');
   }
   function say(text) {
     text = String(text || '').trim(); if (!text || !net) return;
@@ -701,7 +701,8 @@
 
   // ---------- действия ----------
   let toastT = 0;
-  function toast(msg, bad) { const t = $('#toast'); t.textContent = msg; t.className = bad ? 'bad' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); }
+  let chatToast = false;
+  function toast(msg, bad) { chatToast = false; const t = $('#toast'); t.textContent = msg; t.className = bad ? 'bad' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); }
   function done(r) {
     if (!r) return;
     const msg = r.msg || r.err;
@@ -719,7 +720,10 @@
   }
   const netCall = (name, body) => Net.post(name, Object.assign({ room: net.room, token: net.token }, body || {})).then(r => { if (r.err || r.ok === false) toast(r.err || r.msg, true); return r; });
 
-  document.addEventListener('keydown', e => { if (e.target && e.target.id === 'chatin' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); say(e.target.value); } });
+  $('#toast').addEventListener('click', () => { if (!chatToast || !S) return; $('#toast').hidden = true; section = 'log'; sheet = false; closeModalIfFree(); render(); $('#page').scrollTop = 0; });
+  // окно не закрываем, если в нём событие, бой или ответ на сделку
+  function closeModalIfFree() { if (/^(parley|deal:)/.test(modalKey)) { parleyWith = null; dealWith = null; closeModal(); } }
+  document.addEventListener('keydown', e => { if (e.target && e.target.id === 'chatin' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); say(e.target.value); e.target.blur(); } });
   document.addEventListener('click', e => {
     const vb = e.target.closest('#menu [data-view], #tabbar [data-view]'); if (vb) { if (!S) return; section = vb.dataset.view; confirmNew = false; sheet = false; render(); if (section === 'map') applyView(); $('#page').scrollTop = 0; return; }
     const go = e.target.closest('#stats [data-go]'); if (go) { if (!S) return; const g = go.dataset.go.split(':'); section = g[0]; if (g[1]) { focus = { view: g[1] }; sheet = true; } else sheet = false; confirmNew = false; render(); return; }
@@ -741,7 +745,7 @@
     if (a === 'sendscore') { const nk = ($('#scorenick') || {}).value || ''; const o = P().over; try { localStorage.setItem('war90.nick', nk.trim()); } catch (er) { /* ignore */ } Net.post('score', { nick: nk, fid: me, title: o.title, score: o.score || E.scoreOf(S, me), date: E.date(S.turn).label, scen: S.scen || 's91', diff: S.diff }).then(r => { if (r.ok) { P().scoreSent = true; save(); toast('Ты в таблице рекордов: ' + r.place + '-е место'); const box = $('#scorebox'); if (box) box.innerHTML = '<p class="good">Записано: ' + r.place + '-е место в зале славы.</p>'; } else toast(r.err || 'Не вышло', true); }); return; }
     if (a === 'diff') { diff = k; try { localStorage.setItem('war90.diff', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=diff]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#diffnote').textContent = DIFF_NOTE[k]; return; }
     if (a === 'pick') { netCall('pick', { fid: k || null }); return; }
-    if (a === 'say') { const i = $('#chatin'); say(i && i.value); if (i) i.focus(); return; }
+    if (a === 'say') { const i = $('#chatin'); say(i && i.value); if (i) i.blur(); return; }
     if (a === 'sayq') { say(k); return; }
     if (a === 'slot') { netCall('slot', { fid: k, mode: b.dataset.m }); return; }
     if (a === 'go') { netCall('start'); return; }

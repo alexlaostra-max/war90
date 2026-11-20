@@ -42,6 +42,11 @@ const live = r => { const m = streams.get(r.id); let n = 0; if (m) m.forEach(set
 function closeRoom(r) { rooms.delete(r.id); streams.delete(r.id); emptySince.delete(r.id); save(); }
 const online = (r, token) => { const m = streams.get(r.id); return !!(m && m.get(token) && m.get(token).size); };
 const taken = (r, fid) => Object.keys(r.players).find(t => r.players[t].fid === fid);
+function sysSay(r, text) {
+  if (!r.chat) r.chat = [];
+  const now = Date.now(); r.chat.push({ id: now.toString(36) + id(2), t: now, n: '', f: null, c: null, sys: true, x: text });
+  if (r.chat.length > CHAT_KEEP) r.chat.splice(0, r.chat.length - CHAT_KEEP);
+}
 const cidOf = p => p.cid || (p.cid = id(3)); // метка автора в чате, чтобы не светить токен
 function lobby(r, token) {
   return {
@@ -151,6 +156,7 @@ const api = {
     if (FIDS.length - absent.length < 2) return { err: 'Нужны хотя бы две бригады' };
     Object.keys(r.players).forEach(t => { if (!r.players[t].fid) delete r.players[t]; }); // зрителей нет
     r.S = E.newGame(humans, crypto.randomBytes(4).readInt32LE(0), nicks, absent, r.diff, r.scen); r.started = true;
+    sysSay(r, '🎬 Игра началась. ' + (r.timer ? 'На месяц ' + r.timer + ' мин.' : 'Без таймера.'));
     push(r); return { ok: true };
   },
   act(b, r, token) {
@@ -159,6 +165,7 @@ const api = {
     const args = Array.isArray(b.args) ? b.args.slice(0, 4) : [];
     if (!fn || args.some(a => a !== null && !['string', 'number'].includes(typeof a))) return { ok: false, msg: 'Неизвестное действие' };
     const res = fn(r.S, p.fid, ...args);
+    if (res.ok && res.deal) sysSay(r, '🤝 ' + res.deal);
     if (res.ok) push(r);
     return res;
   },
@@ -173,6 +180,7 @@ const api = {
     if (!r.started) return { ok: false, msg: 'Игра не началась' };
     const res = E.endTurn(r.S, true); push(r); return res;
   },
+  // служебные сообщения в чат: сделки, бот за игрока, конец месяца по таймеру
   say(b, r, token) {
     const p = r.players[token], text = clean(b.text, 300).replace(/\s+/g, ' ');
     if (!text) return { ok: false, msg: 'Пустое сообщение' };
@@ -248,13 +256,14 @@ setInterval(() => {
     let changed = false; r.off = r.off || {};
     Object.keys(r.players).forEach(t => {
       const fid = r.players[t].fid; if (!fid || !r.S.f[fid]) return;
-      if (online(r, t)) { delete r.off[t]; if (E.setAuto(r.S, fid, false)) changed = true; }
-      else { if (!r.off[t]) r.off[t] = now; if (now - r.off[t] >= AUTO_MS && E.setAuto(r.S, fid, true)) changed = true; }
+      const nm = r.players[t].nick + ' (' + D.FACTIONS.find(f => f.id === fid).name + ')';
+      if (online(r, t)) { delete r.off[t]; if (E.setAuto(r.S, fid, false)) { changed = true; sysSay(r, '👋 ' + nm + ' вернулся и снова сам ведёт бригаду'); } }
+      else { if (!r.off[t]) r.off[t] = now; if (now - r.off[t] >= AUTO_MS && E.setAuto(r.S, fid, true)) { changed = true; sysSay(r, '🤖 ' + nm + ' пропал, бригаду ведёт бот'); } }
     });
     if (changed && E.allReady(r.S)) E.endTurn(r.S, false);
     if (r.deadline && now >= r.deadline) {
       const someone = Object.keys(r.players).some(t => online(r, t));
-      if (someone) { E.endTurn(r.S, true); changed = true; } else r.deadline = now + 30e3; // без людей не спешим
+      if (someone) { E.endTurn(r.S, true); changed = true; sysSay(r, '⏱ Время вышло, месяц закрыт за всех. Теперь ' + E.date(r.S.turn).label); } else r.deadline = now + 30e3; // без людей не спешим
     }
     if (changed) push(r);
   });
