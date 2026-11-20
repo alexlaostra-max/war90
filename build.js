@@ -1,7 +1,7 @@
 // Сборка: index.html (обычная страница со ссылками на файлы) и dist/artifact.html (всё в одном файле)
 const fs = require('fs'), path = require('path');
 const rd = f => fs.readFileSync(path.join(__dirname, f), 'utf8');
-const JS = ['data', 'events', 'geo', 'engine', 'art', 'net', 'music', 'ui'];
+const JS = ['data', 'events', 'geo', 'engine', 'art', 'net', 'music', 'sfx', 'ui'];
 const FONTS = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans:wght@400;700&family=Russo+One&display=swap">';
 const body = rd('src/body.html');
 

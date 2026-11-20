@@ -616,3 +616,5 @@ svg.art.face { aspect-ratio: 1; }
 .ach.got { opacity: .9; border-color: #5a4a2a; }
 .ach.now { opacity: 1; border-color: var(--gold); background: #2b2418; }
 .recs td small { font-size: 11px; }
+#sfx { padding: 9px 10px; color: var(--dim); } #sfx .ico { width: 16px; height: 16px; } #sfx[aria-pressed="true"] { color: var(--gold); } #sfx.off .w { opacity: .15; }
+@media (max-width: 860px) { #sfx { padding: 6px 8px; } }

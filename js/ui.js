@@ -528,8 +528,8 @@
     if (!r) return;
     const msg = r.msg || r.err;
     if (r.event && r.ok) { save(); showResult(r); return; }
-    if (r.battleEnd && r.ok) { save(); showBattleEnd(r); if (!net) render(); return; }
-    if (r.ok && (r.battle || r.round)) { if (!net) { save(); render(); } return; }
+    if (r.battleEnd && r.ok) { if (G.Sfx) G.Sfx.play(r.win ? 'cash' : 'shot'); save(); showBattleEnd(r); if (!net) render(); return; }
+    if (r.ok && (r.battle || r.round)) { if (G.Sfx) G.Sfx.play('shot'); if (!net) { save(); render(); } return; }
     if (msg) toast(msg, !r.ok || r.win === false);
     if (r.ok && !net) { save(); render(); }
   }
@@ -633,6 +633,7 @@
     const p = P(), ev = E.currentEvent(S, me); if (!ev) return;
     const key = 'ev:' + S.turn + ':' + ev.id + ':' + R(p.money); if (modalKey === key) return;
     const kind = ev.extra === 'law' ? 'law' : ev.extra === 'crew' ? 'crew' : ev.date ? 'history' : 'street';
+    if (G.Sfx) G.Sfx.play(kind === 'law' ? 'siren' : 'event');
     let h = '<div class="evscene">' + A.eventScene(kind, ev.id) + '</div><p class="eyebrow">' + E.date(S.turn).label + (ev.date ? ' · история' : ev.extra === 'law' ? ' · пришли из власти' : ev.extra === 'crew' ? ' · внутри семьи' : '') + '</p>';
     const rp = !ev.extra && p.report;
     if (rp) {
@@ -707,6 +708,7 @@
     if (d.gone) ch += '<span class="bad">Ушёл: ' + esc(d.gone) + '</span>';
     if (d.dead) ch += '<span class="bad">Казнён: ' + esc(d.dead) + '</span>';
     if (d.demote) ch += '<span class="bad">Снят в резерв: ' + esc(d.demote) + '</span>';
+    if (G.Sfx && d.money > 0) G.Sfx.play('cash'); else if (G.Sfx && d.dead) G.Sfx.play('shot');
     const wc = r.who != null && E.crew(S, me).find(c => c.id === r.who), rain = d.money > 0 ? '<div class="cashrain">' + A.moneyRain() + '</div>' : '';
     openModal(rain + '<p class="eyebrow">' + esc(r.title) + '</p>' + (wc ? '<div class="evwho"><span class="ava">' + A.face(wc) + '</span><div><b>' + esc(E.cname(wc)) + '</b><small>' + (wc.st === 'hurt' ? 'ранен' : wc.st === 'jail' ? 'сидит' : 'сила ' + wc.str + ', ум ' + wc.wit + ', верность ' + wc.loy) + '</small></div></div>' : '') + '<p class="lead">' + esc(r.msg) + '</p><p class="deltas">' + (ch || '<span>Без последствий</span>') + '</p><button class="btn primary wide" data-a="close">Дальше</button>', 'event', 'result');
     if (!net) renderTop();
