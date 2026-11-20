@@ -14,6 +14,16 @@
     document.documentElement.classList.add('tg');
     TG.BackButton.onClick(() => { if (sheet) { sheet = false; render(); } else if (modalKey === 'records' || modalKey === 'lawinfo') { closeModal(); if (S) render(); else showStart(); } });
   }
+  if (TG) document.documentElement.classList.add('tg');
+  // высота нижней панели и вкладок: под неё поджимаются экран, шторка и всплывашки
+  if (window.ResizeObserver) {
+    const rs = document.documentElement.style, ro = new ResizeObserver(() => {
+      const t = document.getElementById('top'), b = document.getElementById('tabbar');
+      if (b) rs.setProperty('--tabh', b.offsetHeight + 'px');
+      if (t) rs.setProperty('--toph', (getComputedStyle(t).position === 'fixed' ? t.offsetHeight : 0) + 'px');
+    });
+    ['top', 'tabbar'].forEach(id => { const el = document.getElementById(id); if (el) ro.observe(el); });
+  }
   const tgSync = () => { if (!TG) return; if (sheet || modalKey === 'records' || modalKey === 'lawinfo') TG.BackButton.show(); else TG.BackButton.hide(); };
   const haptic = kind => { try { if (TG && TG.HapticFeedback) TG.HapticFeedback.impactOccurred(kind || 'medium'); } catch (e) { /* ignore */ } };
   const DONATE = '+79936338436', DONATE_SHOW = '+7 993 633-84-36'; // донат автору: Т-Банк по номеру
@@ -267,18 +277,20 @@
   // порядок людей как на схеме: ближний круг, бригадиры, резерв
   function chartOrder() {
     const cr = E.crew(S, me), out = [];
-    ['right', 'cons', 'treas'].forEach(pos => { const c = cr.find(x => x.pos === pos); if (c) out.push(c); });
+    INNER.forEach(pos => { const c = cr.find(x => x.pos === pos); if (c) out.push(c); });
     myOkrugs().forEach(ok => { const c = cr.find(x => x.pos === 'capo' && x.ok === ok); if (c) out.push(c); });
     watchers().forEach(c => out.push(c));
     cr.forEach(c => { if (!out.includes(c) && c.pos) out.push(c); });
     cr.forEach(c => { if (!c.pos) out.push(c); });
     return out;
   }
+  const INNER = ['right', 'cons', 'treas', 'lawyer'];
   const mini = (l, v) => '<i>' + l + '</i><u><s style="width:' + v * 10 + '%"></s></u><b>' + v + '</b>';
   const statBar = (l, v) => '<span class="stat"><i>' + l + '</i><b>' + v + '</b><u><s style="width:' + v * 10 + '%"></s></u></span>';
   function postEffect(c) {
     if (c.st !== 'ok') return '<p class="bad">Вне строя. Должность не работает, пока он не вернётся.</p>';
-    const t = { right: '+1 ход в месяц, нападения +' + c.str * 2 + '%', cons: 'Переговоры и стрелки +' + c.wit * 3 + '%, взятки наверх −' + c.wit * 3 + '%', treas: c.loy <= 3 ? 'Будет подворовывать: доход −5%. Верность низкая' : 'Доход +' + c.wit * 2 + '%', capo: 'Оборона районов округа +' + c.str * 2 + ', дань +' + c.str * 5 + '%, нападения в округе +' + c.str * 3 + '%. Сам ставит смотрящих из резерва и строит точки в округе на половину дани' + (c.fund ? ' (накоплено ' + Math.round(c.fund) + ' тыс.)' : '') + (c.wit < 5 ? '. Умом не блещет: строит не самое выгодное' : ''), watch: 'Оборона района +' + c.str * 3 + ', дань +' + c.str * 3 + '%, доход точек +' + c.wit * 4 + '%' }[c.pos];
+    const t = { right: '+1 ход в месяц, нападения +' + c.str * 2 + '%', cons: 'Переговоры и стрелки +' + c.wit * 3 + '%, взятки наверх −' + c.wit * 3 + '%', treas: c.loy <= 3 ? 'Будет подворовывать: доход −5%. Верность низкая' : 'Доход +' + c.wit * 2 + '%', lawyer: 'Задержанных отпускают чаще на ' + c.wit * 3 + '%, сроки короче на ' + c.wit * 4 + '%, изъятия меньше на ' + c.wit * 5 + '%', capo: 'Оборона районов округа +' + c.str * 2 + ', дань +' + c.str * 5 + '%, нападения в округе +' + c.str * 3 + '%. Сам ставит смотрящих из резерва и строит точки в округе на половину дани' + (c.fund ? ' (накоплено ' + Math.round(c.fund) + ' тыс.)' : '') + (c.wit < 5 ? '. Умом не блещет: строит не самое выгодное' : ''), watch: 'Оборона района +' + c.str * 3 + ', дань +' + c.str * 3 + '%, доход точек +' + c.wit * 4 + '%' }[c.pos];
+    if (c.pos === 'lawyer' && c.loy <= 3) return '<p class="bad">Сливает дела следствию: розыск +2 в месяц, защиты никакой. Верность низкая</p>';
     if (c.pos === 'watch' && c.loy <= 3) return '<p class="bad">Будет утаивать половину дани района: верность низкая</p>';
     return '<p class="good">' + t + '</p>';
   }
@@ -299,6 +311,14 @@
     const st = c.st === 'hurt' ? '<em class="badge">ранен</em>' : c.st === 'jail' ? '<em class="badge">сидит</em>' : '';
     return '<button class="node' + (c.st !== 'ok' ? ' out' : '') + (c.leg ? ' legend' : '') + (isSel ? ' sel' : '') + '" data-a="person" data-id="' + c.id + '"><span class="ava">' + A.face(c) + '</span><span class="nb"><span class="role">' + role + (c.leg ? ' · легенда' : '') + '</span>' + st + '<b>«' + esc(c.nick) + '»</b><small>' + esc(c.name) + ', ' + c.age + '</small>' + (extra || '') + '<span class="mini">' + mini('Сила', c.str) + mini('Ум', c.wit) + mini('Верн.', c.loy) + '</span></span></button>';
   }
+  // компактная карточка: ближний круг и бригадиры стоят в ряд
+  function cnode(c, role, slot, extra) {
+    const isSel = focus && (c ? focus.id === c.id : focus.id == null && focus.pos === slot.pos && (focus.ok || null) === (slot.ok || null));
+    if (!c) return '<button class="cnode vacant' + (isSel ? ' sel' : '') + '" data-a="vacant" data-pos="' + slot.pos + '" data-ok="' + (slot.ok || '') + '"><span class="ava">' + A.vacantFace() + '</span><span class="role">' + role + '</span><b>Вакантно</b>' + (extra || '') + '<small>' + (slot.dis ? 'нужно больше районов' : 'назначить') + '</small></button>';
+    const st = c.st === 'hurt' ? '<em class="badge">ранен</em>' : c.st === 'jail' ? '<em class="badge">сидит</em>' : '';
+    const n = (l, v, warn) => '<i>' + l + '</i><span class="' + (warn ? 'bad' : '') + '">' + v + '</span>';
+    return '<button class="cnode' + (c.st !== 'ok' ? ' out' : '') + (c.leg ? ' legend' : '') + (isSel ? ' sel' : '') + '" data-a="person" data-id="' + c.id + '" title="' + esc(E.cname(c)) + '"><span class="ava">' + A.face(c) + '</span>' + st + '<span class="role">' + role + '</span><b>' + esc(c.nick) + '</b>' + (extra || '') + '<span class="cst">' + n('С', c.str) + n('У', c.wit) + n('В', c.loy, c.loy <= 3) + '</span></button>';
+  }
   function renderOrg() {
     const p = P(), cr = E.crew(S, me), total = E.count(S, me), capos = cr.filter(x => x.pos === 'capo'), max = E.capoMax(S, me), bench = cr.filter(x => !x.pos);
     const on = v => focus && focus.view === v ? ' sel' : '';
@@ -309,10 +329,10 @@
       unit('men', 'men', 'Бойцы · вербовка', p.men + ' из ' + cap, 'ждут ' + E.pool(S, me) + ' · по ' + E.recruitPrice(S) + ' тыс.') +
       unit('arms', 'gun', 'Арсенал', Math.min(p.men, p.guns) + ' со стволом', p.guns < p.men ? 'без ствола ' + (p.men - p.guns) : 'все вооружены', p.guns < p.men) +
       unit('cars', 'car', 'Гараж', 'мест ' + seats, 'на разборку до ' + (10 + seats) + ' бойцов') + '</div>';
-    h += '<p class="tlabel">Ближний круг</p><div class="tier">' + ['right', 'cons', 'treas'].map(pos => node(cr.find(x => x.pos === pos), POSTS[pos].name, { pos })).join('') + '</div>';
-    h += '<p class="tlabel">Бригадиры · ' + capos.length + ' из ' + max + '</p><div class="tier">' + myOkrugs().map(ok => {
-      const n = okDistricts(ok).length, zv = '<span class="zv">' + n + ' ' + (n === 1 ? 'район' : n < 5 ? 'района' : 'районов') + ' · ~' + Math.round(p.men * n / Math.max(1, total)) + ' бойцов</span>';
-      return node(capos.find(x => x.ok === ok), 'Бригадир · ' + DD.OKRUGS[ok].short, { pos: 'capo', ok, dis: capos.length >= max }, zv);
+    h += '<p class="tlabel">Ближний круг</p><div class="tier ctier">' + INNER.map(pos => cnode(cr.find(x => x.pos === pos), POSTS[pos].name, { pos })).join('') + '</div>';
+    h += '<p class="tlabel">Бригадиры · ' + capos.length + ' из ' + max + '</p><div class="tier ctier">' + myOkrugs().map(ok => {
+      const n = okDistricts(ok).length, zv = '<span class="zv">' + n + ' ' + (n === 1 ? 'район' : n < 5 ? 'района' : 'районов') + ' · ~' + Math.round(p.men * n / Math.max(1, total)) + '</span>';
+      return cnode(capos.find(x => x.ok === ok), DD.OKRUGS[ok].short, { pos: 'capo', ok, dis: capos.length >= max }, zv);
     }).join('') + '</div>';
     const ws = watchers();
     h += '<p class="tlabel">Смотрящие · ' + ws.length + ' из ' + total + ' районов</p><div class="tier">' + (ws.length ? ws.map(c => '<button class="wchip' + (c.st !== 'ok' ? ' out' : '') + (focus && focus.id === c.id ? ' sel' : '') + '" data-a="person" data-id="' + c.id + '"><span class="ava">' + A.face(c) + '</span><span><b>«' + esc(c.nick) + '»</b><small>' + esc(DD.DISTRICTS[E.watchDist(c)].name) + '</small></span></button>').join('') : '<p class="muted">Смотрящих нет. Их ставят бригадиры округов из резерва — назначь бригадира, и он сам расставит людей и начнёт строить точки.</p>') + '</div>';
@@ -347,7 +367,7 @@
       if (c.st === 'ok') {
         const same = s => c.pos === s[0] && (c.ok || null) === (s[1] || null);
         const opt = s => { const hold = cr.find(x => x.pos === s[0] && (x.ok || null) === (s[1] || null)); return '<option value="' + s[0] + '|' + (s[1] || '') + '">' + (s[0] === 'watch' ? DD.DISTRICTS[E.watchDist({ ok: s[1] })].name : slotName(s[0], s[1])) + (hold ? ' — сейчас «' + esc(hold.nick) + '»' : ' — свободно') + '</option>'; };
-        const top = [['right'], ['cons'], ['treas']].concat(myOkrugs().map(ok => ['capo', ok])).filter(s => !same(s));
+        const top = INNER.map(x => [x]).concat(myOkrugs().map(ok => ['capo', ok])).filter(s => !same(s));
         h += '<h3>Назначить</h3><select class="pick" data-a="reassign" data-id="' + c.id + '" aria-label="Назначить на должность"><option value="">Выбрать должность…</option><optgroup label="Ближний круг и бригадиры">' + top.map(opt).join('') + '</optgroup></select><p class="muted">Смотрящих на районы ставят бригадиры сами.</p>';
         if (!c.pos) h += '<button class="btn sm ghost" data-a="dismiss" data-id="' + c.id + '">Вернуть в рядовые</button>';
       }

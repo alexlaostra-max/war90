@@ -195,7 +195,7 @@
       p.crew = p.crew.filter(x => x !== c); p.dead.unshift({ n: cname(c), pos: c.pos, t: S.turn, how: where }); if (p.dead.length > 12) p.dead.length = 12;
       addRep(S, fid, -1); log(S, nm.charAt(0).toUpperCase() + nm.slice(1) + ' погиб: ' + where + '.', 'bad', fid); return;
     }
-    const m = kind === 'hurt' ? ri(S, 2, 4) : ri(S, 12, 30);
+    const m = kind === 'hurt' ? ri(S, 2, 4) : Math.max(6, Math.round(ri(S, 12, 30) * (1 - lawyerWit(S, fid) * 0.04)));
     c.st = kind; c.until = S.turn + (kind === 'hurt' && fx(S, fid, 'med') ? Math.ceil(m / 2) : m);
     let s2 = nm.charAt(0).toUpperCase() + nm.slice(1) + (kind === 'hurt' ? ' ранен: ' : ' арестован: ') + where + '. Вернётся: ' + date(c.until + 1).label + '.';
     if (kind === 'jail' && c.loy <= 3 && rnd(S) < 0.5) { addHeat(S, fid, 10); s2 += ' На допросах дал показания: розыск +10.'; c.loy = Math.max(1, c.loy - 1); }
@@ -208,6 +208,8 @@
     const r = post(S, fid, 'right'), cp = capoOf(S, fid, D.DISTRICTS[i].ok);
     return (fid === 'izm' ? 1.2 : 1) * (1 + (r ? r.str * 0.02 : 0) + (cp ? cp.str * 0.03 : 0));
   }
+  // юрист работает, только если верен; неверный сливает дела (см. heatDelta)
+  const lawyerWit = (S, fid) => { const c = post(S, fid, 'lawyer'); return c && c.loy > 3 ? c.wit : 0; };
   const consBonus = (S, fid) => { const c = post(S, fid, 'cons'); return c ? c.wit * 3 : 0; };
   function crewPhase(S, fid) {
     const p = S.f[fid];
@@ -285,6 +287,7 @@
     if (has(S, fid, 'charity')) v -= 2;
     D.PROJECTS.forEach(pr => { if ((p.proj[pr.id] || {}).stage === 3) v += pr.heat; });
     v += Math.floor(count(S, fid) / 5);
+    const lw = post(S, fid, 'lawyer'); if (lw && lw.loy <= 3) v += 2;
     return v > 0 ? Math.round(v * lawK(S)) : v;
   }
 
@@ -608,7 +611,7 @@
   function questDone(S, fid, q) {
     const p = S.f[fid], cr = crew(S, fid), has = pos => cr.some(c => c.pos === pos);
     switch (q.id) {
-      case 'right': case 'capo': case 'cons': case 'treas': return has(q.id);
+      case 'right': case 'capo': case 'cons': case 'treas': case 'lawyer': return has(q.id);
       case 'arms': return p.guns >= 5;
       case 'grow': return count(S, fid) >= 2;
       case 'build': return owned(S, fid).some(i => S.d[i].b.length);
@@ -1047,16 +1050,16 @@
     const who = D.LAW[L].name;
     let n = L === 1 ? ri(S, 1, 2) : L === 2 ? ri(S, 2, 5) : L === 3 ? Math.max(4, Math.round(p.men * rr(S, 0.1, 0.15))) : Math.max(8, Math.round(p.men * rr(S, 0.18, 0.25)));
     n = Math.min(Math.round(n * (1 - fxp(S, fid, 'hide')) * (has(S, fid, 'mansion') ? 0.75 : 1)), p.men); if (!n) return;
-    let jail = 0, dead = 0, free = 0; const pk = 0.12 + 0.04 * L, pf = clamp(0.3 + conn(S, fid) * 0.03, 0, 0.7);
+    let jail = 0, dead = 0, free = 0; const pk = 0.12 + 0.04 * L, lwit = lawyerWit(S, fid), pf = clamp(0.3 + conn(S, fid) * 0.03 + lwit * 0.03, 0, 0.85);
     for (let i = 0; i < n; i++) { const x = rnd(S); if (x < pk) dead++; else if (x < pk + pf) free++; else jail++; }
     p.men -= jail + dead;
-    if (jail) p.jail.push({ n: jail, t: S.turn + ri(S, 12, 36) });
+    if (jail) p.jail.push({ n: jail, t: S.turn + Math.max(6, Math.round(ri(S, 12, 36) * (1 - lwit * 0.04))) });
     const rep = clamp(Math.ceil(free / 2) - dead - Math.floor(jail / 4), -6, 4);
     addRep(S, fid, rep);
     let s = who + ': задержано ' + n + '. ';
     if (jail) s += 'Сели: ' + jail + '. '; if (dead) s += 'Убиты при задержании: ' + dead + '. '; if (free) s += 'Отпущены: ' + free + '. ';
     const blk = cash(p).black;
-    if (L >= 3 && blk > 0) { const fr = Math.round(blk * (L === 3 ? 0.15 : 0.3)); p.money -= fr; s += 'Изъят чёрный нал: −' + fr + '. Белые деньги на счетах не тронули. '; }
+    if (L >= 3 && blk > 0) { const fr = Math.round(blk * (L === 3 ? 0.15 : 0.3) * (1 - lwit * 0.05)); p.money -= fr; s += 'Изъят чёрный нал: −' + fr + '. Белые деньги на счетах не тронули. '; }
     if (L === 4 && rnd(S) < 0.3) {
       const act = D.PROJECTS.filter(pr => (p.proj[pr.id] || {}).stage === 3);
       if (act.length) { const pr = act[Math.floor(rnd(S) * act.length)]; p.proj[pr.id] = { stage: 0 }; s += 'Изъят бизнес: ' + pr.name + '. '; }
@@ -1221,7 +1224,7 @@
     specials5: (S, f) => { const k = new Set(); owned(S, f).forEach(i => S.d[i].b.forEach(b => { if (D.BUILDS[b].need && b !== 'casino') k.add(b); })); return k.size >= 5; },
     first_deal: (S, f, p) => Object.keys(p.proj || {}).some(k => p.proj[k].stage === 3), deals5: (S, f, p) => Object.keys(p.proj || {}).filter(k => p.proj[k].stage === 3).length >= 5,
     ent: (S, f) => owned(S, f).some(i => S.d[i].ent), ent5: (S, f) => owned(S, f).filter(i => S.d[i].ent).length >= 5,
-    full_circle: (S, f) => ['right', 'cons', 'treas'].every(pos => post(S, f, pos)), capos3: (S, f) => crew(S, f).filter(c => c.pos === 'capo').length >= 3,
+    full_circle: (S, f) => ['right', 'cons', 'treas', 'lawyer'].every(pos => post(S, f, pos)), capos3: (S, f) => crew(S, f).filter(c => c.pos === 'capo').length >= 3,
     legend: (S, f) => crew(S, f).some(c => c.leg && !PALS.includes(c.leg)), pals3: (S, f) => crew(S, f).filter(c => PALS.includes(c.leg)).length >= 3, pals7: (S, f) => crew(S, f).filter(c => PALS.includes(c.leg)).length >= 7,
     executed: (S, f, p) => !!(p.flags || {}).exec, framed: (S, f, p) => !!(p.flags || {}).framed, tutor: (S, f, p) => !!(p.flags || {}).tutor,
     off_all: (S, f, p) => Object.keys(D.OFFICIALS).every(k => (p.off || {})[k] > 0), clean: (S, f, p) => date(S.turn).year >= 1995 && S.turn - (S.t0 || 0) >= 24 && p.heat < 1 && count(S, f) >= 5,

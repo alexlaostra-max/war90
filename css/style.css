@@ -642,3 +642,44 @@ html.tg #app { padding-top: 4px; }
 .unread { display: inline-block; min-width: 16px; padding: 0 4px; margin-left: 5px; border-radius: 8px; background: var(--bad); color: #fff; font: 700 11px/16px var(--mono); font-style: normal; text-align: center; vertical-align: 2px; }
 #tabbar button { position: relative; }
 #tabbar .unread { position: absolute; top: 1px; right: calc(50% - 22px); margin: 0; }
+
+/* компактные карточки: ближний круг и бригадиры в ряд */
+.ctier { display: grid; grid-template-columns: repeat(auto-fit, 128px); justify-content: center; gap: 8px; }
+.cnode { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 7px; min-width: 0; background: var(--raise); border: 1px solid var(--line); border-radius: 4px; text-align: center; }
+.cnode:hover { border-color: var(--gold); }
+.cnode.sel { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); background: #2f2a1f; }
+.cnode .ava { width: 42px; height: 42px; margin-bottom: 2px; }
+.cnode .role { font: 9px/1.2 var(--mono); color: var(--gold); text-transform: uppercase; letter-spacing: .05em; max-width: 100%; overflow-wrap: anywhere; }
+.cnode b { font: 400 14px var(--display); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cnode small { font-size: 11px; color: var(--gold); }
+.cnode .zv { font: 10px var(--mono); color: var(--dim); }
+.cnode .cst { display: flex; gap: 6px; font: 11px var(--mono); margin-top: 2px; }
+.cnode .cst i { font-style: normal; color: var(--dim); margin-right: 1px; }
+.cnode .cst .bad { color: var(--bad); }
+.cnode .badge { top: 4px; right: 4px; font-size: 8px; }
+.cnode.vacant { background: none; border-style: dashed; } .cnode.vacant b { color: var(--dim); } .cnode.vacant .ava { opacity: .6; }
+.cnode.out { opacity: .6; }
+.cnode.legend { border-color: #6b5a2e; } .cnode.legend .role { color: #ffcf5a; }
+@media (max-width: 860px) {
+  .ctier { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  .cnode { padding: 6px 2px 5px; }
+  .cnode .ava { width: 36px; height: 36px; }
+  .cnode b { font-size: 12px; }
+  .cnode .cst { gap: 3px; font-size: 10px; }
+}
+.cand > .ava + div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+/* верх экрана под системными кнопками (Телеграм на весь экран, вырез айфона) */
+:root { --safe-top: max(env(safe-area-inset-top, 0px), calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px))); }
+/* телефон: шапка с показателями и кнопкой месяца — внизу, над вкладками */
+@media (max-width: 860px) {
+  #app { padding-top: calc(6px + var(--safe-top)); padding-bottom: calc(var(--tabh, 58px) + var(--toph, 78px)); }
+  #top { position: fixed; left: 0; right: 0; bottom: var(--tabh, 58px); z-index: 41; margin: 0; background: #120f17; border-top: 1px solid var(--line); padding: 5px max(10px, env(safe-area-inset-right, 0px)) 6px max(10px, env(safe-area-inset-left, 0px)); gap: 4px 8px; }
+  #stats { order: -1; }
+  .brand { min-width: 0; } .brand b { display: none; } .brand span { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #top #end { margin-left: 4px; padding: 8px 14px; }
+  #side, #side[hidden] { top: calc(8vh + var(--safe-top)); bottom: calc(var(--tabh, 58px) + var(--toph, 78px)); }
+  #toast { bottom: calc(var(--tabh, 58px) + var(--toph, 78px) + 10px); }
+  #modal { padding-top: max(16px, calc(var(--safe-top) + 8px)); }
+  .tg #sheethead .btn { display: none; }
+}
