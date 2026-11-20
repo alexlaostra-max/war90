@@ -723,3 +723,6 @@ svg.art.face { aspect-ratio: 1; }
 .photo.bph.l2 img { filter: saturate(.8) brightness(.93); }
 .photo.bph.l3 img { filter: saturate(1.1) contrast(1.05); }
 .pnext .photo.bph { width: 100%; display: block; border-radius: 0; }
+/* непрочитанное в чате: красный кружок с «!» над значком */
+.unread { min-width: 17px; height: 17px; padding: 0; border-radius: 50%; font: 900 12px/17px var(--body); box-shadow: 0 0 0 2px #120f17; }
+#tabbar .unread { top: 0; right: calc(50% - 20px); }

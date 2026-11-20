@@ -688,7 +688,7 @@
     renderTop(); paintMap(); achSync(); tgSync();
     // меню разделов под шапкой; у «Банды» и «Районов» справа панель, остальные разделы во всю ширину
     if (net && section === 'log') chatSeen();
-    const un = v => v === 'log' && net && net.unread ? '<i class="unread">' + net.unread + '</i>' : '';
+    const un = v => v === 'log' && net && net.unread ? '<i class="unread" title="Непрочитанных: ' + net.unread + '" aria-label="Непрочитанных сообщений: ' + net.unread + '">!</i>' : '';
     const vname = v => net && v[0] === 'log' ? 'Чат' : v[1], tab = v => net && v === 'log' ? ['chat', 'Чат'] : TABS[v];
     $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + vname(v) + un(v[0]) + '</button>').join('');
     $('#tabbar').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(tab(v[0])[0]) + '<span>' + tab(v[0])[1] + '</span>' + un(v[0]) + '</button>').join('');
