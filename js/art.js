@@ -645,6 +645,12 @@
     conn: '<path d="M2.2 9.6C2.2 6.4 6.6 4 12 4s9.8 2.4 9.8 5.6v1.2c0 .5-.4.9-.9.9h-3c-.5 0-.9-.4-.9-.9V8.9A11 11 0 0 0 12 8a11 11 0 0 0-5 .9v1.9c0 .5-.4.9-.9.9h-3c-.5 0-.9-.4-.9-.9z"/><path fill-rule="evenodd" d="M8 10.4h8l3.6 8.3c.3.7-.2 1.3-.9 1.3H5.3c-.7 0-1.2-.6-.9-1.3zM12 12.2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><circle cx="12" cy="15.2" r="1"/>',
     // мигалка
     heat: '<path d="M7 17.2v-5a5 5 0 0 1 10 0v5z"/><rect x="5" y="17.6" width="14" height="3.4" rx=".8"/><path d="M12 1.6v3M3.4 5.4l2.1 2.1M20.6 5.4l-2.1 2.1M1.4 12.6h2.8M19.8 12.6h2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>',
+    // нижнее меню на телефоне
+    map: '<path d="M2 5.5l6-2.5 8 3 6-2.5v15L16 21l-8-3-6 2.5zM8 3v15M16 6v15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M2 5.5l6-2.5v15l-6 2.5z" opacity=".35"/>',
+    deal: '<path fill-rule="evenodd" d="M9 3h6c1 0 1.8.8 1.8 1.8V6H21c.6 0 1 .4 1 1v12c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h4.2V4.8C7.2 3.8 8 3 9 3zm.2 3h5.6V5H9.2zM2 11.5h20v1.6H2zM10.5 11h3v3.5h-3z"/>',
+    law: '<path d="M12 2l10 5v2H2V7zM4 10h3v8H4zM10.5 10h3v8h-3zM17 10h3v8h-3zM2 19h20v3H2z"/>',
+    clans: '<path d="M4 2h1.8v20H4zM5.8 3h7l-1.6 3 1.6 3h-7zM18.2 2H20v20h-1.8zM18.2 3h-7l1.6 3-1.6 3h7z" opacity=".9"/>',
+    log: '<path fill-rule="evenodd" d="M5 2h11l4 4v15c0 .6-.4 1-1 1H5c-.6 0-1-.4-1-1V3c0-.6.4-1 1-1zm2 7v1.6h10V9zm0 4v1.6h10V13zm0 4v1.6h7V17zM15 2.5V7h4.5z"/>',
     // нота и «следующий трек» для плеера
     note: '<path d="M9 17.5V5.2l11-2.2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><ellipse cx="6.4" cy="17.6" rx="3.2" ry="2.5"/><ellipse cx="17.4" cy="15.2" rx="3.2" ry="2.5"/>',
     next: '<path d="M3 5.5v13l9-6.5zM12 5.5v13l9-6.5z"/><rect x="20" y="5.5" width="2" height="13" rx=".5"/>'

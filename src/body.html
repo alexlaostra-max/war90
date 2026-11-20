@@ -1,6 +1,7 @@
 <div id="app">
   <header id="top">
     <div class="brand"><b>Передел</b><span id="date"></span></div>
+    <div id="apm" aria-label="Ходы в этом месяце"></div>
     <div id="stats"></div>
     <button id="music" class="btn" aria-pressed="false" title="Включить музыку"><svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 17.5V5.2l11-2.2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><ellipse cx="6.4" cy="17.6" rx="3.2" ry="2.5"/><ellipse cx="17.4" cy="15.2" rx="3.2" ry="2.5"/></svg><span>Музыка</span></button>
     <button id="mnext" class="btn off" disabled aria-hidden="true" aria-label="Следующий трек" title="Следующий трек"><svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5v13l9-6.5zM12 5.5v13l9-6.5z"/><rect x="20" y="5.5" width="2" height="13" rx=".5"/></svg></button>
@@ -14,12 +15,14 @@
       <div id="mapview" hidden>
         <svg id="map" preserveAspectRatio="xMidYMid meet"></svg>
         <div id="zoom"><button data-z="1" aria-label="Приблизить">+</button><button data-z="-1" aria-label="Отдалить">−</button><button data-z="0" aria-label="Вся карта">◎</button></div>
+        <button id="mylist" class="btn sm" data-a="dlist">Мои районы</button>
         <p id="legend"><span><i class="lg mine"></i>твои</span><span><i class="lg target"></i>можно напасть</span><span><i class="lg ent"></i>предприятие</span></p>
       </div>
       <div id="page" hidden></div>
     </section>
-    <aside id="side"><div id="pane"></div></aside>
+    <aside id="side"><div id="sheethead"><button class="btn sm ghost" data-a="sheetclose">← Назад</button><b id="sheettitle"></b></div><div id="pane"></div></aside>
   </main>
+  <nav id="tabbar" aria-label="Разделы"></nav>
 </div>
 <div id="modal" hidden></div>
 <div id="toast" hidden role="status"></div>

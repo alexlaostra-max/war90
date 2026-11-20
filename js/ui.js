@@ -3,6 +3,9 @@
   const G = window.W90, E = G.Engine, D = G.DATA, GEO = G.GEO, Net = G.Net, A = G.ART;
   const SAVE = 'war90.save.v4';
   let S = null, me = null, sel = null, section = 'gang', confirmNew = false;
+  // телефон: подробности (досье, район) выезжают поверх экрана отдельной панелью
+  const mobile = () => matchMedia('(max-width: 860px)').matches;
+  let sheet = false, perksOpen = false;
   let net = null;          // онлайн: { room, token, lobby }
   let modalKey = '';       // что сейчас в модальном окне
   const FULL = GEO.box.slice(); let view = FULL.slice();
@@ -59,7 +62,7 @@
     moved += Math.abs(dx) + Math.abs(dy);
     if (moved > 6) { if (!svg.hasPointerCapture(e.pointerId)) svg.setPointerCapture(e.pointerId); const sc = svgPoint(e)[2]; view[0] -= dx * sc; view[1] -= dy * sc; clampView(); applyView(); }
   });
-  const up = e => { const was = ptrs.has(e.pointerId); ptrs.delete(e.pointerId); pinch = 0; if (was && moved <= 6 && e.type === 'pointerup') { const t = document.elementFromPoint(e.clientX, e.clientY); if (S && t && t.dataset && t.dataset.i != null) { sel = +t.dataset.i; section = 'map'; render(); } } };
+  const up = e => { const was = ptrs.has(e.pointerId); ptrs.delete(e.pointerId); pinch = 0; if (was && moved <= 6 && e.type === 'pointerup') { const t = document.elementFromPoint(e.clientX, e.clientY); if (S && t && t.dataset && t.dataset.i != null) { sel = +t.dataset.i; section = 'map'; sheet = true; render(); } } };
   svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
   svg.addEventListener('wheel', e => { e.preventDefault(); const p = svgPoint(e); zoomAt(e.deltaY > 0 ? 1.18 : 0.85, p[0], p[1]); }, { passive: false });
   $('#zoom').addEventListener('click', e => { const z = e.target.dataset.z; if (!z) return; if (z === '0') { view = FULL.slice(); applyView(); } else zoomAt(z === '1' ? 0.7 : 1.4, view[0] + view[2] / 2, view[1] + view[3] / 2); });
@@ -90,9 +93,10 @@
       st('money', 'Касса, тыс. $', R(p.money), 'бел. ' + E.cash(p).white + ' · ' + sign(inc.total) + '/мес', p.money < 0 ? 'bad' : '') +
       st('men', 'Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('gun', 'Стволы', p.guns) + st('car', 'Тачки', p.cars) +
       st('rep', 'Авторитет', R(p.rep)) + st('conn', 'Связи', E.conn(S, me)) +
-      '<button class="st heat l' + L + '" data-go="law" title="Розыск">' + A.icon('heat') + '<div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></button>' +
+      '<button class="st heat l' + L + '" data-go="law" title="Розыск">' + A.icon('heat') + '<b class="hnum">' + R(p.heat) + '</b><div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></button>' +
       '';
     $('#perks').innerHTML = fxStrip();
+    $('#apm').innerHTML = '<div class="pips">' + pips + '</div>';
     $('#ap').innerHTML = '<span>Ходы</span><div class="pips">' + pips + '</div><b>' + p.ap + ' из ' + E.apMax(S, me) + '</b>';
     const end = $('#end');
     end.disabled = !!p.event || !!p.over || S.done;
@@ -102,6 +106,7 @@
 
   // ---------- вкладки ----------
   const VIEWS = [['gang', 'Банда'], ['map', 'Районы'], ['big', 'Крупные дела'], ['law', 'Власть'], ['clans', 'Группировки'], ['log', 'Хроника']];
+  const TABS = { gang: ['men', 'Банда'], map: ['map', 'Районы'], big: ['deal', 'Дела'], law: ['law', 'Власть'], clans: ['clans', 'Группы'], log: ['log', 'Хроника'] };
   const btn = (label, a, attrs, lock, cls) => '<button class="btn ' + (cls || '') + '" data-a="' + a + '" ' + (attrs || '') + (lock ? ' disabled' : '') + '>' + label + (lock && typeof lock === 'string' ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
   const kindTag = k => '<span class="tag ' + k + '">' + ({ w: 'белый', g: 'серый', b: 'чёрный' }[k]) + '</span>';
   const who = f => fd(f).name + (S.f[f].human && S.f[f].nick ? ' · ' + esc(S.f[f].nick) : '');
@@ -283,7 +288,7 @@
     const pc = E.promoteCost(S), plock = p.promoTurn === S.turn ? 'раз в месяц' : p.men < 6 ? 'нужно 6 бойцов' : p.money < pc ? 'не хватает денег' : '';
     h += '<p class="tlabel">Резерв · ' + bench.length + '</p><div class="tier">' + (bench.length ? bench.map(c => node(c, 'Резерв')).join('') : '<p class="muted">Пусто. Каждый месяц из бригады может выделиться новый человек.</p>') + '</div>';
     h += '<div class="tier promo">' + btn('Выдвинуть бойца из рядовых · ' + pc + ' тыс.', 'promote', '', plock || false, 'ghost') + '</div>';
-    $('#org').innerHTML = h;
+    $('#org').innerHTML = '<div class="mquest">' + questCard() + '</div>' + h;
   }
   // «Путь наверх»: карточка задания от наставника над досье
   function questCard() {
@@ -403,7 +408,7 @@
     const recr = E.inflow(S, me).rows.filter(r => r[0] === 'Спортзалы' || r[0] === 'Другие точки').reduce((a, r) => a + r[1], 0);
     if (recr) rows.push([['rec', 'Новобранцы', '/мес.', '+'], recr]);
     const chips = rows.map(r => { const cap = W90.DATA.FX_CAP[r[0][0]]; return '<span class="perk' + (cap && r[1] >= cap ? ' max' : '') + '" title="' + (cap && r[1] >= cap ? 'Потолок' : '') + '">' + r[0][1] + ' <b>' + (r[0][3] || '') + r[1] + r[0][2] + '</b></span>'; }).join('');
-    return '<span class="slabel">Плюшки империи</span>' + (chips || '<span class="muted">пока нет: строй точки на районах</span>');
+    return '<button class="slabel" data-a="perkstoggle" aria-expanded="' + perksOpen + '">Плюшки империи' + (rows.length ? ' · ' + rows.length : '') + '<i>' + (perksOpen ? '▴' : '▾') + '</i></button>' + (chips || '<span class="muted">пока нет: строй точки на районах</span>');
   }
   // кто сейчас президент и мэр: карточки с портретом на странице власти
   const MON = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -471,6 +476,11 @@
     renderTop(); paintMap();
     // меню разделов под шапкой; у «Банды» и «Районов» справа панель, остальные разделы во всю ширину
     $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + v[1] + '</button>').join('');
+    $('#tabbar').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(TABS[v[0]][0]) + '<span>' + TABS[v[0]][1] + '</span></button>').join('');
+    if (section !== 'gang' && section !== 'map') sheet = false;
+    $('#main').classList.toggle('sheet', sheet);
+    $('#sheettitle').textContent = section === 'map' ? (sel == null ? 'Мои районы' : D.DISTRICTS[sel].name) : focus && focus.view ? { boss: 'Общак', men: 'Бойцы', arms: 'Арсенал', cars: 'Гараж' }[focus.view] : 'Досье';
+    $('#strip').classList.toggle('open', perksOpen);
     const split = section === 'gang' || section === 'map';
     $('#main').classList.toggle('wide', !split); $('#side').hidden = !split;
     $('#org').hidden = section !== 'gang'; $('#mapview').hidden = section !== 'map'; $('#page').hidden = split;
@@ -503,8 +513,8 @@
   const netCall = (name, body) => Net.post(name, Object.assign({ room: net.room, token: net.token }, body || {})).then(r => { if (r.err || r.ok === false) toast(r.err || r.msg, true); return r; });
 
   document.addEventListener('click', e => {
-    const vb = e.target.closest('#menu [data-view]'); if (vb) { if (!S) return; section = vb.dataset.view; confirmNew = false; render(); if (section === 'map') applyView(); return; }
-    const go = e.target.closest('#stats [data-go]'); if (go) { if (!S) return; const g = go.dataset.go.split(':'); section = g[0]; if (g[1]) focus = { view: g[1] }; confirmNew = false; render(); return; }
+    const vb = e.target.closest('#menu [data-view], #tabbar [data-view]'); if (vb) { if (!S) return; section = vb.dataset.view; confirmNew = false; sheet = false; render(); if (section === 'map') applyView(); $('#page').scrollTop = 0; return; }
+    const go = e.target.closest('#stats [data-go]'); if (go) { if (!S) return; const g = go.dataset.go.split(':'); section = g[0]; if (g[1]) { focus = { view: g[1] }; sheet = true; } else sheet = false; confirmNew = false; render(); return; }
     const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
     const a = b.dataset.a, k = b.dataset.k;
     // меню и лобби
@@ -526,8 +536,10 @@
     else if (a === 'build') act('build', [di, k]);
     else if (a === 'upgrade') act('upgrade', [di, +b.dataset.x]);
     else if (a === 'dshow') { showDone = !showDone; render(); }
-    else if (a === 'dlist') { sel = null; render(); }
-    else if (a === 'unit') { focus = { view: b.dataset.u }; section = 'gang'; render(); }
+    else if (a === 'dlist') { sel = null; section = 'map'; sheet = true; render(); }
+    else if (a === 'sheetclose') { sheet = false; render(); }
+    else if (a === 'perkstoggle') { perksOpen = !perksOpen; render(); }
+    else if (a === 'unit') { focus = { view: b.dataset.u }; section = 'gang'; sheet = true; render(); }
     else if (a === 'kidnap') act('kidnap', [sel]);
     else if (a === 'raid') act('raid', [di]);
     else if (a === 'unassign') act('unassign', [+b.dataset.id]);
@@ -539,7 +551,7 @@
     else if (a === 'repair') act('repairCar', [k]);
     else if (a === 'quest') act('quest', [0]);
     else if (a === 'qskip') act('quest', [1]);
-    else if (a === 'qgo') { const g = k.split(':'); if (g[0] === 'vacant') { focus = { pos: g[1], ok: g[1] === 'capo' ? myOkrugs()[0] || null : null }; section = 'gang'; } else if (g[0] === 'unit') { focus = { view: g[1] }; section = 'gang'; } else { section = g[1]; if (g[1] === 'map') sel = null; } render(); if (section === 'map') applyView(); }
+    else if (a === 'qgo') { const g = k.split(':'); if (g[0] === 'vacant') { focus = { pos: g[1], ok: g[1] === 'capo' ? myOkrugs()[0] || null : null }; section = 'gang'; sheet = true; } else if (g[0] === 'unit') { focus = { view: g[1] }; section = 'gang'; sheet = true; } else { section = g[1]; sheet = false; if (g[1] === 'map') sel = null; } render(); if (section === 'map') applyView(); }
     else if (a === 'sellcar') act('sellCar', [k, b.dataset.n === '1' ? 1 : 0]);
     else if (a === 'hire') act('hire', [k]);
     else if (a === 'bribe') act('bribe', []);
@@ -554,9 +566,9 @@
     else if (a === 'cashout') act('cashOut', []);
     else if (a === 'opt') act('choose', [+k]);
     else if (a === 'force') netCall('force');
-    else if (a === 'goto') { sel = +b.dataset.i; section = 'map'; showOnMap(sel); render(); }
-    else if (a === 'person') { focus = { id: +b.dataset.id }; section = 'gang'; render(); }
-    else if (a === 'vacant') { focus = { pos: b.dataset.pos, ok: b.dataset.ok || null }; section = 'gang'; render(); }
+    else if (a === 'goto') { sel = +b.dataset.i; section = 'map'; sheet = true; showOnMap(sel); render(); }
+    else if (a === 'person') { focus = { id: +b.dataset.id }; section = 'gang'; sheet = true; render(); }
+    else if (a === 'vacant') { focus = { pos: b.dataset.pos, ok: b.dataset.ok || null }; section = 'gang'; sheet = true; render(); }
     else if (a === 'appoint') { focus = { id: +b.dataset.id }; act('assign', [+b.dataset.id, b.dataset.pos, b.dataset.ok || null]); }
     else if (a === 'new1') { confirmNew = true; render(); }
     else if (a === 'new0') { confirmNew = false; render(); }
