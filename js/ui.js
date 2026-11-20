@@ -285,7 +285,15 @@
     h += '<div class="tier promo">' + btn('Выдвинуть бойца из рядовых · ' + pc + ' тыс.', 'promote', '', plock || false, 'ghost') + '</div>';
     $('#org').innerHTML = h;
   }
-  function paneDossier() {
+  // «Путь наверх»: карточка задания от наставника над досье
+  function questCard() {
+    const q = E.questNow(S, me); if (!q) return '';
+    const done = E.questDone(S, me, q), n = (P().quest || 0) + 1, m = R(q.$ * (1 + S.turn / 60));
+    return '<div class="quest' + (done ? ' done' : '') + '"><div class="qhead"><span class="ava">' + A.legendFace('hasan') + '</span><div><p class="eyebrow">Путь наверх · ' + n + ' из ' + D.QUESTS.length + '</p><b>' + q.title + '</b><small>Дед Хасан объясняет</small></div></div><p>' + q.text + '</p><p class="qhow">' + (done ? '✓ Сделано. ' : 'Задание: ') + q.how + '</p><div class="row">' +
+      (done ? '<button class="btn sm primary" data-a="quest">Забрать: +' + m + ' тыс., авторитет +' + q.rep + '</button>' : '<button class="btn sm" data-a="qgo" data-k="' + q.go + '">Показать, где</button>') + '<button class="btn sm ghost" data-a="qskip">Пропустить обучение</button></div></div>';
+  }
+  const paneDossier = () => questCard() + dossierInner();
+  function dossierInner() {
     const cr = E.crew(S, me);
     if (focus && focus.id != null && !cr.some(x => x.id === focus.id)) focus = null;
     if (focus && focus.view) return { boss: paneBoss, men: paneMen, arms: paneArms, cars: paneCars }[focus.view]();
@@ -311,7 +319,7 @@
     }
     // пустая должность: подбор из резерва
     const pos = focus.pos, ok = focus.ok || null, hold = cr.find(x => x.pos === pos && (x.ok || null) === ok);
-    if (hold) { focus = { id: hold.id }; return paneDossier(); }
+    if (hold) { focus = { id: hold.id }; return dossierInner(); }
     const capFull = pos === 'capo' && cr.filter(x => x.pos === 'capo').length >= E.capoMax(S, me);
     const key = pos === 'right' || pos === 'capo' || pos === 'watch' ? 'str' : 'wit';
     const cand = cr.filter(x => !x.pos && x.st === 'ok').sort((a, b) => b[key] - a[key] || b.loy - a.loy);
@@ -529,6 +537,9 @@
     else if (a === 'vests') act('buyVests', [+b.dataset.n || 5]);
     else if (a === 'car') act('buyCar', [k || 'nine']);
     else if (a === 'repair') act('repairCar', [k]);
+    else if (a === 'quest') act('quest', [0]);
+    else if (a === 'qskip') act('quest', [1]);
+    else if (a === 'qgo') { const g = k.split(':'); if (g[0] === 'vacant') { focus = { pos: g[1], ok: g[1] === 'capo' ? myOkrugs()[0] || null : null }; section = 'gang'; } else if (g[0] === 'unit') { focus = { view: g[1] }; section = 'gang'; } else { section = g[1]; if (g[1] === 'map') sel = null; } render(); if (section === 'map') applyView(); }
     else if (a === 'sellcar') act('sellCar', [k, b.dataset.n === '1' ? 1 : 0]);
     else if (a === 'hire') act('hire', [k]);
     else if (a === 'bribe') act('bribe', []);

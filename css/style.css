@@ -481,3 +481,15 @@ svg.art.face { aspect-ratio: 1; }
 .photo figcaption a { color: var(--dim); text-decoration: none; }
 .photo figcaption a:hover { color: var(--fg); text-decoration: underline; }
 .item.locked .photo img { filter: grayscale(.8); }
+/* «Путь наверх»: задание наставника */
+.quest { border: 1px solid #5a4a2a; border-left: 3px solid var(--gold); border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; background: linear-gradient(180deg, #2b2418, var(--panel)); }
+.quest.done { border-color: var(--good); border-left-color: var(--good); }
+.qhead { display: flex; gap: 10px; align-items: center; }
+.qhead .ava { width: 44px; height: 44px; }
+.qhead .eyebrow { margin: 0; font-size: 10px; }
+.qhead b { font: 400 16px var(--display); display: block; }
+.qhead small { font-size: 11px; color: var(--dim); }
+.quest p { font-size: 13px; margin: 8px 0 0; }
+.quest .qhow { color: var(--gold); }
+.quest.done .qhow { color: var(--good); }
+.quest .row { margin-top: 8px; gap: 6px; flex-wrap: wrap; }

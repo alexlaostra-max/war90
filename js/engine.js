@@ -514,6 +514,29 @@
       }
     });
   }
+  // «Путь наверх»: задание выполнено — награду забирают кнопкой
+  function questDone(S, fid, q) {
+    const p = S.f[fid], cr = crew(S, fid), has = pos => cr.some(c => c.pos === pos);
+    switch (q.id) {
+      case 'right': case 'capo': case 'cons': case 'treas': return has(q.id);
+      case 'arms': return p.guns >= 5;
+      case 'grow': return count(S, fid) >= 2;
+      case 'build': return owned(S, fid).some(i => S.d[i].b.length);
+      case 'law': return Object.keys(p.off || {}).some(k => p.off[k] > 0);
+      case 'big': return Object.keys(p.proj || {}).some(k => (p.proj[k].stage || 0) > 0);
+    }
+    return false;
+  }
+  const questNow = (S, fid) => { const p = S.f[fid]; return p.human && (p.quest || 0) < D.QUESTS.length ? D.QUESTS[p.quest || 0] : null; };
+  function quest(S, fid, skip) {
+    const e = spend(S, fid, 0); if (e) return fail(e);
+    const p = S.f[fid], q = questNow(S, fid); if (!q) return fail('Заданий больше нет');
+    if (skip) { p.quest = D.QUESTS.length; return { ok: true, msg: 'Дед Хасан пожал плечами: дальше сам.' }; }
+    if (!questDone(S, fid, q)) return fail('Ещё не сделано: ' + q.how.charAt(0).toLowerCase() + q.how.slice(1));
+    const m = Math.round(q.$ * era(S)); p.money += m; addRep(S, fid, q.rep); p.quest = (p.quest || 0) + 1;
+    log(S, 'Дед Хасан доволен: «' + q.title + '». +' + m + ' тыс., авторитет +' + q.rep + '.', 'good', fid);
+    return { ok: true, msg: 'Задание «' + q.title + '» выполнено: +' + m + ' тыс., авторитет +' + q.rep };
+  }
   // машины ломаются: сломанная не возит бойцов, пока её не починят; автосервисы берегут парк
   const repairCost = (S, fid, k) => Math.max(2, Math.round(D.CARS[k].price * 0.3 * (1 - fxp(S, fid, 'car'))));
   const carSale = (k, broken) => Math.max(1, Math.round(D.CARS[k].price * (broken ? 0.15 : 0.45)));
@@ -1041,6 +1064,6 @@
     return V;
   }
 
-  const ACTIONS = { repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
-  G.Engine = { lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  const ACTIONS = { quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
+  G.Engine = { questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);
