@@ -351,6 +351,11 @@
     'car-w220': { src: 'img/car-w220.jpg', author: 'nakhon100', license: 'CC BY 2.0', url: W + 'Mercedes-Benz_S600_L_W220_(12373237945).jpg' },
     'car-lc100': { src: 'img/car-lc100.jpg', author: 'Dinkun Chen', license: 'CC BY-SA 4.0', url: W + 'TOYOTA_LAND_CRUISER_(J100)_China.jpg' },
     vest: { src: 'img/vest.jpg' }, // прислал владелец проекта
+    'car-x5': { src: 'img/car-x5.jpg', author: 'Dinkun Chen', license: 'CC BY-SA 4.0', url: W + 'BMW_X5_(E53)_China_(2).jpg' },
+    'car-escalade': { src: 'img/car-escalade.jpg', author: 'IFCAR', license: 'общественное достояние', url: W + 'Cadillac-Escalade.jpg' },
+    'car-rr': { src: 'img/car-rr.jpg', author: 'OSX', license: 'общественное достояние', url: W + '2002_Land_Rover_Range_Rover_(L322_MY03)_Vogue_wagon_(2015-07-03)_01.jpg' },
+    'car-cayenne': { src: 'img/car-cayenne.jpg', author: 'OWS Photography', license: 'CC BY 4.0', url: W + 'Porsche_Cayenne_S_(955)_Washington_DC_Metro_Area,_USA.jpg' },
+    'car-e65': { src: 'img/car-e65.jpg', author: 'Dinkun Chen', license: 'CC BY-SA 4.0', url: W + 'BMW_7_SERIES_(E65)_China.jpg' },
     'car-uaz': { src: 'img/car-uaz.jpg', author: 'Nikolai Bulykin', license: 'CC BY-SA 4.0', url: W + 'Бишкек,_УАЗ-452_на_Турусбекова.jpg' },
     'car-audi': { src: 'img/car-audi.jpg', author: 'Preiselbeere', license: 'CC BY-SA 3.0', url: W + 'Audi_100_C3,_BJ_1987.JPG' },
     'car-bmw': { src: 'img/car-bmw.jpg', author: 'Elveres', license: 'CC BY-SA 4.0', url: W + '1991_BMW_E34.jpg' },

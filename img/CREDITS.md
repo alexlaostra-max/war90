@@ -20,5 +20,11 @@
 | car-gelik.jpg | Mercedes-Benz 300 GE (W463) | Alexander Migl | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Mercedes-Benz W463 Cabriolet 300 GE](https://commons.wikimedia.org/wiki/File:Mercedes-Benz_W463_Cabriolet_300_GE_1X7A0244.jpg) |
 | car-w220.jpg | Mercedes-Benz S600 L (W220) | nakhon100 | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Mercedes-Benz S600 L W220](https://commons.wikimedia.org/wiki/File:Mercedes-Benz_S600_L_W220_(12373237945).jpg) |
 | car-lc100.jpg | Toyota Land Cruiser 100 | Dinkun Chen | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [TOYOTA LAND CRUISER (J100) China](https://commons.wikimedia.org/wiki/File:TOYOTA_LAND_CRUISER_(J100)_China.jpg) |
+| car-x5.jpg | BMW X5 (E53) | Dinkun Chen | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [BMW X5 (E53) China (2)](https://commons.wikimedia.org/wiki/File:BMW_X5_(E53)_China_(2).jpg) |
+| car-escalade.jpg | Cadillac Escalade | IFCAR | Общественное достояние | [Cadillac-Escalade](https://commons.wikimedia.org/wiki/File:Cadillac-Escalade.jpg) |
+| car-rr.jpg | Range Rover (L322) | OSX | Общественное достояние | [2002 Land Rover Range Rover (L322)](https://commons.wikimedia.org/wiki/File:2002_Land_Rover_Range_Rover_(L322_MY03)_Vogue_wagon_(2015-07-03)_01.jpg) |
+| car-cayenne.jpg | Porsche Cayenne S (955) | OWS Photography | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | [Porsche Cayenne S (955)](https://commons.wikimedia.org/wiki/File:Porsche_Cayenne_S_(955)_Washington_DC_Metro_Area,_USA.jpg) |
+| car-e65.jpg | BMW 7 (E65) | Dinkun Chen | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [BMW 7 SERIES (E65) China](https://commons.wikimedia.org/wiki/File:BMW_7_SERIES_(E65)_China.jpg) |
+
 
 vest.jpg — бронежилет: фото прислал владелец проекта, источник и лицензия не указаны. Права на него — на владельце проекта; при сомнениях замените фото со свободной лицензией.
