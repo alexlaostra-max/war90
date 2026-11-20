@@ -174,11 +174,30 @@
       scheduleBar(T, bar, next, bus, lead); next += T.beats * 60 / T.bpm; bar++;
     }
   }
+  // Айфон глушит Web Audio, когда включён беззвучный режим. Обход: режим «воспроизведение» (iOS 17+)
+  // и тихий зацикленный <audio> — он переводит звук страницы в медиаканал. Зовётся из нажатия.
+  let mute = null;
+  function unlockAudio(c) {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* старый браузер */ }
+    if (!mute && /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document) {
+      const n = 4000, buf = new ArrayBuffer(44 + n), v = new DataView(buf), w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+      w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true);
+      for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+      mute = document.createElement('audio'); mute.setAttribute('x-webkit-airplay', 'deny'); mute.preload = 'auto'; mute.loop = true;
+      mute.src = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+    }
+    if (mute) { const pr = mute.play(); if (pr && pr.catch) pr.catch(() => {}); }
+    if (c && c.state !== 'running') { try { c.resume(); } catch (e) { /* ignore */ } }
+  }
+  G.unlockAudio = unlockAudio;
+  // вернулись в приложение — звук мог остановиться (звонок, сворачивание)
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && on && ctx && ctx.state !== 'running') { unlockAudio(ctx); } });
   function start() {
     if (on) return true;
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
     if (!ctx) { ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.0001; master.connect(ctx.destination); }
-    if (ctx.state === 'suspended') ctx.resume();
+    unlockAudio(ctx);
     master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 0.5);
     on = true; load(ti < 0 ? Math.floor(Math.random() * TRACKS.length) : ti, ctx.currentTime + 0.1); tick(); timer = setInterval(tick, 200);
     return true;

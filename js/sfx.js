@@ -5,9 +5,10 @@
   let ctx = null, out = null, noise = null;
   let on = (() => { try { return localStorage.getItem(KEY) !== '0'; } catch (e) { return true; } })();
   function init() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return true; }
+    if (ctx) { if (ctx.state !== 'running' && G.unlockAudio) G.unlockAudio(ctx); else if (ctx.state === 'suspended') ctx.resume(); return true; }
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
     ctx = new AC(); out = ctx.createGain(); out.gain.value = 0.35; out.connect(ctx.destination);
+    if (G.unlockAudio) G.unlockAudio(ctx);
     noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     return true;
   }

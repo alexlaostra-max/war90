@@ -9,11 +9,13 @@ const PWA = '<link rel="manifest" href="manifest.webmanifest">\n<meta name="them
 const TG = '<script>if (/tgWebApp/.test(location.hash + location.search)) document.write(\'<script src="https://telegram.org/js/telegram-web-app.js"><\\/script>\');</script>';
 const SW_REG = '<script>if (\'serviceWorker\' in navigator && location.protocol === \'https:\') navigator.serviceWorker.register(\'sw.js\');</script>';
 const body = rd('src/body.html');
+// версия игры: хэш кода и стилей. Сервер сравнивает её с открытой у игрока и просит переподключиться после обновления
+const appVer = crypto.createHash('sha1').update(body).update(rd('css/style.css')).update(JS.map(f => rd('js/' + f + '.js')).join('')).digest('hex').slice(0, 10);
 
 fs.writeFileSync(path.join(__dirname, 'index.html'),
-  '<!doctype html>\n<html lang="ru">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<title>Передел</title>\n' + PWA + '\n' + TG + '\n' + FONTS +
-  '\n<link rel="stylesheet" href="css/style.css">\n<style>body{margin:0}[hidden]{display:none!important}</style>\n</head>\n<body>\n' + body +
-  JS.map(f => '<script src="js/' + f + '.js"></script>').join('\n') + '\n' + SW_REG + '\n</body>\n</html>\n');
+  '<!doctype html>\n<html lang="ru">\n<head>\n<meta charset="utf-8">\n<meta name="app-ver" content="' + appVer + '">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<title>Передел</title>\n' + PWA + '\n' + TG + '\n' + FONTS +
+  '\n<link rel="stylesheet" href="css/style.css?v=' + appVer + '">\n<style>body{margin:0}[hidden]{display:none!important}</style>\n</head>\n<body>\n' + body +
+  JS.map(f => '<script src="js/' + f + '.js?v=' + appVer + '"></script>').join('\n') + '\n' + SW_REG + '\n</body>\n</html>\n');
 
 fs.writeFileSync(path.join(__dirname, 'manifest.webmanifest'), JSON.stringify({
   name: 'Передел', short_name: 'Передел', description: 'Стратегия про Москву 1991–2007',

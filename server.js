@@ -11,6 +11,8 @@ const MAX_ROOMS = 200, ROOM_TTL = 14 * 24 * 3600e3;
 // комната без единого подключённого человека закрывается через 10 минут (боты не в счёт)
 const IDLE = +process.env.ROOM_IDLE_MS || 10 * 60e3;
 const FIDS = D.FACTIONS.map(f => f.id);
+// версия игры из собранного index.html: после git pull и перезапуска она новая, и клиенты просят переподключиться
+const VER = (() => { try { return (/<meta name="app-ver" content="(\w+)"/.exec(fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8')) || [])[1] || ''; } catch (e) { return ''; } })();
 // чат комнаты: хранится 100 последних сообщений, игрокам уходят 50, писать не чаще раза в секунду
 // таймер хода (минуты; 0 — без таймера) и через сколько офлайна бригаду забирает бот
 const TIMERS = [0, 3, 5, 10], AUTO_MS = +process.env.AUTO_MS || 3 * 60e3, MIN = +process.env.TIMER_UNIT_MS || 60e3;
@@ -59,7 +61,7 @@ function lobby(r, token) {
 }
 function payload(r, token) {
   const p = r.players[token];
-  return JSON.stringify({ lobby: lobby(r, token), state: r.started && p && p.fid ? E.viewFor(r.S, p.fid) : null });
+  return JSON.stringify({ ver: VER, lobby: lobby(r, token), state: r.started && p && p.fid ? E.viewFor(r.S, p.fid) : null });
 }
 function push(r) {
   r.touched = Date.now(); save();
@@ -205,6 +207,7 @@ function send(res, code, obj) { const s = JSON.stringify(obj); res.writeHead(cod
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/api/rooms' && req.method === 'GET') return send(res, 200, { rooms: listRooms() });
+  if (url.pathname === '/api/version' && req.method === 'GET') return send(res, 200, { v: VER });
   if (url.pathname === '/api/scores' && req.method === 'GET') return send(res, 200, { scores: scores.slice(0, 50) });
   if (url.pathname === '/api/stream' && req.method === 'GET') {
     const r = rooms.get(url.searchParams.get('room')), token = url.searchParams.get('token');

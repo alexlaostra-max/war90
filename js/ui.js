@@ -1016,6 +1016,21 @@
   }
   function leaveToMenu() { Net.close(); net = null; S = null; me = null; if (location.hash) history.replaceState(null, '', location.pathname); showStart(); }
 
+  // ---------- обновление игры: сервер на новой версии — просим переподключиться ----------
+  const VER = (document.querySelector('meta[name="app-ver"]') || {}).content || '';
+  let verAsked = false;
+  function checkVer(v) {
+    if (!VER || !v || v === VER || verAsked) return;
+    verAsked = true;
+    const box = document.createElement('div'); box.id = 'upd';
+    box.innerHTML = '<div><b>Игра обновилась</b><span>Переподключись, чтобы играть в новую версию. ' + (net ? 'Комната и бригада останутся.' : 'Партия сохранена.') + '</span></div><button class="btn primary" id="updgo">Переподключиться</button>';
+    document.body.appendChild(box); haptic('medium');
+    $('#updgo').addEventListener('click', () => { try { if (!net && S) { save(); sessionStorage.setItem('war90.resume', '1'); } } catch (e) { /* ignore */ } location.reload(); });
+  }
+  // одиночная игра тоже узнаёт об обновлении: спрашиваем сервер при возврате в игру и раз в 3 минуты
+  const pollVer = () => { if (!VER || verAsked || !/^https?:/.test(location.protocol)) return; fetch('api/version', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => j && checkVer(j.v)).catch(() => {}); };
+  setInterval(pollVer, 180e3); document.addEventListener('visibilitychange', () => { if (!document.hidden) pollVer(); });
+
   // ---------- онлайн ----------
   let leaving = false; window.addEventListener('pagehide', () => { leaving = true; }); window.addEventListener('beforeunload', () => { leaving = true; });
   function forget(room) { const m = Net.recall() || {}; delete m[room]; Net.remember(m); }
@@ -1027,6 +1042,7 @@
   }
   function onSync(msg) {
     if (!net) return;
+    checkVer(msg.ver);
     const prevT = net.lobby && net.lobby.chat && net.lobby.chat.length ? net.lobby.chat[net.lobby.chat.length - 1].t : 0;
     net.lobby = msg.lobby; chatNews(prevT);
     net.endAt = msg.lobby.left != null ? Date.now() + msg.lobby.left : null;
@@ -1070,6 +1086,8 @@
     if (data && data.S) { S = E.migrate(data.S); me = S.humans[0]; sel = data.sel; render(); return; }
     const sp = TG && TG.initDataUnsafe && TG.initDataUnsafe.start_param, m = /^#room-([\w-]+)$/.exec(location.hash) || (sp && /^room-([\w-]+)$/.exec(sp)), rec = Net.recall() || {};
     if (m && rec[m[1]]) { enterRoom(m[1], rec[m[1]]); return; }
+    let resume = false; try { resume = sessionStorage.getItem('war90.resume') === '1'; sessionStorage.removeItem('war90.resume'); } catch (e) { /* ignore */ }
+    if (resume && !m) { const sv = load(); if (sv) { S = sv; me = S.humans[0]; achShown = null; render(); return; } }
     showStart();
     if (m) Net.rooms().then(l => { if (l) Net.post('join', { room: m[1], nick: savedNick() }).then(r => r.room ? enterRoom(r.room, r.token) : toast(r.err, true)); });
   }
