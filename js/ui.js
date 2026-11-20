@@ -488,9 +488,45 @@
     return h + '</div>';
   }
 
+  // ---------- чат комнаты ----------
+  const QUICK = ['Готов', 'Жди, думаю', 'Мир?', 'Забьём стрелку', 'Без обид'];
+  const hhmm = t => { const d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  function chatLogHTML() {
+    const L = net.lobby, list = L.chat || [], my = L.me && L.me.cid;
+    if (!list.length) return '<p class="muted">Тишина. Напиши первым.</p>';
+    return list.map(m => { const f = m.f && D.FACTIONS.find(x => x.id === m.f); return '<p class="' + (m.c === my ? 'me' : '') + '"><b' + (f ? ' style="color:' + f.color + '"' : '') + '>' + esc(m.n) + '</b>' + (f ? ' <small>' + f.name + '</small>' : '') + ' <time>' + hhmm(m.t) + '</time><br>' + esc(m.x) + '</p>'; }).join('');
+  }
+  function chatHTML() {
+    if (!net || !net.lobby) return '';
+    return '<div class="box chat"><h3>Чат комнаты</h3><div id="chatlog" class="chatlog">' + chatLogHTML() + '</div>' +
+      '<div class="chatin"><input id="chatin" maxlength="300" placeholder="Сообщение" autocomplete="off" enterkeyhint="send"><button class="btn primary" data-a="say">Отправить</button></div>' +
+      '<div class="quick">' + QUICK.map(q => '<button class="btn sm ghost" data-a="sayq" data-k="' + esc(q) + '">' + q + '</button>').join('') + '</div></div>';
+  }
+  const chatBottom = () => { const lg = $('#chatlog'); if (lg) lg.scrollTop = lg.scrollHeight; };
+  const typing = () => document.activeElement && document.activeElement.id === 'chatin';
+  // пока человек печатает, панель не перерисовывается целиком, иначе слетит фокус и клавиатура на телефоне
+  function chatOnly() { const lg = $('#chatlog'); if (!lg || !typing()) return false; lg.innerHTML = chatLogHTML(); chatBottom(); return true; }
+  function chatSeen() { if (!net || !net.lobby) return; const l = net.lobby.chat || []; net.seenT = l.length ? l[l.length - 1].t : 0; net.unread = 0; }
+  // новые сообщения от других: счётчик на вкладке и всплывашка, если чат сейчас не на экране
+  function chatNews(prev) {
+    const L = net.lobby, list = L.chat || [], my = L.me && L.me.cid;
+    if (net.seenT == null) { chatSeen(); return; } // история при входе непрочитанной не считается
+    const fresh = list.filter(m => m.t > (prev || 0) && m.c !== my);
+    const shown = (!S && modalKey === 'lobby') || (S && section === 'clans');
+    if (shown) { chatSeen(); return; }
+    if (!fresh.length) return;
+    net.unread = (net.unread || 0) + fresh.length;
+    const m = fresh[fresh.length - 1]; toast('💬 ' + m.n + ': ' + m.x.slice(0, 80)); haptic('light'); if (G.Sfx) G.Sfx.play('msg');
+  }
+  function say(text) {
+    text = String(text || '').trim(); if (!text || !net) return;
+    netCall('say', { text }).then(r => { if (r.ok) { const i = $('#chatin'); if (i && i.value.trim() === text) i.value = ''; } });
+  }
+
   function paneClans() {
     const p = P();
     let h = '<h2>Группировки</h2><p class="sub">Сложность: ' + E.dif(S).name.toLowerCase() + '. Первые ' + E.dif(S).grace + ' месяцев боты не нападают на живых игроков. Родной район держится в ' + E.dif(S).home + ' раза крепче.</p><table class="tbl clans"><tr><th>Бригада</th><th>Районы</th><th>Сила</th><th></th></tr>';
+    h += chatHTML();
     D.FACTIONS.filter(f => !S.f[f.id].absent).sort((a, b) => E.count(S, b.id) - E.count(S, a.id)).forEach(f => {
       const x = S.f[f.id], mine = f.id === me;
       h += '<tr class="' + (x.alive ? '' : 'dead') + '"><td><span class="ava xs">' + A.bossFace(f) + '</span><i class="dot" style="background:' + f.color + '"></i>' + f.name + (mine ? ' (ты)' : x.human ? ' · ' + esc(x.nick || 'игрок') : '') + (!mine && !x.human && x.alive ? '<br><small class="' + relCls(E.rel(S, me, f.id)) + '">' + relName(E.rel(S, me, f.id)) + (E.inTruce(S, me, f.id) ? ' · мир до ' + E.date(p.truce[f.id]).label : '') + '</small>' : '') + '</td><td>' + E.count(S, f.id) + '</td><td>' + (x.alive ? R(E.power(x)) : '—') + '</td><td>';
@@ -528,8 +564,10 @@
     if (!S) return;
     renderTop(); paintMap(); achSync(); tgSync();
     // меню разделов под шапкой; у «Банды» и «Районов» справа панель, остальные разделы во всю ширину
-    $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + v[1] + '</button>').join('');
-    $('#tabbar').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(TABS[v[0]][0]) + '<span>' + TABS[v[0]][1] + '</span></button>').join('');
+    if (net && section === 'clans') chatSeen();
+    const un = v => v === 'clans' && net && net.unread ? '<i class="unread">' + net.unread + '</i>' : '';
+    $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + v[1] + un(v[0]) + '</button>').join('');
+    $('#tabbar').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(TABS[v[0]][0]) + '<span>' + TABS[v[0]][1] + '</span>' + un(v[0]) + '</button>').join('');
     if (section !== 'gang' && section !== 'map') sheet = false;
     $('#main').classList.toggle('msheet', sheet);
     $('#sheettitle').textContent = section === 'map' ? (sel == null ? 'Мои районы' : D.DISTRICTS[sel].name) : focus && focus.view ? { boss: 'Общак', men: 'Бойцы', arms: 'Арсенал', cars: 'Гараж' }[focus.view] : 'Досье';
@@ -540,8 +578,10 @@
     if (section === 'gang') renderOrg();
     const host = split ? $('#pane') : $('#page'), pk = section + ':' + (section === 'map' ? sel : section === 'gang' ? JSON.stringify(focus) : ''), keep = host.dataset.key === pk ? host.scrollTop : 0;
     const fn = { gang: paneDossier, map: paneDistrict, big: paneBig, law: paneLaw, clans: paneClans, log: paneLog }[section];
-    host.innerHTML = split ? fn() : '<div class="inner' + (section === 'big' ? ' wide' : '') + '">' + fn() + '</div>';
-    host.dataset.key = pk; host.scrollTop = keep;
+    if (!(section === 'clans' && chatOnly())) {
+      host.innerHTML = split ? fn() : '<div class="inner' + (section === 'big' ? ' wide' : '') + '">' + fn() + '</div>';
+      host.dataset.key = pk; host.scrollTop = keep; chatBottom();
+    }
     if (P().over) showOver(); else if (P().battle) showBattle(); else if ((P().assaults || []).length) showAssault(); else if (P().event) showEvent(); else if (parleyWith) showParley();
   }
 
@@ -565,6 +605,7 @@
   }
   const netCall = (name, body) => Net.post(name, Object.assign({ room: net.room, token: net.token }, body || {})).then(r => { if (r.err || r.ok === false) toast(r.err || r.msg, true); return r; });
 
+  document.addEventListener('keydown', e => { if (e.target && e.target.id === 'chatin' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); say(e.target.value); } });
   document.addEventListener('click', e => {
     const vb = e.target.closest('#menu [data-view], #tabbar [data-view]'); if (vb) { if (!S) return; section = vb.dataset.view; confirmNew = false; sheet = false; render(); if (section === 'map') applyView(); $('#page').scrollTop = 0; return; }
     const go = e.target.closest('#stats [data-go]'); if (go) { if (!S) return; const g = go.dataset.go.split(':'); section = g[0]; if (g[1]) { focus = { view: g[1] }; sheet = true; } else sheet = false; confirmNew = false; render(); return; }
@@ -586,6 +627,8 @@
     if (a === 'sendscore') { const nk = ($('#scorenick') || {}).value || ''; const o = P().over; try { localStorage.setItem('war90.nick', nk.trim()); } catch (er) { /* ignore */ } Net.post('score', { nick: nk, fid: me, title: o.title, score: o.score || E.scoreOf(S, me), date: E.date(S.turn).label, scen: S.scen || 's91', diff: S.diff }).then(r => { if (r.ok) { P().scoreSent = true; save(); toast('Ты в таблице рекордов: ' + r.place + '-е место'); const box = $('#scorebox'); if (box) box.innerHTML = '<p class="good">Записано: ' + r.place + '-е место в зале славы.</p>'; } else toast(r.err || 'Не вышло', true); }); return; }
     if (a === 'diff') { diff = k; try { localStorage.setItem('war90.diff', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=diff]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#diffnote').textContent = DIFF_NOTE[k]; return; }
     if (a === 'pick') { netCall('pick', { fid: k || null }); return; }
+    if (a === 'say') { const i = $('#chatin'); say(i && i.value); if (i) i.focus(); return; }
+    if (a === 'sayq') { say(k); return; }
     if (a === 'slot') { netCall('slot', { fid: k, mode: b.dataset.m }); return; }
     if (a === 'go') { netCall('start'); return; }
     if (a === 'leave') { netCall('leave').then(r => { if (r.ok) { forget(net.room); leaveToMenu(); } }); return; }
@@ -856,7 +899,8 @@
   }
   function onSync(msg) {
     if (!net) return;
-    net.lobby = msg.lobby;
+    const prevT = net.lobby && net.lobby.chat && net.lobby.chat.length ? net.lobby.chat[net.lobby.chat.length - 1].t : 0;
+    net.lobby = msg.lobby; chatNews(prevT);
     if (!msg.state) { S = null; showLobby(); return; }
     const first = !S; S = msg.state; me = S.me; if (first) achShown = null;
     if (first) { sel = E.owned(S, me)[0]; if (sel == null) sel = null; section = 'gang'; focus = { pos: 'right' }; if (modalKey === 'lobby') closeModal(); }
@@ -883,9 +927,11 @@
     h += '</div>';
     if (L.host) h += btn('Начать игру', 'go', '', humans ? false : 'сначала займи бригаду', 'primary wide');
     else h += '<p class="muted">Игру начнёт создатель комнаты.</p>';
+    if (modalKey === 'lobby' && chatOnly()) return;
+    h += chatHTML();
     const sc = modal.firstChild && modalKey === 'lobby' ? modal.firstChild.scrollTop : 0;
     openModal(h + btn('Выйти из комнаты', 'leave', '', false, 'wide ghost'), 'start', 'lobby');
-    modal.firstChild.scrollTop = sc;
+    modal.firstChild.scrollTop = sc; chatBottom(); chatSeen();
   }
 
   buildMap();

@@ -628,3 +628,17 @@ svg.art.face { aspect-ratio: 1; }
 .blog .dice i { font-style: normal; font-size: 18px; color: var(--gold); letter-spacing: 1px; vertical-align: -2px; }
 /* Telegram: свой заголовок у Телеграма, отступы под его панели */
 html.tg #app { padding-top: 4px; }
+
+/* чат комнаты */
+.chat h3 { margin-top: 0; }
+.chatlog { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 2px 2px 6px; overscroll-behavior: contain; }
+.chatlog p { margin: 0; padding: 6px 9px; background: var(--raise); border-radius: 6px; max-width: 88%; align-self: flex-start; overflow-wrap: anywhere; }
+.chatlog p.me { align-self: flex-end; background: #2a1d26; }
+.chatlog p.muted { background: none; }
+.chatlog small, .chatlog time { color: var(--dim); font: 11px var(--mono); }
+.chatin { display: flex; gap: 6px; margin-top: 6px; }
+.chatin input { flex: 1; min-width: 0; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; font: inherit; font-size: 16px; }
+.chat .quick { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.unread { display: inline-block; min-width: 16px; padding: 0 4px; margin-left: 5px; border-radius: 8px; background: var(--bad); color: #fff; font: 700 11px/16px var(--mono); font-style: normal; text-align: center; vertical-align: 2px; }
+#tabbar button { position: relative; }
+#tabbar .unread { position: absolute; top: 1px; right: calc(50% - 22px); margin: 0; }

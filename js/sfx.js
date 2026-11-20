@@ -24,6 +24,8 @@
     // событие: глухой удар и тянущийся бас
     event(t) { tone('sine', 110, t, 0.6, 0.3, 70); burst(t, 'lowpass', 400, 0.25, 0.4); },
     // достижение: короткое арпеджио
+    // сообщение в чате: короткий двойной щелчок
+    msg(t) { tone('sine', 1320, t, 0.08, 0.1); tone('sine', 1760, t + 0.09, 0.1, 0.08); },
     ach(t) { [784, 988, 1175, 1568].forEach((f, i) => tone('triangle', f, t + i * 0.08, 0.35, 0.12)); }
   };
   function play(kind) { if (!on || !SOUND[kind] || !init()) return; try { SOUND[kind](ctx.currentTime + 0.02); } catch (e) { /* звук не обязателен */ } }

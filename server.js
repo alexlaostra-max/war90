@@ -11,6 +11,8 @@ const MAX_ROOMS = 200, ROOM_TTL = 14 * 24 * 3600e3;
 // комната без единого подключённого человека закрывается через 10 минут (боты не в счёт)
 const IDLE = +process.env.ROOM_IDLE_MS || 10 * 60e3;
 const FIDS = D.FACTIONS.map(f => f.id);
+// чат комнаты: хранится 100 последних сообщений, игрокам уходят 50, писать не чаще раза в секунду
+const CHAT_KEEP = 100, CHAT_SHOW = 50, CHAT_GAP = 1000;
 const rooms = new Map();    // id -> room
 const streams = new Map();  // roomId -> Map(token -> Set(res))
 const emptySince = new Map(); // roomId -> с какого момента в комнате нет ни одного подключения
@@ -38,11 +40,13 @@ const live = r => { const m = streams.get(r.id); let n = 0; if (m) m.forEach(set
 function closeRoom(r) { rooms.delete(r.id); streams.delete(r.id); emptySince.delete(r.id); save(); }
 const online = (r, token) => { const m = streams.get(r.id); return !!(m && m.get(token) && m.get(token).size); };
 const taken = (r, fid) => Object.keys(r.players).find(t => r.players[t].fid === fid);
+const cidOf = p => p.cid || (p.cid = id(3)); // метка автора в чате, чтобы не светить токен
 function lobby(r, token) {
   return {
     id: r.id, name: r.name, started: r.started, host: r.host === token, slots: r.slots, diff: r.diff || 'norm', scen: r.scen || 's91',
-    me: r.players[token] ? { nick: r.players[token].nick, fid: r.players[token].fid } : null,
-    players: Object.keys(r.players).map(t => ({ nick: r.players[t].nick, fid: r.players[t].fid, host: t === r.host, online: online(r, t) }))
+    me: r.players[token] ? { nick: r.players[token].nick, fid: r.players[token].fid, cid: cidOf(r.players[token]) } : null,
+    players: Object.keys(r.players).map(t => ({ nick: r.players[t].nick, fid: r.players[t].fid, host: t === r.host, online: online(r, t) })),
+    chat: (r.chat || []).slice(-CHAT_SHOW)
   };
 }
 function payload(r, token) {
@@ -156,6 +160,16 @@ const api = {
     if (r.host !== token) return { ok: false, msg: 'Это может только создатель комнаты' };
     if (!r.started) return { ok: false, msg: 'Игра не началась' };
     const res = E.endTurn(r.S, true); push(r); return res;
+  },
+  say(b, r, token) {
+    const p = r.players[token], text = clean(b.text, 300).replace(/\s+/g, ' ');
+    if (!text) return { ok: false, msg: 'Пустое сообщение' };
+    const now = Date.now(); if (p.saidAt && now - p.saidAt < CHAT_GAP) return { ok: false, msg: 'Не так часто' };
+    p.saidAt = now;
+    if (!r.chat) r.chat = [];
+    r.chat.push({ id: now.toString(36) + id(2), t: now, n: p.nick, f: p.fid || null, c: cidOf(p), x: text });
+    if (r.chat.length > CHAT_KEEP) r.chat.splice(0, r.chat.length - CHAT_KEEP);
+    push(r); return { ok: true };
   },
   leave(b, r, token) {
     if (r.started) return { err: 'Из идущей игры выйти нельзя: твою бригаду некому вести' };
