@@ -17,7 +17,20 @@
   const R = Math.round;
   const P = () => S.f[me];
 
-  function save() { if (net) return; try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) { /* без сохранения */ } }
+  function save() { if (net) return; try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) { /* без сохранения */ } cloudAuto(); }
+  // облачное сохранение по коду: после первого раза партия сама уходит в облако раз в месяц игры
+  const CLOUD = 'war90.cloud';
+  const cloudCode = () => { try { return localStorage.getItem(CLOUD) || ''; } catch (e) { return ''; } };
+  let cloudTurn = -1;
+  function cloudPush(manual) {
+    if (!S || net) return;
+    Net.post('csave', { code: cloudCode() || null, state: S }).then(r => {
+      if (r.ok) { try { localStorage.setItem(CLOUD, r.code); } catch (e) { /* ignore */ } cloudTurn = S.turn; if (manual) { toast('Сохранено в облако. Код: ' + r.code); render(); } }
+      else if (manual) toast(r.err || 'Сервер недоступен', true);
+    });
+  }
+  function cloudAuto() { if (S && !net && cloudCode() && Net.available() && S.turn !== cloudTurn) cloudPush(false); }
+  const cloudHTML = () => { if (!Net.available()) return ''; const c = cloudCode(); return '<div class="box cloud"><h3>Облачное сохранение</h3>' + (c ? '<p>Твой код: <b class="code">' + c + '</b></p><p class="muted">Партия сама сохраняется в облако каждый месяц. Чтобы продолжить на другом устройстве или по новому адресу игры, введи этот код в меню.</p>' + btn('Сохранить сейчас', 'cloudsave', '', false, 'ghost') : '<p class="muted">Сохрани партию на сервер и получи код: по нему её можно продолжить с телефона, с компьютера или по новому адресу игры.</p>' + btn('Сохранить в облако и получить код', 'cloudsave', '', false, 'primary')) + '</div>'; };
   function load() { try { const s = JSON.parse(localStorage.getItem(SAVE)); return s && s.v === 4 && !s.done ? E.migrate(s) : null; } catch (e) { return null; } }
   function wipe() { try { localStorage.removeItem(SAVE); } catch (e) { /* ignore */ } }
 
@@ -494,7 +507,7 @@
     toast('Запись партии сохранена: ' + a.download);
   }
   function paneLog() {
-    let h = '<h2>Хроника</h2><div class="box">' + achHTML() + '</div><div class="box rec"><p>Запись партии: что было каждый месяц, какие решения ты принимал. Пришли файл разработчику — по нему настроят баланс.</p>' + btn('Скачать запись партии', 'export', '', false, 'wide') + '</div><ul class="log">' + S.log.filter(l => !l.to || l.to === me).slice(0, 60).map(l => '<li class="' + l.k + '"><time>' + E.date(l.t).label + '</time>' + esc(l.s) + '</li>').join('') + '</ul>';
+    let h = '<h2>Хроника</h2>' + cloudHTML() + '<div class="box">' + achHTML() + '</div><div class="box rec"><p>Запись партии: что было каждый месяц, какие решения ты принимал. Пришли файл разработчику — по нему настроят баланс.</p>' + btn('Скачать запись партии', 'export', '', false, 'wide') + '</div><ul class="log">' + S.log.filter(l => !l.to || l.to === me).slice(0, 60).map(l => '<li class="' + l.k + '"><time>' + E.date(l.t).label + '</time>' + esc(l.s) + '</li>').join('') + '</ul>';
     if (net) return h + btn('Выйти в меню', 'menu', '', false, 'wide ghost') + '<p class="muted">Комната останется, вернуться можно с этого же устройства.</p>';
     h += confirmNew ? '<div class="box"><p>Начать заново? Текущая партия пропадёт.</p><div class="grid"><button class="btn" data-a="new2">Да, заново</button><button class="btn" data-a="new0">Отмена</button></div></div>' : btn('Новая игра', 'new1', '', false, 'wide ghost');
     return h;
@@ -555,6 +568,8 @@
     if (a === 'refresh') { showStart(); return; }
     if (a === 'scen') { scen = k; try { localStorage.setItem('war90.scen', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=scen]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#scennote').textContent = D.SCENARIOS[k].desc; return; }
     if (a === 'records') { showRecords(); return; }
+    if (a === 'cloudsave') { cloudPush(true); return; }
+    if (a === 'cloudload') { Net.post('cload', { code: ($('#cloudcode') || {}).value || '' }).then(r => { if (!r.ok) { toast(r.err || 'Сервер недоступен', true); return; } S = E.migrate(r.state); me = S.humans[0]; net = null; achShown = null; try { localStorage.setItem(CLOUD, r.code); } catch (er) { /* ignore */ } cloudTurn = S.turn; save(); closeModal(); render(); toast('Партия загружена: ' + fd(me).name + ', ' + E.date(S.turn).label); }); return; }
     if (a === 'install') { if (installEv) { installEv.prompt(); installEv.userChoice.finally(() => { installEv = null; const bx = $('#installbox'); if (bx) bx.hidden = true; }); } return; }
     if (a === 'menu0') { showStart(); return; }
     if (a === 'sendscore') { const nk = ($('#scorenick') || {}).value || ''; const o = P().over; try { localStorage.setItem('war90.nick', nk.trim()); } catch (er) { /* ignore */ } Net.post('score', { nick: nk, fid: me, title: o.title, score: o.score || E.scoreOf(S, me), date: E.date(S.turn).label, scen: S.scen || 's91', diff: S.diff }).then(r => { if (r.ok) { P().scoreSent = true; save(); toast('Ты в таблице рекордов: ' + r.place + '-е место'); const box = $('#scorebox'); if (box) box.innerHTML = '<p class="good">Записано: ' + r.place + '-е место в зале славы.</p>'; } else toast(r.err || 'Не вышло', true); }); return; }
@@ -780,6 +795,7 @@
     const sv = load();
     let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + diffHTML() + scenHTML() + '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button>' + installHTML();
     h += '<div class="modes"><section><h3>Онлайн</h3><div id="online"><p class="muted">Ищу сервер…</p></div></section><section><h3>Одиночная игра</h3>';
+    h += '<div class="row cloadrow"><label class="field"><span>Продолжить по коду из облака</span><input id="cloudcode" maxlength="9" placeholder="K7F3-9QX2" autocapitalize="characters" value="' + esc(cloudCode()) + '"></label><button class="btn" data-a="cloudload">Загрузить</button></div>';
     if (sv) h += '<button class="btn primary wide" data-a="continue">Продолжить: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
     h += '<p class="muted">Выбери бригаду. Остальных ведут боты.</p><div class="factions">';
     D.FACTIONS.forEach(f => { const d = D.DISTRICTS.find(x => x.name === f.home); h += '<button class="fac" data-a="start" data-k="' + f.id + '"><span class="ava">' + A.bossFace(f) + '</span><i style="background:' + f.color + '"></i><b>' + f.name + '</b><span>' + f.home + ', ' + D.OKRUGS[d.ok].short + '</span><small>' + esc(f.perk) + '</small></button>'; });

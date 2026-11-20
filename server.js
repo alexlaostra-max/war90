@@ -74,6 +74,25 @@ function addScore(b) {
   return { ok: true, place: scores.indexOf(row) + 1 };
 }
 
+// ---------- облачные сохранения одиночной игры: партия хранится под кодом вида K7F3-9QX2 ----------
+const SAVES = path.join(path.dirname(STORE), 'saves');
+const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const newCode = () => { const b = crypto.randomBytes(8); let s = ''; for (let i = 0; i < 8; i++) s += CODE_ABC[b[i] % CODE_ABC.length]; return s.slice(0, 4) + '-' + s.slice(4); };
+const codeOk = c => typeof c === 'string' && /^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(c);
+function cloudSave(b, done) {
+  const st = b.state;
+  if (!st || typeof st !== 'object' || st.v !== 4 || !Array.isArray(st.humans) || !st.f || !st.d) return done({ err: 'Это не сохранение игры' });
+  const code = codeOk(b.code) ? b.code : newCode();
+  fs.mkdir(SAVES, { recursive: true }, () => fs.writeFile(path.join(SAVES, code + '.json'), JSON.stringify(st), err => done(err ? { err: 'Не удалось сохранить' } : { ok: true, code, at: Date.now() })));
+}
+function cloudLoad(b, done) {
+  const code = String(b.code || '').toUpperCase().replace(/[^A-Z2-9]/g, '').replace(/^(.{4})(.{4})$/, '$1-$2');
+  if (!codeOk(code)) return done({ err: 'Код вида K7F3-9QX2' });
+  fs.readFile(path.join(SAVES, code + '.json'), 'utf8', (err, txt) => { if (err) return done({ err: 'Сохранение не найдено' }); try { done({ ok: true, code, state: JSON.parse(txt) }); } catch (e) { done({ err: 'Сохранение повреждено' }); } });
+}
+// старые облачные сохранения (полгода без обновления) удаляются
+setInterval(() => fs.readdir(SAVES, (err, fl) => { if (err) return; fl.forEach(f => fs.stat(path.join(SAVES, f), (e, st) => { if (!e && Date.now() - st.mtimeMs > 180 * 864e5) fs.unlink(path.join(SAVES, f), () => {}); })); }), 864e5).unref();
+
 // ---------- API ----------
 const api = {
   create(b) {
@@ -166,13 +185,16 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname.startsWith('/api/') && req.method === 'POST') {
     const name = url.pathname.slice(5); let body = '';
-    if (!Object.prototype.hasOwnProperty.call(api, name) && name !== 'score') return send(res, 404, { err: 'Нет такого метода' });
-    req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
+    const big = name === 'csave';
+    if (!Object.prototype.hasOwnProperty.call(api, name) && !['score', 'csave', 'cload'].includes(name)) return send(res, 404, { err: 'Нет такого метода' });
+    req.on('data', c => { body += c; if (body.length > (big ? 3e6 : 10000)) req.destroy(); });
     req.on('end', () => {
       let b; try { b = JSON.parse(body || '{}'); } catch (e) { return send(res, 400, { err: 'Плохой запрос' }); }
       if (!b || typeof b !== 'object') return send(res, 400, { err: 'Плохой запрос' });
       if (name === 'create') return send(res, 200, api.create(b));
       if (name === 'score') return send(res, 200, addScore(b));
+      if (name === 'csave') return cloudSave(b, r => send(res, 200, r));
+      if (name === 'cload') return cloudLoad(b, r => send(res, 200, r));
       const r = rooms.get(b.room); if (!r) return send(res, 200, { err: 'Комната не найдена' });
       if (name !== 'join' && !r.players[b.token]) return send(res, 200, { err: 'Тебя нет в этой комнате' });
       try { send(res, 200, api[name](b, r, b.token)); } catch (e) { console.error(e); send(res, 500, { err: 'Ошибка сервера' }); }
