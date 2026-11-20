@@ -531,7 +531,7 @@
     const fn = { gang: paneDossier, map: paneDistrict, big: paneBig, law: paneLaw, clans: paneClans, log: paneLog }[section];
     host.innerHTML = split ? fn() : '<div class="inner' + (section === 'big' ? ' wide' : '') + '">' + fn() + '</div>';
     host.dataset.key = pk; host.scrollTop = keep;
-    if (P().over) showOver(); else if (P().event) showEvent(); else if (P().battle) showBattle(); else if (parleyWith) showParley();
+    if (P().over) showOver(); else if (P().battle) showBattle(); else if ((P().assaults || []).length) showAssault(); else if (P().event) showEvent(); else if (parleyWith) showParley();
   }
 
   // ---------- действия ----------
@@ -617,6 +617,7 @@
     else if (a === 'talk') act('parley', [parleyWith, k, b.dataset.i != null ? +b.dataset.i : null]);
     else if (a === 'pclose') { parleyWith = null; closeModal(); render(); }
     else if (a === 'tac') act('battle', [k]);
+    else if (a === 'defend') act('defend', [+k, b.dataset.h]);
     else if (a === 'promote') act('promote', []);
     else if (a === 'proj') act('projStep', [k, b.dataset.h || null]);
     else if (a === 'cashout') act('cashOut', []);
@@ -676,15 +677,33 @@
     const key = 'battle:' + B.round + ':' + B.i; if (modalKey === key) return;
     const dd = D.DISTRICTS[B.i], foe = B.foe && S.f[B.foe] ? fd(B.foe) : null, l = E.crew(S, me).find(c => c.st === 'ok' && ((c.pos === 'capo' && c.ok === dd.ok) || c.pos === 'right'));
     const bar = (v, v0, cls, brk) => '<div class="bbar ' + cls + '"><em style="width:' + Math.max(0, Math.min(100, v / v0 * 100)) + '%"></em>' + (brk ? '<s style="left:' + E.BREAK * 100 + '%"></s>' : '') + '</div>';
-    let h = '<p class="eyebrow">' + E.KINDS[B.lvl] + ' · раунд ' + (B.round + 1) + ' из ' + E.BATTLE_ROUNDS + '</p><h2>Перестрелка: ' + esc(dd.name) + '</h2>';
-    h += '<div class="vs"><div><span class="ava">' + (l ? A.face(l) : A.bossFace(fd(me))) + '</span><b>' + (l ? esc(E.cname(l)) : 'Ты лично') + '</b><small>ведёт ' + B.men + ' бойцов</small>' + bar(B.a, B.a0, 'our', true) + '<small>силы ' + R(Math.max(0, B.a)) + ' из ' + R(B.a0) + '</small></div><i>×</i><div><span class="ava">' + (foe ? A.bossFace(foe) : shpana(B.i)) + '</span><b>' + (foe ? esc(foe.name) : 'Местная шпана') + '</b><small>' + (foe ? esc(foe.boss) : 'держат дворы') + '</small>' + bar(B.d, B.d0, 'their') + '<small>оборона ' + R(Math.max(0, B.d)) + ' из ' + R(B.d0) + '</small></div></div>';
-    h += '<p class="muted">Район наш, когда оборона упадёт до нуля. Если наших сил останется меньше черты, бойцы дрогнут. На всё ' + E.BATTLE_ROUNDS + ' раундов.</p>';
-    if (B.log.length) h += '<ol class="blog">' + B.log.map(x => '<li><b>' + E.TACTICS[x.t].name + '</b>' + (x.note ? ' · ' + esc(x.note) : '') + '<span><em class="good">урон ' + x.dealt + '</em> <em class="bad">получили ' + x.took + '</em></span></li>').join('') + '</ol>';
+    let h = '<p class="eyebrow">' + (B.def ? 'Оборона' : E.KINDS[B.lvl]) + ' · раунд ' + (B.round + 1) + ' из ' + E.BATTLE_ROUNDS + '</p><h2>' + (B.def ? 'Отбиваемся: ' : 'Перестрелка: ') + esc(dd.name) + '</h2>';
+    h += '<div class="vs"><div><span class="ava">' + (l ? A.face(l) : A.bossFace(fd(me))) + '</span><b>' + (l ? esc(E.cname(l)) : 'Ты лично') + '</b><small>ведёт ' + B.men + ' бойцов</small>' + bar(B.a, B.a0, 'our', true) + '<small>силы ' + R(Math.max(0, B.a)) + ' из ' + R(B.a0) + '</small></div><i>×</i><div><span class="ava">' + (foe ? A.bossFace(foe) : shpana(B.i)) + '</span><b>' + (foe ? esc(foe.name) : 'Местная шпана') + '</b><small>' + (foe ? esc(foe.boss) : 'держат дворы') + '</small>' + bar(B.d, B.d0, 'their') + '<small>' + (B.def ? 'натиск ' : 'оборона ') + R(Math.max(0, B.d)) + ' из ' + R(B.d0) + '</small></div></div>';
+    h += '<p class="muted">' + (B.def ? 'Отобьёмся, если их натиск упадёт до нуля или продержимся ' + E.BATTLE_ROUNDS + ' раундов. Если наших сил останется меньше черты, бойцы дрогнут и район уйдёт.' : 'Район наш, когда оборона упадёт до нуля. Если наших сил останется меньше черты, бойцы дрогнут. На всё ' + E.BATTLE_ROUNDS + ' раундов.') + '</p>';
+    h += '<p class="units">Урон за раунд: наш <b>' + R(Math.max(0, B.a) * 0.32) + '</b>, их <b>' + R(Math.max(0, B.d) * 0.28) + '</b> · броня: наша <b>' + R((B.armU || 0) * 100) + '%</b>, их <b>' + R((B.armT || 0) * 100) + '%</b> · кубики 2d6: ×0.71…×1.29, ⚅⚅ — в упор ×1.5, ⚀⚀ — осечка ×0.5</p>';
+    const die = n => '⚀⚁⚂⚃⚄⚅'[n - 1];
+    if (B.log.length) h += '<ol class="blog">' + B.log.map(x => '<li><b>' + E.TACTICS[x.t].name + '</b>' + (x.note ? ' · ' + esc(x.note) : '') + (x.du ? '<span class="dice">мы <i>' + die(x.du[0]) + die(x.du[1]) + '</i> ' + x.bu + ' × ' + x.our + ' × ' + x.ku + ' → <em class="good">' + x.dealt + '</em> · они <i>' + die(x.dt[0]) + die(x.dt[1]) + '</i> ' + x.bt + ' × ' + x.their + ' × ' + x.kt + ' → <em class="bad">' + x.took + '</em></span>' : '<span><em class="good">урон ' + x.dealt + '</em> <em class="bad">получили ' + x.took + '</em></span>') + '</li>').join('') + '</ol>';
     h += '<div class="tacts">' + Object.keys(E.TACTICS).map(t => {
       const T = E.TACTICS[t], lock = E.tacticLock(S, me, t), extra = t === 'flank' ? 'удача ' + R(E.flankOdds(S, me) * 100) + '%' : t === 'talk' ? 'шанс ' + R(E.talkOdds(S, me)) + '%' : t === 'rpg' ? 'РПГ: ' + ((p.arms || {}).rpg || 0) : t === 'snipe' ? 'СВД: ' + ((p.arms || {}).svd || 0) : '';
       return '<button class="card' + (t === 'storm' || t === 'flank' || t === 'rpg' ? ' atk' : '') + (t === 'retreat' ? ' ghost' : '') + '" data-a="tac" data-k="' + t + '"' + (lock ? ' disabled' : '') + '><b>' + T.name + '</b><span>' + esc(T.desc) + '</span>' + (extra ? '<small>' + extra + '</small>' : '') + (lock ? '<small class="bad">' + lock + '</small>' : '') + '</button>';
     }).join('') + '</div>';
     openModal(h, 'event battle', key);
+  }
+  // наезд на район: вступить в бой, откупиться, сдать или положиться на своих
+  function showAssault() {
+    const p = P(), x = p.assaults[0]; if (!x) return;
+    const key = 'as:' + x.att + ':' + x.i + ':' + p.assaults.length; if (modalKey === key) return;
+    const dd = D.DISTRICTS[x.i], f = fd(x.att), our = E.districtDef(S, x.i), odds = R(E.defendOdds(S, me, x, true) * 100), oddsA = R(E.defendOdds(S, me, x, false) * 100), cost = E.buyOffCost(S, x), cp = E.crew(S, me).find(c => c.st === 'ok' && c.pos === 'capo' && c.ok === dd.ok);
+    if (G.Sfx) G.Sfx.play('siren');
+    let h = '<div class="evscene">' + A.eventScene('law', 'as' + x.i) + '</div><p class="eyebrow">Наезд · ' + E.date(S.turn).label + (p.assaults.length > 1 ? ' · ещё ' + (p.assaults.length - 1) : '') + '</p><h2>' + esc(f.name) + ' напали на ' + esc(dd.name) + '</h2>';
+    h += '<div class="vs"><div><span class="ava">' + (cp ? A.face(cp) : A.bossFace(fd(me))) + '</span><b>' + (cp ? esc(E.cname(cp)) : 'Твои на районе') + '</b><small>оборона ' + R(our) + '</small></div><i>×</i><div><span class="ava">' + A.bossFace(f) + '</span><b>' + esc(f.name) + '</b><small>едут ' + x.men + ' бойцов · сила ' + x.a + '</small></div></div>';
+    h += '<p class="lead">Машины у ' + esc(dd.name) + ', пацаны с битами и стволами. Решать надо сейчас.</p><div class="opts">';
+    h += '<button class="opt" data-a="defend" data-k="0" data-h="fight"><span>Вступить в бой: приводишь подмогу, сам командуешь по раундам</span><em>отобьёмся ~' + odds + '%</em></button>';
+    h += '<button class="opt" data-a="defend" data-k="0" data-h="auto"><span>' + (cp ? 'Пусть ' + esc(cp.nick) + ' разберётся сам' : 'Пусть пацаны на районе разберутся сами') + '</span><em>~' + oddsA + '%</em></button>';
+    h += '<button class="opt" data-a="defend" data-k="0" data-h="pay"' + (p.money < cost ? ' disabled' : '') + '><span>Откупиться</span><em>' + cost + ' тыс.</em>' + (p.money < cost ? '<small>Не хватает денег</small>' : '') + '</button>';
+    h += '<button class="opt" data-a="defend" data-k="0" data-h="give"><span>Сдать район без крови</span><em class="bad">авторитет −4</em></button></div>';
+    h += '<p class="muted">Если ничего не решить до конца месяца, бой пройдёт без тебя.</p>';
+    openModal(h, 'event', key);
   }
   function showBattleEnd(r) {
     openModal('<p class="eyebrow">Итог перестрелки</p><h2>' + esc(r.title) + '</h2><p class="lead ' + (r.win ? 'good' : 'bad') + '">' + esc(r.msg) + '</p><button class="btn primary wide" data-a="close">Дальше</button>', 'event', 'bres');

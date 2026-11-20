@@ -415,19 +415,27 @@
     return null;
   }
   // один раунд; rand — источник случайности (для оценки шансов — Math.random, в игре — сид)
+  // Кубики: каждая сторона бросает 2d6. Сумма даёт множитель ×0.71…×1.29, две шестёрки — «в упор» ×1.5, две единицы — «осечка» ×0.5.
+  // Урон за раунд = база (сила стороны × 0.32 или 0.28) × тактика × кубики × (1 − броня противника)
+  const roll = rand => [1 + Math.floor(rand() * 6), 1 + Math.floor(rand() * 6)];
+  const diceK = d => (d[0] === 6 && d[1] === 6 ? 1.5 : d[0] === 1 && d[1] === 1 ? 0.5 : 1) * (0.6 + (d[0] + d[1]) / 17.5);
   function roundCalc(B, t, rand, extra) {
     const T = TACTICS[t]; let our = T.our || 0, their = T.their == null ? 1 : T.their, bonus = 0, note = '';
     if (t === 'flank') { const ok = rand() < extra.flank; our = ok ? 1.9 : 0.4; their = ok ? 0.5 : 1.4; note = ok ? 'зашли с тыла' : 'нарвались на засаду'; }
     if (t === 'rpg') bonus = B.d0 * 0.2;
-    if (t === 'talk') { if (rand() * 100 < extra.talk) return { dealt: B.d, took: 0, note: 'сдались и ушли с района', surrender: true }; our = 0; their = 1; note = 'послали подальше'; }
-    const dealt = B.a * 0.32 * our * (0.8 + rand() * 0.4) + bonus, took = B.d * 0.28 * their * (0.8 + rand() * 0.4);
-    return { dealt, took, note };
+    if (t === 'talk') { if (rand() * 100 < extra.talk) return { dealt: B.d, took: 0, note: B.def ? 'договорились, они уехали' : 'сдались и ушли с района', surrender: true }; our = 0; their = 1; note = 'послали подальше'; }
+    const du = roll(rand), dt = roll(rand), ku = diceK(du), kt = diceK(dt), baseU = B.a * 0.32, baseT = B.d * 0.28, armU = B.armU || 0, armT = B.armT || 0;
+    if (du[0] === 6 && du[1] === 6) note += (note ? ', ' : '') + 'в упор'; if (du[0] === 1 && du[1] === 1) note += (note ? ', ' : '') + 'осечка';
+    const dealt = baseU * our * ku * (1 - armT) + bonus, took = baseT * their * kt * (1 - armU);
+    return { dealt, took, note, du, dt, ku, kt, baseU, baseT, our, their, armU, armT };
   }
-  function battleSim(a, d, rand) { // оценка: штурм, пока сильнее, иначе из укрытия
+  function battleSim(a, d, rand) { // оценка: штурм, пока сильнее, иначе из укрытия (a — нападающий, d — оборона)
     const B = { a, a0: a, d, d0: d };
     for (let r = 0; r < BATTLE_ROUNDS; r++) { const x = roundCalc(B, B.a >= B.d ? 'storm' : 'cover', rand, {}); B.d -= x.dealt; B.a -= x.took; if (B.d <= 0) return true; if (B.a <= B.a0 * BREAK) return false; }
     return false;
   }
+  // броня: броники у бойцов, до 30% урона; в обороне ещё 10% — свои дворы и стены
+  const armorOf = (p, men) => Math.round(Math.min(1, (p.vests || 0) / Math.max(1, men)) * 0.3 * 100) / 100;
   function attack(S, fid, i, lvl) {
     const e = spend(S, fid, 1); if (e) return fail(e);
     if (!S.d[i] || !SHARES[lvl]) return fail('Нет такой цели');
@@ -437,23 +445,29 @@
     if (p.men < 3) return fail('Некого посылать');
     p.ap--;
     const men = strike(p, SHARES[lvl]), a = power(p) * men / Math.max(1, p.men) * atkMult(S, fid, i) * rr(S, 0.9, 1.1), dv = districtDef(S, i) * rr(S, 0.9, 1.1);
-    p.battle = { i, lvl, men, a, a0: a, d: dv, d0: dv, round: 0, log: [], foe: d.o, held: okrugHeld(S, fid, dd.ok) };
+    p.battle = { i, lvl, men, a, a0: a, d: dv, d0: dv, round: 0, log: [], foe: d.o, held: okrugHeld(S, fid, dd.ok), armU: armorOf(p, men), armT: d.o ? 0.1 : 0 };
     addHeat(S, fid, HEATS[lvl] + (dd.ok === 'CAO' ? 2 : 0));
     return { ok: true, msg: KINDS[lvl] + ': ' + dd.name + '. Едут ' + men + ' бойцов', battle: true };
   }
   function battle(S, fid, t) {
     const p = S.f[fid]; if (!p || !p.human || p.over || S.done) return fail('Игра окончена');
     const B = p.battle; if (!B) return fail('Перестрелки нет');
-    if (t === 'retreat') return finishBattle(S, fid, false, 'Ты увёл людей');
+    if (t === 'retreat') return B.def ? defendEnd(S, fid, false, 'Ты отвёл людей и сдал район') : finishBattle(S, fid, false, 'Ты увёл людей');
     const lock = tacticLock(S, fid, t); if (lock) return fail(lock);
     if (t === 'rpg') { p.arms.rpg--; p.guns--; }
     if (t === 'flank') B.flank = 1;
     const x = roundCalc(B, t, () => rnd(S), { flank: flankOdds(S, fid), talk: talkOdds(S, fid) });
     B.d -= x.dealt; B.a -= x.took; B.round++;
-    B.log.push({ t, dealt: Math.round(x.dealt), took: Math.round(x.took), note: x.note });
-    if (x.surrender || B.d <= 0) return finishBattle(S, fid, true, x.surrender ? 'Они сдались' : 'Район зачищен');
-    if (B.a <= B.a0 * BREAK) return finishBattle(S, fid, false, 'Бойцы дрогнули');
-    if (B.round >= BATTLE_ROUNDS) return finishBattle(S, fid, false, 'Не продавили: район устоял');
+    B.log.push({ t, dealt: Math.round(x.dealt), took: Math.round(x.took), note: x.note, du: x.du, dt: x.dt, ku: x.ku && +x.ku.toFixed(2), kt: x.kt && +x.kt.toFixed(2), our: x.our, their: x.their, bu: x.baseU && Math.round(x.baseU), bt: x.baseT && Math.round(x.baseT) });
+    if (B.def) {
+      if (x.surrender || B.d <= 0) return defendEnd(S, fid, true, x.surrender ? 'Договорились: они уехали' : 'Отбились: нападавшие бежали');
+      if (B.a <= B.a0 * BREAK) return defendEnd(S, fid, false, 'Наши дрогнули');
+      if (B.round >= BATTLE_ROUNDS) return defendEnd(S, fid, true, 'Не прорвались: атака выдохлась');
+    } else {
+      if (x.surrender || B.d <= 0) return finishBattle(S, fid, true, x.surrender ? 'Они сдались' : 'Район зачищен');
+      if (B.a <= B.a0 * BREAK) return finishBattle(S, fid, false, 'Бойцы дрогнули');
+      if (B.round >= BATTLE_ROUNDS) return finishBattle(S, fid, false, 'Не продавили: район устоял');
+    }
     return { ok: true, msg: TACTICS[t].name + ': урон ' + Math.round(x.dealt) + ', получили ' + Math.round(x.took) + (x.note ? ' (' + x.note + ')' : ''), round: true };
   }
   function finishBattle(S, fid, win, why) {
@@ -478,6 +492,50 @@
       log(S, 'Не удалось взять ' + dd.name + '. Потери: ' + r.la, 'bad', fid);
     }
     return { ok: true, msg, win: r.win, battleEnd: true, title: (r.win ? 'Взят район ' : 'Перестрелка за ') + dd.name };
+  }
+  // ---------- наезды на районы игрока ----------
+  const assaultValid = (S, fid, x) => S.d[x.i].o === fid && S.f[x.att] && S.f[x.att].alive;
+  const buyOffCost = (S, x) => Math.round(x.a * 1.6 * era(S));
+  // сам вступаешь в бой — приводишь подмогу: половину сил бригады сверх гарнизона района
+  const defPower = (S, fid, x, full) => districtDef(S, x.i) + (full ? power(S.f[fid]) * 0.5 : 0);
+  function defendOdds(S, fid, x, full) { const a = defPower(S, fid, x, full); let w = 0; for (let k = 0; k < 200; k++) if (!battleSim(x.a * (0.9 + Math.random() * 0.2), a * (0.9 + Math.random() * 0.2), Math.random, true)) w++; return w / 200; }
+  function resolveAssault(S, fid, x, how) {
+    const p = S.f[fid]; p.assaults = (p.assaults || []).filter(y => y !== x);
+    if (!assaultValid(S, fid, x)) return { ok: true, msg: 'Наезд отменился сам собой' };
+    const nm = D.DISTRICTS[x.i].name, who = fdef(x.att).name;
+    if (how === 'pay') { const c = buyOffCost(S, x); if (p.money < c) return fail('Не хватает денег: нужно ' + c); p.money -= c; addRel(S, fid, x.att, 5); addRep(S, fid, -1); log(S, who + ' получили ' + c + ' тыс. и отъехали от ' + nm + '.', '', fid); return { ok: true, msg: 'Откупился: ' + c + ' тыс. ' + who + ' уехали.' }; }
+    if (how === 'give') { S.d[x.i].o = x.att; S.d[x.i].ent = false; addRep(S, fid, -4); log(S, 'Ты сдал ' + nm + ' бригаде ' + who + ' без боя.', 'bad', fid); p.lostNow = (p.lostNow || []).concat(nm); if (count(S, fid) === 0) eliminate(S, fid); return { ok: true, msg: nm + ' отошёл к ' + who + '. Без крови.' }; }
+    const r = fight(S, x.att, x.i, 0.65);
+    return { ok: true, msg: r.win ? who + ' взяли ' + nm + '. Наши потери: ' + r.ld : nm + ' устоял без тебя. Наши потери: ' + r.ld, battleEnd: true, win: !r.win, title: 'Наезд на ' + nm };
+  }
+  function defend(S, fid, k, how) {
+    const p = S.f[fid]; if (!p || !p.human || p.over || S.done) return fail('Игра окончена');
+    if (p.battle) return fail('Сначала закончи перестрелку');
+    const x = (p.assaults || [])[+k]; if (!x) return fail('Наезда нет');
+    if (how !== 'fight') return resolveAssault(S, fid, x, how);
+    if (!assaultValid(S, fid, x)) { p.assaults.splice(+k, 1); return fail('Район уже не твой'); }
+    p.assaults.splice(+k, 1);
+    const a = defPower(S, fid, x, true) * rr(S, 0.9, 1.1), men = Math.max(3, Math.round(p.men * Math.min(1, defFactor(count(S, fid)) + 0.5)));
+    p.battle = { def: true, i: x.i, att: x.att, men, attMen: x.men, a, a0: a, d: x.a, d0: x.a, round: 0, log: [], foe: x.att, armU: Math.round((armorOf(p, men) + 0.1) * 100) / 100, armT: 0.05 };
+    return { ok: true, msg: 'Ты вступил в бой за ' + D.DISTRICTS[x.i].name, battle: true };
+  }
+  function defendEnd(S, fid, win, why) {
+    const p = S.f[fid], B = p.battle, i = B.i, nm = D.DISTRICTS[i].name, A0 = S.f[B.att], who = fdef(B.att).name;
+    p.battle = null;
+    const lost = clamp(1 - Math.max(0, B.a) / B.a0, 0, 1);
+    let la = Math.round(B.men * lost * 0.3 * (win ? 1 : 1.3) * (1 - fxp(S, fid, 'med')) * vestK(p, B.men)); la = Math.min(la, p.men);
+    const lb = Math.min(A0.men, Math.round(B.attMen * clamp((B.d0 - Math.max(0, B.d)) / B.d0, 0, 1) * 0.5));
+    p.men -= la; p.guns = Math.max(0, p.guns - Math.floor(la / 2)); A0.men -= lb; A0.guns = Math.max(0, A0.guns - Math.floor(lb / 2));
+    let msg;
+    if (win) { addRep(S, fid, 3); msg = why + '. ' + nm + ' остался твоим. Наши потери: ' + la + ', у ' + who + ': ' + lb; log(S, 'Отбили наезд ' + who + ' на ' + nm + '. Потери: ' + la + ', у них ' + lb, 'good', fid); }
+    else {
+      S.d[i].o = B.att; S.d[i].ent = false; addRep(S, fid, -3); p.lostNow = (p.lostNow || []).concat(nm);
+      const cp = capoOf(S, fid, D.DISTRICTS[i].ok); if (cp && rnd(S) < 0.2 / armorK(p) * 0.5) fate(S, fid, cp, 'hurt', 'защищая ' + nm);
+      msg = why + '. ' + who + ' забрали ' + nm + '. Наши потери: ' + la;
+      log(S, who + ' отбили у тебя ' + nm + '. Потери: ' + la, 'bad', fid);
+      if (count(S, fid) === 0) eliminate(S, fid);
+    }
+    return { ok: true, msg, win, battleEnd: true, title: (win ? 'Отбились: ' : 'Потерян район ') + nm };
   }
   function winOdds(S, fid, i, lvl) { // оценка без изменения состояния: прогон перестрелки
     const def = districtDef(S, i), p = S.f[fid], base = power(p) * strike(p, SHARES[lvl]) / Math.max(1, p.men) * atkMult(S, fid, i); let w = 0;
@@ -1079,8 +1137,13 @@
       if (best < 0) continue;
       const bo = S.d[best].o, hum = bo && S.f[bo].human;
       if (power(f) * strike(f, 0.65) / Math.max(1, f.men) < districtDef(S, best) * (hum ? (rel(S, bo, fid) <= -50 ? 1.15 : X.ratio) : 1.2)) continue;
+      if (hum && S.f[bo].alive && !S.f[bo].over) {
+        // на район живого игрока: наезд встаёт в очередь, в начале месяца игрок решает — вступить в бой, откупиться или сдать
+        const P0 = S.f[bo]; P0.assaults = (P0.assaults || []).filter(x => x.i !== best);
+        const men = strike(f, 0.65); P0.assaults.push({ att: fid, i: best, men, a: Math.round(power(f) * men / Math.max(1, f.men) * rr(S, 0.85, 1.15)), t: S.turn + 1 });
+        S.hits[bo] = (S.hits[bo] || 0) + 1; continue;
+      }
       const r = fight(S, fid, best, 0.65);
-      if (hum && r.win) S.hits[bo] = (S.hits[bo] || 0) + 1;
       if (!hum && r.win && r.prev) log(S, fdef(fid).name + ' забрали ' + D.DISTRICTS[best].name + ' у бригады ' + fdef(r.prev).name + '.');
     }
   }
@@ -1117,7 +1180,7 @@
   function endTurn(S, force) {
     if (S.done) return fail('Игра окончена');
     if (!force && active(S).some(h => S.f[h].event)) return fail('Сначала реши, что делать с событием');
-    active(S).forEach(h => { if (S.f[h].battle) finishBattle(S, h, false, 'Месяц кончился'); snapshot(S, h); S.f[h].event = null; S.f[h].queue = []; humanPhase(S, h); });
+    active(S).forEach(h => { if (S.f[h].battle) { if (S.f[h].battle.def) defendEnd(S, h, false, 'Месяц кончился'); else finishBattle(S, h, false, 'Месяц кончился'); } (S.f[h].assaults || []).slice().forEach(x => resolveAssault(S, h, x, 'auto')); snapshot(S, h); S.f[h].event = null; S.f[h].queue = []; humanPhase(S, h); });
     S.hits = {};
     D.FACTIONS.forEach(f => { if (!S.f[f.id].human) aiTurn(S, f.id); });
     active(S).forEach(h => { if (count(S, h) === 0) eliminate(S, h); });
@@ -1180,7 +1243,7 @@
     if (p.hist.length > 220) p.hist.shift();
     p.month = { acts: {}, ev: [] };
   }
-  const ACTIONS = { setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
+  const ACTIONS = { defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
-  G.Engine = { checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);

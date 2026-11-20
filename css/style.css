@@ -621,3 +621,8 @@ svg.art.face { aspect-ratio: 1; }
 .box.install { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; border-color: #5a4a2a; } .box.install p { margin: 0 0 6px; }
 .box.cloud .code { font: 400 20px var(--mono); color: var(--gold); letter-spacing: .08em; }
 .cloadrow { margin: 6px 0 12px; } .cloadrow .field { flex: 1; } .cloadrow input { text-transform: uppercase; font-family: var(--mono); }
+
+/* кубики в перестрелке */
+.units { font: 12px var(--mono); color: var(--dim); margin: 4px 0 8px; } .units b { color: var(--fg); font-weight: 400; }
+.blog .dice { display: block; font: 12px var(--mono); color: var(--dim); margin-top: 2px; }
+.blog .dice i { font-style: normal; font-size: 18px; color: var(--gold); letter-spacing: 1px; vertical-align: -2px; }
