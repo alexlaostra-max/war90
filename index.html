@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="app-ver" content="cd2d61e1f5">
+<meta name="app-ver" content="8312e78eaa">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Передел</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Передел">
 <script>if (/tgWebApp/.test(location.hash + location.search)) document.write('<script src="https://telegram.org/js/telegram-web-app.js"><\/script>');</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans:wght@400;700&family=Russo+One&display=swap">
-<link rel="stylesheet" href="css/style.css?v=cd2d61e1f5">
+<link rel="stylesheet" href="css/style.css?v=8312e78eaa">
 <style>body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -30,6 +30,7 @@
   </header>
   <div id="bar"><nav id="menu" aria-label="Разделы"></nav><div id="ap" aria-label="Ходы в этом месяце"></div></div>
   <div id="strip"><div id="perks" aria-label="Что дают точки империи"></div></div>
+  <div id="specbar" hidden></div>
   <main id="main">
     <section id="stage" aria-label="Раздел">
       <div id="org"></div>
@@ -37,6 +38,8 @@
         <svg id="map" preserveAspectRatio="xMidYMid meet"></svg>
         <div id="zoom"><button data-z="1" aria-label="Приблизить">+</button><button data-z="-1" aria-label="Отдалить">−</button><button data-z="0" aria-label="Вся карта">◎</button></div>
         <button id="mylist" class="btn sm" data-a="dlist">Мои районы</button>
+        <button id="maphelp" data-a="tip" data-k="map" title="Как брать районы" aria-label="Как брать районы">?</button>
+        <div id="maptip" hidden></div>
         <p id="legend"><span><i class="lg mine"></i>твои</span><span><i class="lg target"></i>можно напасть</span><span><i class="lg ent"></i>предприятие</span></p>
       </div>
       <div id="page" hidden></div>
@@ -47,15 +50,15 @@
 </div>
 <div id="modal" hidden></div>
 <div id="toast" hidden role="status"></div>
-<script src="js/data.js?v=cd2d61e1f5"></script>
-<script src="js/events.js?v=cd2d61e1f5"></script>
-<script src="js/geo.js?v=cd2d61e1f5"></script>
-<script src="js/engine.js?v=cd2d61e1f5"></script>
-<script src="js/art.js?v=cd2d61e1f5"></script>
-<script src="js/net.js?v=cd2d61e1f5"></script>
-<script src="js/music.js?v=cd2d61e1f5"></script>
-<script src="js/sfx.js?v=cd2d61e1f5"></script>
-<script src="js/ui.js?v=cd2d61e1f5"></script>
+<script src="js/data.js?v=8312e78eaa"></script>
+<script src="js/events.js?v=8312e78eaa"></script>
+<script src="js/geo.js?v=8312e78eaa"></script>
+<script src="js/engine.js?v=8312e78eaa"></script>
+<script src="js/art.js?v=8312e78eaa"></script>
+<script src="js/net.js?v=8312e78eaa"></script>
+<script src="js/music.js?v=8312e78eaa"></script>
+<script src="js/sfx.js?v=8312e78eaa"></script>
+<script src="js/ui.js?v=8312e78eaa"></script>
 <script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js');</script>
 </body>
 </html>

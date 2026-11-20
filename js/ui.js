@@ -144,6 +144,7 @@
       el.classList.toggle('foe', !!o && o !== me);
       el.classList.toggle('target', E.attackable(S, me, i));
       el.classList.toggle('sel', i === sel);
+      el.classList.toggle('watched', spectating && !!o && o === watchFid);
     });
     svg.querySelectorAll('.ent').forEach(el => el.classList.toggle('got', S.d[+el.dataset.m].ent));
     const s = svg.querySelector('.cell.sel'); if (s) s.parentNode.appendChild(s);
@@ -155,7 +156,7 @@
     $('#date').textContent = E.date(S.turn).label + (net ? ' · ' + net.lobby.name : '');
     // показатель шапки: значок, подпись, число, пояснение
     // нажатие ведёт туда, где этим показателем управляют
-    const GO = { money: 'gang:boss', men: 'gang:men', gun: 'gang:arms', car: 'gang:cars', rep: 'gang:boss', conn: 'law' };
+    const GO = { money: 'cash', men: 'gang:men', gun: 'gang:arms', car: 'gang:cars', rep: 'gang:boss', conn: 'law' };
     const st = (k, l, v, x, cls) => '<button class="st s-' + k + ' ' + (cls || '') + '" data-go="' + GO[k] + '" title="' + l + '">' + A.icon(k) + '<div><span>' + l + '</span><b>' + v + '</b>' + (x ? '<i>' + x + '</i>' : '') + '</div></button>';
     let pips = ''; for (let i = 0; i < E.apMax(S, me); i++) pips += '<u class="' + (i < p.ap ? 'on' : '') + '"></u>';
     $('#stats').innerHTML =
@@ -175,8 +176,8 @@
   }
 
   // ---------- вкладки ----------
-  const VIEWS = [['gang', 'Банда'], ['map', 'Районы'], ['big', 'Крупные дела'], ['law', 'Власть'], ['clans', 'Группировки'], ['log', 'Хроника']];
-  const TABS = { gang: ['men', 'Банда'], map: ['map', 'Районы'], big: ['deal', 'Дела'], law: ['law', 'Власть'], clans: ['clans', 'Группы'], log: ['log', 'Хроника'] };
+  const VIEWS = [['gang', 'Банда'], ['cash', 'Общак'], ['map', 'Районы'], ['big', 'Крупные дела'], ['law', 'Власть'], ['clans', 'Группировки'], ['log', 'Хроника']];
+  const TABS = { gang: ['men', 'Банда'], cash: ['money', 'Общак'], map: ['map', 'Районы'], big: ['deal', 'Дела'], law: ['law', 'Власть'], clans: ['clans', 'Группы'], log: ['log', 'Хроника'] };
   const btn = (label, a, attrs, lock, cls) => '<button class="btn ' + (cls || '') + '" data-a="' + a + '" ' + (attrs || '') + (lock ? ' disabled' : '') + '>' + label + (lock && typeof lock === 'string' ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
   const kindTag = k => '<span class="tag ' + k + '">' + ({ w: 'белый', g: 'серый', b: 'чёрный' }[k]) + '</span>';
   const who = f => fd(f).name + (S.f[f].human && S.f[f].nick ? ' · ' + esc(S.f[f].nick) : '');
@@ -187,7 +188,7 @@
   // точки района: что стоит, что можно улучшить и что построить
   function pointsHTML(i) {
     const d = S.d[i], dd = D.DISTRICTS[i], p = P();
-    let h = '<h3>Точки <span class="muted">' + d.b.length + ' из ' + dd.slots + '</span></h3>';
+    let h = '<h3>Точки <span class="muted">' + d.b.length + ' из ' + dd.slots + '</span> ' + tipAsk('mine') + '</h3>';
     if (d.b.length) h += '<div class="ptiles">' + d.b.map((b, x) => {
       const B = D.BUILDS[b], lv = E.pointLvl(d, x), c = E.upgradeCost(S, i, x), inc = E.pointInc(me, b, i);
       return '<div class="ptile"><div class="pimg">' + A.build(b, lv) + '<b class="lvb">' + ROMAN[lv] + '</b></div><div class="pinfo"><b>' + B.name + '</b><span class="good">+' + inc * lv + ' в мес.' + (E.pointGood(b, i) ? ' · место +50%' : '') + '</span>' + (B.perk ? '<small class="perk">' + esc(perkAt(B, lv)) + '</small>' : '') + '</div>' +
@@ -205,11 +206,51 @@
   }
   // особенности района: чипы с подсказкой, что это за место
   const traitChips = dd => '<div class="traits">' + dd.t.map(t => '<span class="trait" title="' + esc(D.TRAITS[t].desc) + '">' + D.TRAITS[t].name + '</span>').join('') + '</div>';
+  // ---------- обучение: подсказки к экранам (показываются, пока не нажмёшь «Понятно»; «?» открывает снова) ----------
+  const TIPS = {
+    map: { title: 'Как брать районы', steps: [
+      'Твои районы закрашены твоим цветом. Районы с <b>пунктирной обводкой</b> граничат с твоими — их можно брать.',
+      'Нажми на пунктирный район. Откроется карточка с тремя кнопками: <b>Наезд</b> — едет треть бригады, <b>Разборка</b> — две трети, <b>Война</b> — все.',
+      'Под кнопками написан шанс победы. Чем больше людей едет, тем выше шанс, но больше розыск и потери.',
+      'Каждое нападение тратит один <b>ход</b> — жёлтые кружки внизу. В месяц 3 хода; правая рука и целые округа добавляют.',
+      'Дальше перестрелка: каждый раунд выбираешь тактику, урон решают кубики. Победил — район твой.',
+      'Сила — это бойцы <b>со стволами</b>. Без ствола боец почти бесполезен. Тачки везут на дело больше людей. Всё это — во вкладке «Банда».'] },
+    mine: { title: 'Твой район: как он приносит деньги', steps: [
+      'Каждый твой район платит <b>дань</b> раз в месяц. Но главные деньги дают <b>точки</b> — бизнесы, которые ты строишь ниже.',
+      'Мест под точки мало: сколько занято и сколько всего — видно в заголовке «Точки».',
+      'Метка <b>«+50% здесь»</b> — точка подходит району (у вокзала — вокзальная крыша, у реки — причал) и приносит в полтора раза больше. <b>«Особая»</b> — бывает только там, где есть рынок, вокзал или парк.',
+      'Построенную точку можно улучшить до <b>III уровня</b>: с каждым уровнем доход растёт.',
+      'Белые точки (ресторан, бутик) дают чистые деньги. Чёрные (бордель, цех) дают больше, но поднимают розыск.',
+      'Поставь <b>смотрящего</b> — он поднимает оборону и дань района. А бригадир округа сам ставит смотрящих и строит точки.'] },
+    cash: { title: 'Общак: откуда деньги и куда уходят', steps: [
+      '<b>Касса</b> — все твои деньги. Ниже по строкам видно, что приходит за месяц (дань, точки) и что уходит (бойцы, люди во власти).',
+      '<b>Белый нал</b> — отмытые деньги с белых точек: при облавах их не трогают. <b>Чёрный</b> — с улицы: при розыске от 60 милиция изымает часть.',
+      'Часть кассы можно держать в <b>долларах</b>: рубль дешевеет каждый год, а в августе 1998-го будет дефолт.',
+      'Если месяц в минусе — бери районы, строй точки или отпусти лишних бойцов.'] }
+  };
+  const TIP_KEY = 'war90.tips';
+  const tipsSeen = () => { try { return JSON.parse(localStorage.getItem(TIP_KEY)) || {}; } catch (e) { return {}; } };
+  let tipOpen = {}; // подсказки, открытые кнопкой «?»
+  const tipOn = k => tipOpen[k] || !tipsSeen()[k];
+  function tipHTML(k) {
+    const T = TIPS[k]; if (!T || !tipOn(k)) return '';
+    return '<div class="tip"><p class="eyebrow">Как играть</p><h3>' + T.title + '</h3><ol>' + T.steps.map(x => '<li>' + x + '</li>').join('') + '</ol><button class="btn sm primary" data-a="tipok" data-k="' + k + '">Понятно</button></div>';
+  }
+  const tipAsk = k => '<button class="tipq" data-a="tip" data-k="' + k + '" title="Как это работает" aria-label="Как это работает">?</button>';
+  // подсказка на карте поверх неё, пока не закрыта; районы для нападения подсвечиваются
+  function mapTip() {
+    const box = $('#maptip'); if (!box) return;
+    const on = S && section === 'map' && tipOn('map') && !P().over;
+    box.hidden = !on; box.innerHTML = on ? tipHTML('map') : '';
+    svg.classList.toggle('teach', on);
+  }
+
   function paneDistrict() {
-    if (sel == null) return paneDist();
+    if (sel == null) return spectating && P().over ? watchPane() : paneDist();
     const d = S.d[sel], dd = D.DISTRICTS[sel], p = P(), mine = d.o === me, c = E.conn(S, me);
     const ids = E.okrugIds(dd.ok), have = ids.filter(i => S.d[i].o === me).length;
     let h = '<button class="btn sm ghost back" data-a="dlist">← Все мои районы · ' + E.count(S, me) + '</button><h2>' + esc(dd.name) + '</h2><p class="sub">' + D.OKRUGS[dd.ok].name + ' · у тебя ' + have + ' из ' + ids.length + '</p>' + traitChips(dd);
+    if (mine) h += tipHTML('mine');
     h += '<dl class="kv"><dt>Хозяин</dt><dd>' + (mine ? 'Ты' : d.o ? '<i class="dot" style="background:' + fd(d.o).color + '"></i>' + who(d.o) : 'Местная шпана') + '</dd><dt>Оборона</dt><dd>' + E.districtDef(S, sel) + '</dd>' + (mine ? (() => { const cp = E.crew(S, me).find(x => x.pos === 'capo' && x.ok === dd.ok); return '<dt>Бригадир</dt><dd>' + (cp ? '<button class="link" data-a="person" data-id="' + cp.id + '">' + esc(E.cname(cp)) + '</button>' : '<button class="link" data-a="slot" data-pos="capo" data-ok="' + dd.ok + '">нет, назначить</button>') + '</dd>'; })() : '') + '<dt>Дань</dt><dd>' + dd.inc + ' в мес.</dd>' + (dd.m ? '<dt>Рынок</dt><dd>есть</dd>' : '') + '</dl>';
     if (dd.ent) {
       const e = dd.ent;
@@ -241,7 +282,7 @@
   // общак: что приходит и уходит за месяц, вложения, кто на зоне
   function paneBoss() {
     const p = P(), inc = E.income(S, me), cap = E.menCap(S, me);
-    let h = '<p class="eyebrow">Глава · общак</p><h2>' + fd(me).name + '</h2><p class="sub">' + esc(fd(me).perk) + '</p>';
+    let h = '<p class="eyebrow">Глава · общак ' + tipAsk('cash') + '</p><h2>' + fd(me).name + '</h2><p class="sub">' + esc(fd(me).perk) + '</p>';
     h += '<dl class="kv"><dt>Сила бригады</dt><dd>' + R(E.power(p)) + '</dd><dt>Касса</dt><dd>' + R(p.money) + ' тыс. $</dd><dt>Белый нал</dt><dd class="good">' + E.cash(p).white + '</dd><dt>Чёрный нал</dt><dd>' + E.cash(p).black + '</dd><dt>В долларах</dt><dd class="good">' + E.cur(p).usd + '</dd><dt>В рублях</dt><dd>' + E.cur(p).rub + '</dd><dt>Авторитет</dt><dd>' + R(p.rep) + '</dd><dt>Бойцы</dt><dd>' + p.men + ' из ' + cap + '</dd><dt>Районы</dt><dd>' + E.count(S, me) + ' из 102</dd></dl>';
     h += '<h3>Касса за месяц</h3><table class="tbl">' + inc.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="' + (r[1] < 0 ? 'bad' : 'good') + '">' + sign(r[1]) + '</td></tr>').join('') + '<tr class="sum"><td>Итого</td><td>' + sign(inc.total) + '</td></tr></table>';
     const tot = inc.white + inc.black;
@@ -687,7 +728,7 @@
 
   function render() {
     if (!S) return;
-    renderTop(); paintMap(); achSync(); tgSync();
+    renderTop(); const sb = $('#specbar'); if (sb) { sb.innerHTML = specHTML(); sb.hidden = !sb.innerHTML; } paintMap(); achSync(); tgSync(); mapTip();
     // меню разделов под шапкой; у «Банды» и «Районов» справа панель, остальные разделы во всю ширину
     if (net && section === 'log') chatSeen();
     const un = v => v === 'log' && net && net.unread ? '<i class="unread" title="Непрочитанных: ' + net.unread + '" aria-label="Непрочитанных сообщений: ' + net.unread + '">!</i>' : '';
@@ -703,12 +744,12 @@
     $('#org').hidden = section !== 'gang'; $('#mapview').hidden = section !== 'map'; $('#page').hidden = split;
     if (section === 'gang') renderOrg();
     const host = split ? $('#pane') : $('#page'), pk = section + ':' + (section === 'map' ? sel : section === 'gang' ? JSON.stringify(focus) : ''), keep = host.dataset.key === pk ? host.scrollTop : 0;
-    const fn = { gang: paneDossier, map: paneDistrict, big: paneBig, law: paneLaw, clans: paneClans, log: paneLog }[section];
+    const fn = { gang: paneDossier, cash: () => tipHTML('cash') + paneBoss(), map: paneDistrict, big: paneBig, law: paneLaw, clans: paneClans, log: paneLog }[section];
     if (!(section === 'log' && chatOnly())) {
       host.innerHTML = split ? fn() : '<div class="inner' + (section === 'big' ? ' wide' : '') + '">' + fn() + '</div>';
       host.dataset.key = pk; host.scrollTop = keep; chatBottom();
     }
-    if (P().over) showOver(); else if (P().battle) showBattle(); else if ((P().assaults || []).length) showAssault(); else if (P().event) showEvent(); else if (net && incoming()) showOffer(); else if (dealWith) showDeal(); else if (parleyWith) showParley(); else if (/^(offer|deal):/.test(modalKey)) closeModal();
+    if (P().over && (!spectating || S.done || overPeek)) showOver(); else if (P().over) { if (/^(over|heat):/.test(modalKey)) closeModal(); } else if (P().battle) showBattle(); else if ((P().assaults || []).length) showAssault(); else if (P().event) showEvent(); else if (heatWarn()) showHeat(); else if (net && incoming()) showOffer(); else if (dealWith) showDeal(); else if (parleyWith) showParley(); else if (/^(offer|deal):/.test(modalKey)) closeModal();
   }
 
   // ---------- действия ----------
@@ -756,6 +797,8 @@
     if (a === 'menu0') { showStart(); return; }
     if (a === 'sendscore') { const nk = ($('#scorenick') || {}).value || ''; const o = P().over; try { localStorage.setItem('war90.nick', nk.trim()); } catch (er) { /* ignore */ } Net.post('score', { nick: nk, fid: me, title: o.title, score: o.score || E.scoreOf(S, me), date: E.date(S.turn).label, scen: S.scen || 's91', diff: S.diff }).then(r => { if (r.ok) { P().scoreSent = true; save(); toast('Ты в таблице рекордов: ' + r.place + '-е место'); const box = $('#scorebox'); if (box) box.innerHTML = '<p class="good">Записано: ' + r.place + '-е место в зале славы.</p>'; } else toast(r.err || 'Не вышло', true); }); return; }
     if (a === 'diff') { diff = k; try { localStorage.setItem('war90.diff', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=diff]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#diffnote').textContent = DIFF_NOTE[k]; return; }
+    if (a === 'tipok') { const m = tipsSeen(); m[k] = 1; try { localStorage.setItem(TIP_KEY, JSON.stringify(m)); } catch (er) { /* ignore */ } delete tipOpen[k]; render(); return; }
+    if (a === 'tip') { tipOpen[k] = 1; if (k === 'map') { section = 'map'; sheet = false; } render(); if (k !== 'map') { const h = $(sheet ? '#pane' : '#page'); if (h) h.scrollTop = 0; const pn = $('#pane'); if (pn) pn.scrollTop = 0; } return; }
     if (a === 'pick') { netCall('pick', { fid: k || null }); return; }
     if (a === 'say') { const i = $('#chatin'); say(i && i.value); if (i) i.blur(); return; }
     if (a === 'sayq') { say(k); return; }
@@ -780,6 +823,10 @@
     else if (a === 'raid') act('raid', [di]);
     else if (a === 'unassign') act('unassign', [+b.dataset.id]);
     else if (a === 'dismiss') act('dismiss', [+b.dataset.id]);
+    else if (a === 'heatok') { heatSeen = S.turn; closeModal(); render(); }
+    else if (a === 'heatgo') { heatSeen = S.turn; closeModal(); section = 'law'; sheet = false; render(); }
+    else if (a === 'spectate') { spectating = true; overPeek = false; closeModal(); section = 'map'; sel = null; sheet = false; render(); }
+    else if (a === 'specover') { overPeek = true; render(); }
     else if (a === 'doom') { doom = { id: +b.dataset.id, kind: k }; render(); }
     else if (a === 'doom0') { doom = null; render(); }
     else if (a === 'doom1') { const d = doom; doom = null; act(d.kind === 'frame' ? 'frame' : 'execute', [d.id]); }
@@ -827,7 +874,7 @@
     else if (a === 'new2') { confirmNew = false; wipe(); leaveToMenu(); }
     else if (a === 'close') { closeModal(); render(); }
   });
-  document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.a === 'reassign' && t.value) { const v = t.value.split('|'); act('assign', [+t.dataset.id, v[0], v[1] || null]); } });
+  document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.a === 'watch') { watchFid = t.value; sel = null; section = 'map'; sheet = true; render(); return; } if (t.dataset && t.dataset.a === 'reassign' && t.value) { const v = t.value.split('|'); act('assign', [+t.dataset.id, v[0], v[1] || null]); } });
   $('#end').addEventListener('click', () => {
     if (!S || P().over) return;
     if (net) { netCall('ready', { ready: !P().ready }); return; }
@@ -943,9 +990,12 @@
     openModal(rain + '<p class="eyebrow">' + esc(r.title) + '</p>' + (wc ? '<div class="evwho"><span class="ava">' + A.face(wc) + '</span><div><b>' + esc(E.cname(wc)) + '</b><small>' + (wc.st === 'hurt' ? 'ранен' : wc.st === 'jail' ? 'сидит' : 'сила ' + wc.str + ', ум ' + wc.wit + ', верность ' + wc.loy) + '</small></div></div>' : '') + '<p class="lead">' + esc(r.msg) + '</p><p class="deltas">' + (ch || '<span>Без последствий</span>') + '</p><button class="btn primary wide" data-a="close">Дальше</button>', 'event', 'result');
     if (!net) renderTop();
   }
+  const WHY = { 'СИЗО «Лефортово»': 'Розыск дошёл до 100 из 100. На этом уровне за тобой приходит ФСБ, и откупиться можно, только если связей во власти 8 и больше и в кассе хватает денег. Розыск сбивают люди во власти (вкладка «Власть»), «Занести наверх», юрист и перерыв в нападениях.', 'Вынесли из Москвы': 'У бригады не осталось ни одного района: их забрали соседи. Оборону держат смотрящие, бригадиры и бойцы со стволами.', 'Убит на стрелке': 'Правая рука — сильный и неверный (верность 2 и ниже) — устроил переворот. Таких лучше снимать с должности или казнить заранее.', 'Казначей в бегах с общаком': 'Казначей с верностью 2 и ниже сбежал со всей кассой. Казначеем нужно ставить верного.' };
   function showOver() {
     const o = P().over, key = 'over:' + S.done; if (modalKey === key) return;
     let h = '<p class="eyebrow">' + E.date(S.turn).label + '</p><h2>' + esc(o.title) + '</h2><p class="lead">' + esc(o.text) + '</p>';
+    if (WHY[o.title]) h += '<div class="box why"><h3>Почему так вышло</h3><p>' + WHY[o.title] + '</p></div>';
+    if (net && !S.done) h += btn('👁 Смотреть за игрой дальше', 'spectate', '', false, 'wide primary') + '<p class="muted">Карта, чат и бригады других игроков — до конца партии.</p>';
     if (o.stats) h += '<dl class="kv"><dt>Счёт</dt><dd>' + o.score + '</dd><dt>Касса</dt><dd>' + o.stats.money + ' тыс. $</dd><dt>Районы</dt><dd>' + o.stats.districts + '</dd><dt>Авторитет</dt><dd>' + o.stats.rep + '</dd><dt>Связи</dt><dd>' + o.stats.conn + '</dd><dt>Белый доход</dt><dd>' + o.stats.white + '%</dd></dl>';
     if (net && S.humans.length > 1) {
       h += '<h3>Игроки</h3><table class="tbl">' + S.humans.map(f => { const x = S.f[f]; return '<tr><td><i class="dot" style="background:' + fd(f).color + '"></i>' + who(f) + '</td><td>' + (x.over ? esc(x.over.title) + (x.over.score ? ' · ' + x.over.score : '') : 'ещё играет') + '</td></tr>'; }).join('') + '</table>';
@@ -954,6 +1004,39 @@
     if (Net.available() && !P().scoreSent && o.title && D.ENDINGS.includes(o.title)) h += '<div class="box" id="scorebox"><h3>Зал славы</h3><div class="row"><label class="field"><span>Имя в таблице рекордов</span><input id="scorenick" maxlength="20" value="' + esc(savedNick()) + '"></label><button class="btn primary" data-a="sendscore">Записать · ' + (o.score || E.scoreOf(S, me)) + '</button></div></div>';
     h += '<div class="donate"><p>Понравилась игра? Поддержи автора — каждый перевод идёт на новые районы, события и музыку.</p><div class="drow"><span><b>Т-Банк</b><small>перевод по номеру телефона</small></span><button class="btn" data-a="copyphone" title="Скопировать номер">' + DONATE_SHOW + '<small>нажми, чтобы скопировать</small></button></div></div>';
     openModal(h + '<button class="btn wide" data-a="export">Скачать запись партии</button><button class="btn primary wide" data-a="menu">В меню</button>', 'event', key);
+  }
+
+  // предупреждение о розыске: от 80 раз в месяц, чтобы СИЗО не стало сюрпризом
+  let heatSeen = -1;
+  const heatWarn = () => !P().over && P().heat >= 80 && heatSeen !== S.turn;
+  function showHeat() {
+    const p = P(), key = 'heat:' + S.turn; if (modalKey === key) return;
+    const ok = E.conn(S, me) >= 8, c = Math.round(300 * E.era(S));
+    let h = '<p class="eyebrow">Опасно</p><h2>Розыск ' + Math.round(p.heat) + ' из 100</h2><p class="lead">Тобой занимается ФСБ. Когда розыск дойдёт до <b>100</b>, тебя возьмут — это конец игры (СИЗО «Лефортово»).</p>';
+    h += '<p>' + (ok ? 'Связей во власти ' + E.conn(S, me) + ' — откупиться получится, если в кассе будет ' + c + ' тыс.' : 'Связей во власти ' + E.conn(S, me) + ' из 8 нужных — откупиться не выйдет.') + ' Сейчас розыск меняется на ' + sign(E.heatDelta(S, me)) + ' в месяц.</p>';
+    h += '<h3>Как сбить</h3><ul class="plain"><li>Купить людей во власти — каждый снижает розыск каждый месяц.</li><li>«Занести наверх» — разово минус розыск.</li><li>Перестать нападать: каждое нападение поднимает розыск.</li><li>Назначить верного юриста, вложиться в благотворительность.</li></ul>';
+    h += '<div class="grid">' + btn('Во «Власть»', 'heatgo', '', false, 'primary') + btn('Понятно', 'heatok', '', false, 'ghost') + '</div>';
+    openModal(h, 'event', key); haptic('heavy'); if (G.Sfx) G.Sfx.play('siren');
+  }
+
+  // ---------- наблюдение: выбывший игрок смотрит за партией и за выбранной бригадой ----------
+  let spectating = false, watchFid = null, overPeek = false;
+  function specHTML() {
+    if (!spectating || !P().over || S.done) return '';
+    const alive = D.FACTIONS.filter(f => S.f[f.id] && S.f[f.id].alive && !S.f[f.id].absent && f.id !== me && !(S.f[f.id].human && S.f[f.id].over));
+    if (!watchFid || !alive.some(f => f.id === watchFid)) watchFid = (alive.find(f => S.f[f.id].human) || alive[0] || {}).id || null;
+    let h = '<div class="spec"><span>👁 Ты выбыл: <b>' + esc(P().over.title) + '</b>. Смотришь за игрой.</span><label>Следить за <select data-a="watch">' + alive.map(f => '<option value="' + f.id + '"' + (f.id === watchFid ? ' selected' : '') + '>' + who(f.id) + ' · ' + E.count(S, f.id) + ' р.</option>').join('') + '</select></label>' + btn('Итоги', 'specover', '', false, 'sm ghost') + '</div>';
+    return h;
+  }
+  function watchPane() {
+    const x = S.f[watchFid]; if (!x) return '<h2>Наблюдение</h2><p class="muted">Следить не за кем.</p>';
+    const f = fd(watchFid), own = E.owned(S, watchFid);
+    let h = '<div class="dhero"><span class="ava big">' + A.bossFace(f) + '</span><div><p class="eyebrow">Наблюдение</p><h2>' + esc(f.name) + '</h2><p class="sub">' + (x.human ? esc(x.nick || 'игрок') + (x.auto ? ' · ведёт бот' : x.ready ? ' · закончил месяц' : ' · ходит') : 'бот') + '</p></div></div>';
+    h += '<dl class="kv"><dt>Районы</dt><dd>' + own.length + '</dd><dt>Бойцы</dt><dd>' + R(x.men) + '</dd><dt>Стволы</dt><dd>' + R(x.guns) + '</dd><dt>Тачки</dt><dd>' + R(x.cars) + '</dd><dt>Сила</dt><dd>' + R(E.power(x)) + '</dd><dt>Авторитет</dt><dd>' + R(x.rep) + '</dd></dl>';
+    h += '<h3>Районы</h3><p>' + (own.length ? own.map(i => '<button class="link" data-a="goto" data-i="' + i + '">' + D.DISTRICTS[i].name + '</button>').join(', ') : 'нет') + '</p>';
+    const lg = S.log.filter(l => !l.to && l.s.indexOf(f.name) >= 0).slice(0, 8);
+    if (lg.length) h += '<h3>Что о них слышно</h3><ul class="log">' + lg.map(l => '<li class="' + l.k + '"><time>' + E.date(l.t).label + '</time>' + esc(l.s) + '</li>').join('') + '</ul>';
+    return h;
   }
 
   // ---------- меню ----------

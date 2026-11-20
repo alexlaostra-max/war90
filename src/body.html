@@ -10,6 +10,7 @@
   </header>
   <div id="bar"><nav id="menu" aria-label="Разделы"></nav><div id="ap" aria-label="Ходы в этом месяце"></div></div>
   <div id="strip"><div id="perks" aria-label="Что дают точки империи"></div></div>
+  <div id="specbar" hidden></div>
   <main id="main">
     <section id="stage" aria-label="Раздел">
       <div id="org"></div>
@@ -17,6 +18,8 @@
         <svg id="map" preserveAspectRatio="xMidYMid meet"></svg>
         <div id="zoom"><button data-z="1" aria-label="Приблизить">+</button><button data-z="-1" aria-label="Отдалить">−</button><button data-z="0" aria-label="Вся карта">◎</button></div>
         <button id="mylist" class="btn sm" data-a="dlist">Мои районы</button>
+        <button id="maphelp" data-a="tip" data-k="map" title="Как брать районы" aria-label="Как брать районы">?</button>
+        <div id="maptip" hidden></div>
         <p id="legend"><span><i class="lg mine"></i>твои</span><span><i class="lg target"></i>можно напасть</span><span><i class="lg ent"></i>предприятие</span></p>
       </div>
       <div id="page" hidden></div>

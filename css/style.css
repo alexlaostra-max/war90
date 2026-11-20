@@ -516,7 +516,7 @@ svg.art.face { aspect-ratio: 1; }
   #stats .st .hnum { display: block; }
   /* меню разделов — внизу экрана */
   #bar { display: none; }
-  #tabbar { display: grid; grid-template-columns: repeat(6, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #120f17; border-top: 1px solid var(--line); padding: 4px max(4px, env(safe-area-inset-right, 0px)) calc(4px + var(--safe-bot, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
+  #tabbar { display: grid; grid-template-columns: repeat(7, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #120f17; border-top: 1px solid var(--line); padding: 4px max(4px, env(safe-area-inset-right, 0px)) calc(4px + var(--safe-bot, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
   #tabbar button { background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 0 3px; color: var(--dim); font-size: 10px; min-width: 0; border-radius: 6px; }
   #tabbar .ico { width: 22px; height: 22px; }
   #tabbar button.on { color: var(--fg); background: var(--raise); }
@@ -726,3 +726,24 @@ svg.art.face { aspect-ratio: 1; }
 /* непрочитанное в чате: красный кружок с «!» над значком */
 .unread { min-width: 17px; height: 17px; padding: 0; border-radius: 50%; font: 900 12px/17px var(--body); box-shadow: 0 0 0 2px #120f17; }
 #tabbar .unread { top: 0; right: calc(50% - 20px); }
+
+/* обучение: карточки «Как играть» */
+.tip { border: 1px solid var(--gold); background: #2b2418; border-radius: 6px; padding: 12px 14px; margin: 0 0 14px; }
+.tip h3 { margin: 2px 0 8px; }
+.tip ol { margin: 0 0 10px; padding-left: 20px; font-size: 14px; } .tip li { margin: 0 0 6px; } .tip b { color: var(--gold); font-weight: 700; }
+.tipq { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--gold); background: none; color: var(--gold); font: 700 13px/1 var(--body); vertical-align: 2px; margin-left: 6px; padding: 0; cursor: pointer; }
+#maptip { position: absolute; left: 10px; top: 10px; z-index: 5; width: min(420px, calc(100% - 70px)); max-height: calc(100% - 20px); overflow-y: auto; box-shadow: 0 10px 30px rgba(0, 0, 0, .6); border-radius: 6px; }
+#maptip .tip { margin: 0; }
+#maphelp { position: absolute; right: 10px; bottom: 10px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--gold); background: var(--panel); color: var(--gold); font: 700 18px/1 var(--body); z-index: 4; }
+#map.teach .cell.target { animation: teach 1.1s ease-in-out infinite; stroke: var(--gold); stroke-width: 2.2; }
+@keyframes teach { 50% { fill-opacity: .35; } }
+/* розыск: предупреждение и разбор концовки */
+.why { border-color: var(--gold); } .why p { margin: 0; }
+ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px; }
+/* наблюдение после вылета */
+#specbar[hidden] { display: none; }
+.spec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: #1d1a24; font-size: 13px; }
+.spec label { display: flex; align-items: center; gap: 6px; color: var(--dim); }
+.spec select { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px; font: inherit; max-width: 60vw; }
+.cell.watched { stroke: #fff; stroke-width: 2.4; filter: drop-shadow(0 0 3px rgba(255, 255, 255, .7)); }
+@media (max-width: 860px) { #tabbar button { font-size: 9.5px; } #tabbar .ico { width: 21px; height: 21px; } #maptip { left: 6px; top: 6px; width: calc(100% - 64px); max-height: calc(100% - 70px); } }
