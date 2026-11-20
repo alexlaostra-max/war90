@@ -22,6 +22,10 @@
   const dif = S => DIFF[S.diff] || DIFF.norm;
   function date(turn) { const mi = 11 + turn; return { year: 1991 + Math.floor(mi / 12), month: mi % 12 + 1, label: MONTHS[mi % 12] + ' ' + (1991 + Math.floor(mi / 12)) }; }
   const era = S => 1 + S.turn / 60;
+  // с приходом нового президента власть давит сильнее: розыск растёт быстрее, облавы чаще, взятки дороже
+  const lawK = S => { const y = 1991 + Math.floor((11 + S.turn) / 12); return y >= 2003 ? 1.6 : y >= 2000 ? 1.35 : 1; };
+  // касса делится на белый и чёрный нал: белый (clean) не трогают при облавах, тратится всё сначала из чёрного
+  const cash = p => { const w = Math.min(Math.max(0, p.clean || 0), Math.max(0, p.money)); return { white: Math.round(w), black: Math.round(p.money - w) }; };
   const fdef = id => D.FACTIONS.find(f => f.id === id);
   // to — кому видна запись (бригада); без to видят все
   function log(S, s, k, to) { S.log.unshift({ t: S.turn, s, k: k || '', to: to || undefined }); if (S.log.length > 300) S.log.length = 300; }
@@ -84,7 +88,7 @@
   }
   const hasCar = (f, k) => !!(f.garage && f.garage[k] > 0);
   const armorK = f => hasCar(f, 'gelik') ? 0.5 : 1;
-  const carTalk = (S, fid) => { const f = S.f[fid]; return f.garage ? Math.min(15, (f.garage.merc || 0) * D.CARS.merc.talk) : 0; };
+  const carTalk = (S, fid) => { const f = S.f[fid]; return f.garage ? Math.min(15, Object.keys(f.garage).reduce((s, k) => s + (f.garage[k] || 0) * (D.CARS[k].talk || 0), 0)) : 0; };
   function addArms(p, k, n) { if (!p.arms) kitInit(p); syncKit(p); p.arms[k] = (p.arms[k] || 0) + n; p.guns += n; }
   function addCar(p, k, n) { if (!p.garage) kitInit(p); syncKit(p); p.garage[k] = (p.garage[k] || 0) + n; p.cars += n; }
 
@@ -252,7 +256,8 @@
     if (fid === 'tag') v -= 1;
     v -= fx(S, fid, 'cool');
     D.PROJECTS.forEach(pr => { if ((p.proj[pr.id] || {}).stage === 3) v += pr.heat; });
-    return v + Math.floor(count(S, fid) / 5);
+    v += Math.floor(count(S, fid) / 5);
+    return v > 0 ? Math.round(v * lawK(S)) : v;
   }
 
   // ---------- действия игрока ----------
@@ -268,7 +273,7 @@
     return null;
   }
   const addRep = (S, fid, v) => { const p = S.f[fid]; p.rep = clamp(p.rep + v, 0, 100); };
-  const addHeat = (S, fid, v) => { const p = S.f[fid]; p.heat = clamp(p.heat + v, 0, 100); };
+  const addHeat = (S, fid, v) => { const p = S.f[fid]; p.heat = clamp((p.heat || 0) + (v > 0 ? v * lawK(S) : v), 0, 100); };
 
   // Вербовка стоит денег и не тратит ход; нанять можно только тех, кто ждёт во дворах и спортзалах
   function recruit(S, fid, n) {
@@ -466,12 +471,76 @@
     if (p.money < buildCost(S, k)) return 'Не хватает денег';
     return null;
   }
-  function build(S, fid, i, k) {
-    const e = spend(S, fid, 0) || canBuild(S, fid, i, k); if (e) return fail(e); // стройка стоит только денег
+  function doBuild(S, fid, i, k) {
     const B = D.BUILDS[k], p = S.f[fid];
     p.money -= buildCost(S, k); S.d[i].l = S.d[i].b.map((_, j) => pointLvl(S.d[i], j)); S.d[i].b.push(k); S.d[i].l.push(1);
-    if (B.heat) addHeat(S, fid, B.heat);
-    return { ok: true, msg: B.name + ': ' + D.DISTRICTS[i].name + '. +' + pointInc(fid, k, i) + ' в месяц' };
+    if (B.heat && p.human) addHeat(S, fid, B.heat);
+  }
+  function doUpgrade(S, fid, i, x) { const d = S.d[i]; S.f[fid].money -= upgradeCost(S, i, x); d.l = d.b.map((_, j) => pointLvl(d, j)); d.l[x] = pointLvl(d, x) + 1; }
+  function build(S, fid, i, k) {
+    const e = spend(S, fid, 0) || canBuild(S, fid, i, k); if (e) return fail(e); // стройка стоит только денег
+    doBuild(S, fid, i, k);
+    return { ok: true, msg: D.BUILDS[k].name + ': ' + D.DISTRICTS[i].name + '. +' + pointInc(fid, k, i) + ' в месяц' };
+  }
+  // что выгоднее всего построить или улучшить в этих районах: доход на вложенный доллар, польза точки сверху
+  function bestInvest(S, fid, ids, budget, sloppy) {
+    const opts = [];
+    ids.forEach(i => {
+      const d = S.d[i];
+      Object.keys(D.BUILDS).forEach(k => {
+        const c = buildCost(S, k); if (!c || c > budget || canBuild(S, fid, i, k)) return;
+        const B = D.BUILDS[k]; opts.push({ v: (pointInc(fid, k, i) + (B.fx || B.rec || B.def ? 2 : 0)) / c * (B.need ? 1.2 : 1), i, k, c });
+      });
+      d.b.forEach((k, x) => { if (pointLvl(d, x) >= MAX_LVL) return; const c = upgradeCost(S, i, x); if (c > budget) return; opts.push({ v: (pointInc(fid, k, i) + (D.BUILDS[k].fx ? 1 : 0)) / c, i, x, c }); });
+    });
+    opts.sort((a, b) => b.v - a.v);
+    return opts.length ? opts[sloppy ? Math.floor(rnd(S) * Math.min(3, opts.length)) : 0] : null;
+  }
+  // Бригадиры сами ставят смотрящих из резерва и копят половину дани округа на стройку в своих районах
+  function capoWork(S, fid) {
+    const p = S.f[fid];
+    crew(S, fid).filter(c => c.pos === 'capo' && c.st === 'ok').forEach(cp => {
+      const ids = owned(S, fid).filter(i => D.DISTRICTS[i].ok === cp.ok); if (!ids.length) return;
+      const free = ids.filter(i => !watcherOf(S, fid, i, true)).sort((a, b) => D.DISTRICTS[b].inc - D.DISTRICTS[a].inc);
+      const bench = crew(S, fid).filter(c => !c.pos && c.st === 'ok' && !c.leg).sort((a, b) => (b.str + b.loy * cp.wit / 5) - (a.str + a.loy * cp.wit / 5));
+      if (free.length && bench.length > 1) { const w = bench[0]; w.pos = 'watch'; w.ok = watchKey(free[0]); log(S, 'Бригадир ' + cname(cp) + ' поставил смотрящим на ' + D.DISTRICTS[free[0]].name + ' ' + cname(w) + '.', '', fid); }
+      const pts = ids.reduce((s, i) => s + S.d[i].b.reduce((a, b, x) => a + pointInc(fid, b, i) * pointLvl(S.d[i], x), 0), 0);
+      cp.fund = (cp.fund || 0) + Math.round((ids.reduce((s, i) => s + D.DISTRICTS[i].inc, 0) * 0.5 + pts * 0.2) * (1 + cp.wit * 0.05));
+      for (let n = 0; n < 2; n++) {
+        const budget = Math.min(cp.fund, Math.max(0, p.money)), b = bestInvest(S, fid, ids, budget, cp.wit < 5); if (!b) break;
+        if (b.k) { doBuild(S, fid, b.i, b.k); log(S, 'Бригадир ' + cname(cp) + ' открыл ' + D.BUILDS[b.k].name.toLowerCase() + ': ' + D.DISTRICTS[b.i].name + ', −' + b.c + ' тыс.', 'good', fid); }
+        else { doUpgrade(S, fid, b.i, b.x); log(S, 'Бригадир ' + cname(cp) + ' улучшил ' + D.BUILDS[S.d[b.i].b[b.x]].name.toLowerCase() + ': ' + D.DISTRICTS[b.i].name + ', −' + b.c + ' тыс.', 'good', fid); }
+        cp.fund -= b.c;
+      }
+    });
+  }
+  // машины ломаются: сломанная не возит бойцов, пока её не починят; автосервисы берегут парк
+  const repairCost = (S, fid, k) => Math.max(2, Math.round(D.CARS[k].price * 0.3 * (1 - fxp(S, fid, 'car'))));
+  const carSale = (k, broken) => Math.max(1, Math.round(D.CARS[k].price * (broken ? 0.15 : 0.45)));
+  function carWear(S, fid) {
+    const p = S.f[fid]; if (!p.garage) return; syncKit(p); if (!p.broken) p.broken = {};
+    const kk = 1 - fxp(S, fid, 'car') * 0.8, out = [];
+    Object.keys(p.garage).forEach(k => {
+      const n = p.garage[k] || 0; let b = 0;
+      for (let j = 0; j < n; j++) if (rnd(S) < 0.035 * (D.CARS[k].wear || 1) * kk) b++;
+      if (b) { p.garage[k] -= b; p.cars -= b; p.broken[k] = (p.broken[k] || 0) + b; out.push(D.CARS[k].name + (b > 1 ? ' ×' + b : '')); }
+    });
+    if (out.length) log(S, 'Сломались машины: ' + out.join(', ') + '. Стоят в гараже: починить или продать.', 'bad', fid);
+  }
+  function repairCar(S, fid, k) {
+    const e = spend(S, fid, 0); if (e) return fail(e);
+    const p = S.f[fid]; if (!D.CARS[k] || !(p.broken || {})[k]) return fail('Чинить нечего');
+    const c = repairCost(S, fid, k); if (p.money < c) return fail('Не хватает денег: нужно ' + c);
+    p.money -= c; p.broken[k]--; addCar(p, k, 1);
+    return { ok: true, msg: D.CARS[k].name + ' снова на ходу. Ремонт: ' + c + ' тыс.' };
+  }
+  function sellCar(S, fid, k, broken) {
+    const e = spend(S, fid, 0); if (e) return fail(e);
+    const p = S.f[fid]; if (!D.CARS[k]) return fail('Нет такой машины');
+    if (broken) { if (!(p.broken || {})[k]) return fail('Сломанных нет'); p.broken[k]--; }
+    else { syncKit(p); if (!(p.garage[k] > 0)) return fail('Таких нет'); p.garage[k]--; p.cars--; }
+    const v = carSale(k, broken); p.money += v;
+    return { ok: true, msg: D.CARS[k].name + (broken ? ' ушла на запчасти' : ' продана') + ': +' + v + ' тыс.' };
   }
   function upgrade(S, fid, i, x) {
     const e = spend(S, fid, 0); if (e) return fail(e);
@@ -481,7 +550,7 @@
     const lv = pointLvl(d, x); if (lv >= MAX_LVL) return fail('Улучшать больше некуда');
     const c = upgradeCost(S, i, x);
     if (p.money < c) return fail('Не хватает денег: нужно ' + c);
-    p.money -= c; d.l = d.b.map((_, j) => pointLvl(d, j)); d.l[x] = lv + 1;
+    doUpgrade(S, fid, i, x);
     return { ok: true, msg: D.BUILDS[k].name + ' улучшен: ' + D.DISTRICTS[i].name + '. Теперь +' + pointInc(fid, k, i) * (lv + 1) + ' в месяц' };
   }
   function assign(S, fid, id, pos, ok) {
@@ -579,7 +648,7 @@
     p.money -= c; p.off[k]++; p.ap--;
     return { ok: true, msg: O.name + ' теперь получает у тебя зарплату' };
   }
-  const bribeCost = (S, fid) => Math.round((15 + lawLevel(S.f[fid].heat) * 20) * era(S) * (1 - consBonus(S, fid) / 100));
+  const bribeCost = (S, fid) => Math.round((15 + lawLevel(S.f[fid].heat) * 20) * era(S) * lawK(S) * (1 - consBonus(S, fid) / 100));
   function bribe(S, fid) {
     const e = spend(S, fid, 1); if (e) return fail(e);
     const p = S.f[fid], c = bribeCost(S, fid);
@@ -826,7 +895,7 @@
       eliminate(S, fid, { type: 'jail', title: 'СИЗО «Лефортово»', text: 'Тебя взяли на рассвете. Спецназ ФСБ, наручники, камеры телевидения. Наверху не нашлось никого, кто снял бы трубку. Бригаду поделили за неделю.' });
       return;
     }
-    if (rnd(S) > 0.1 + 0.05 * L) return;
+    if (rnd(S) > (0.1 + 0.05 * L) * lawK(S)) return;
     const who = D.LAW[L].name;
     let n = L === 1 ? ri(S, 1, 2) : L === 2 ? ri(S, 2, 5) : L === 3 ? Math.max(4, Math.round(p.men * rr(S, 0.1, 0.15))) : Math.max(8, Math.round(p.men * rr(S, 0.18, 0.25)));
     n = Math.min(Math.round(n * (1 - fxp(S, fid, 'hide'))), p.men); if (!n) return;
@@ -838,7 +907,8 @@
     addRep(S, fid, rep);
     let s = who + ': задержано ' + n + '. ';
     if (jail) s += 'Сели: ' + jail + '. '; if (dead) s += 'Убиты при задержании: ' + dead + '. '; if (free) s += 'Отпущены: ' + free + '. ';
-    if (L >= 3 && p.money > 0) { const fr = Math.round(p.money * (L === 3 ? 0.1 : 0.2)); p.money -= fr; s += 'Счета арестованы: −' + fr + '. '; }
+    const blk = cash(p).black;
+    if (L >= 3 && blk > 0) { const fr = Math.round(blk * (L === 3 ? 0.15 : 0.3)); p.money -= fr; s += 'Изъят чёрный нал: −' + fr + '. Белые деньги на счетах не тронули. '; }
     if (L === 4 && rnd(S) < 0.3) {
       const act = D.PROJECTS.filter(pr => (p.proj[pr.id] || {}).stage === 3);
       if (act.length) { const pr = act[Math.floor(rnd(S) * act.length)]; p.proj[pr.id] = { stage: 0 }; s += 'Изъят бизнес: ' + pr.name + '. '; }
@@ -853,19 +923,21 @@
   function humanPhase(S, fid) {
     const p = S.f[fid], before = p.money;
     p.report = { money: 0, law: null, lost: [] };
-    p.money += income(S, fid).total;
+    const inc = income(S, fid), w0 = cash(p).white;
+    p.money += inc.total; p.clean = w0 + Math.max(0, inc.white); p.clean = cash(p).white;
     p.later = p.later.filter(l => { if (l.t <= S.turn) { p.money += l.amt; if (l.amt >= 0) log(S, 'Вернулись вложения («' + l.why + '»): +' + l.amt, 'good', fid); else log(S, 'Пришли за долгом («' + l.why + '»): ' + l.amt, 'bad', fid); return false; } return true; });
     if (p.money < 0) { const l = Math.max(1, Math.round(p.men * 0.1)); p.men = Math.max(0, p.men - l); addRep(S, fid, -2); log(S, 'Общак пуст, платить нечем. Ушли бойцы: ' + l, 'bad', fid); }
     D.PROJECTS.forEach(pr => {
       const st = p.proj[pr.id]; if (!st || st.stage !== 3) return;
-      st.age++; if (pr.guns) addArms(p, 'aks', pr.guns); if (pr.cars) addCar(p, 'audi', pr.cars); if (pr.repTurn) addRep(S, fid, pr.repTurn);
+      st.age++; if (pr.guns) addArms(p, 'aks', pr.guns); if (pr.cars) addCar(p, pr.carK || 'audi', pr.cars); if (pr.repTurn) addRep(S, fid, pr.repTurn);
       if (pr.pyramid && st.age >= 8 && rnd(S) < 0.05 + 0.02 * (st.age - 8)) { p.proj[pr.id] = { stage: 0, dead: true }; addHeat(S, fid, 25); addRep(S, fid, -15); log(S, 'Пирамида рухнула. Толпа вкладчиков громит офис, прокуратура возбудила дело.', 'bad', fid); }
     });
     if (p.rep > 15) p.rep -= p.rep * 0.015;
     Object.keys(p.rel || {}).forEach(k => { p.rel[k] = Math.round(p.rel[k] * 0.9); });
-    addHeat(S, fid, heatDelta(S, fid));
+    p.heat = clamp(p.heat + heatDelta(S, fid), 0, 100);
     lawPressure(S, fid);
-    if (!p.over) crewPhase(S, fid);
+    if (!p.over) { crewPhase(S, fid); capoWork(S, fid); carWear(S, fid); }
+    p.clean = cash(p).white;
     p.jail = p.jail.filter(j => { if (j.t <= S.turn) { if (!p.over) p.men += j.n; addRep(S, fid, 1); log(S, 'Откинулись с зоны: ' + j.n + '. Вернулись в бригаду.', 'good', fid); return false; } return true; });
     p.report.money = Math.round(p.money - before);
   }
@@ -877,11 +949,16 @@
     f.acc += (1 + Math.min(n, 15) * 0.3 + Math.max(0, n - 15) * 0.1) * X.grow; const add = Math.floor(f.acc); f.acc -= add;
     f.men = Math.min(menCap(S, fid), f.men + add);
     f.money += n * 3 * (1 + S.turn / 90);
+    // бригадиры ботов тоже вкладываются в точки: треть кассы идёт на стройку, точки приносят доход
+    const own = owned(S, fid);
+    own.forEach(i => S.d[i].b.forEach((b, x) => { f.money += pointInc(fid, b, i) * pointLvl(S.d[i], x); }));
+    for (let k = 0; k < 2; k++) { const b = bestInvest(S, fid, own, f.money * 0.35, true); if (!b) break; if (b.k) doBuild(S, fid, b.i, b.k); else doUpgrade(S, fid, b.i, b.x); }
+    if (f.cars > 2 && rnd(S) < 0.3) f.cars--; // машины изнашиваются и у ботов
     while (f.money >= 15 && f.guns < f.men) { f.money -= 15; f.guns += 5; }
     while (f.money >= 12 && f.cars * 4 < f.men) { f.money -= 12; f.cars++; }
     f.rep = clamp(10 + n * 2, 0, 100);
     // чем больше бригада, тем чаще ею занимаются силовики
-    if (rnd(S) < 0.05 + Math.min(0.15, n * 0.004)) { const l = Math.round(f.men * rr(S, 0.12, 0.22)); f.men -= l; f.guns = Math.max(0, f.guns - Math.floor(l / 2)); if (l > 6) log(S, 'Силовики накрыли бригаду ' + fdef(fid).name + ': минус ' + l + ' бойцов.'); }
+    if (rnd(S) < (0.05 + Math.min(0.15, n * 0.004)) * lawK(S)) { const l = Math.round(f.men * rr(S, 0.12, 0.22)); f.men -= l; f.guns = Math.max(0, f.guns - Math.floor(l / 2)); if (l > 6) log(S, 'Силовики накрыли бригаду ' + fdef(fid).name + ': минус ' + l + ' бойцов.'); }
     // раскол: разросшуюся бригаду рвут изнутри, часть районов уходит местным
     if (n >= 18 && rnd(S) < 0.03 + (n - 18) * 0.002) {
       const own = owned(S, fid).filter(i => !isHome(S, fid, i)), k = Math.ceil(n * rr(S, 0.12, 0.2));
@@ -951,6 +1028,7 @@
     checkDone(S);
     if (S.done) return { ok: true, msg: 'Игра окончена', over: true };
     S.turn++;
+    { const dt = date(S.turn); if (dt.month === 1 && dt.year === 2000) log(S, 'Новый год, новый хозяин в Кремле. Власть закручивает гайки: розыск растёт на 35% быстрее, облавы чаще.', 'big'); if (dt.month === 1 && dt.year === 2003) log(S, 'Вертикаль достроена: розыск растёт на 60% быстрее, чем в девяностые. Пора легализоваться.', 'big'); }
     active(S).forEach(h => { const p = S.f[h], inf = inflow(S, h).total; p.pool = Math.min(pool(S, h) + inf, inf * 3); p.report.lost = p.lostNow || []; p.lostNow = null; p.ap = apMax(S, h); p.ready = false; pickEvent(S, h); });
     return { ok: true, msg: date(S.turn).label };
   }
@@ -963,6 +1041,6 @@
     return V;
   }
 
-  const ACTIONS = { battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
-  G.Engine = { pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  const ACTIONS = { repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
+  G.Engine = { lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);

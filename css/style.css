@@ -325,6 +325,7 @@ svg.art.face { aspect-ratio: 1; }
 .pinfo span { font: 13px var(--mono); }
 .pmax { margin: 0; padding: 4px 10px 9px; }
 .btn.pup { margin: 4px 8px 8px; flex-direction: row; gap: 8px; text-align: left; padding: 5px 8px; }
+.btn.pup small { display: block; font-size: 11px; color: var(--good); }
 .pnext { width: 52px; flex: none; border-radius: 2px; overflow: hidden; opacity: .9; }
 .card.bcard { padding: 0 0 8px; overflow: hidden; }
 .card.bcard > :not(svg) { margin-left: 10px; margin-right: 10px; }

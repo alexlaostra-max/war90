@@ -173,26 +173,26 @@
   const BUILDS = {
     kiosk: { name: 'Ларёк', cost: 10, inc: 2, kind: 'g', good: ['station', 'sleep', 'students'], fx: { kid: 5 }, perk: 'Уши на улице: похищения удачнее на 5%', desc: 'Сникерсы, спирт «Рояль», сигареты. Продавцы видят, кто при деньгах' },
     market: { name: 'Крыша рынка', cost: 0, inc: 6, kind: 'b', needMen: 8, heat: 2, onlyMarket: true, one: true, fx: { upkeep: 10 }, perk: 'Свой провиант: содержание бойцов −10%', desc: 'Нужен рынок на районе и 8 бойцов' },
-    gym: { name: 'Спортзал', cost: 20, inc: 1, kind: 'w', good: ['sleep', 'students'], rec: 3, one: true, perk: 'Качалка: +3 новобранца в месяц', desc: 'Качалка и секция борьбы' },
+    gym: { name: 'Спортзал', cost: 20, inc: 1, kind: 'w', good: ['sleep', 'students'], rec: 3, one: true, perk: 'Качалка: новобранцев +3 в месяц', desc: 'Качалка и секция борьбы' },
     service: { name: 'Автосервис', cost: 25, inc: 4, kind: 'g', good: ['highway', 'industry'], fx: { car: 15 }, perk: 'Тачки дешевле на 15%', desc: 'Ремонт и разбор угнанных' },
     gunshop: { name: 'Охотничий магазин', cost: 40, inc: 3, kind: 'w', good: ['park', 'highway'], from: 1992, one: true, fx: { gun: 15 }, perk: 'Стволы дешевле на 15%', desc: 'Лицензия на нарезное, а в подсобке армейское' },
     clinic: { name: 'Подпольный врач', cost: 35, inc: 1, kind: 'g', one: true, fx: { med: 15 }, perk: 'Потери в бою −15%, раненые встают быстрее', desc: 'Хирург из Склифа, шьёт без вопросов и без протокола' },
     rest: { name: 'Ресторан', cost: 45, inc: 6, kind: 'w', good: ['center', 'elite', 'tourist'], fx: { talk: 5 }, perk: 'Стрелки и переговоры: шанс договориться +5%', desc: 'Место для стрелок и банкетов' },
     bordel: { name: 'Бордель', cost: 50, inc: 8, kind: 'b', good: ['station', 'tourist'], from: 1992, heat: 1, one: true, fx: { cool: 1 }, perk: 'Менты отдыхают бесплатно: розыск −1 в месяц', desc: 'Вывеска «Сауна», девочки по вызову, компромат на гостей' },
     flat: { name: 'Квартиры', cost: 30, inc: 2, kind: 'w', good: ['sleep', 'center'], from: 1992, fx: { hide: 10 }, perk: 'Явочные квартиры: при облавах берут на 10% меньше', desc: 'Приватизация жилья у алкашей и стариков' },
-    prem: { name: 'Помещения', cost: 70, inc: 6, kind: 'w', good: ['center', 'industry'], from: 1992, fx: { cap: 3 }, perk: 'Общаги и склады: бригада больше на 3 человека', desc: 'Приватизация первых этажей под аренду' },
-    chop: { name: 'ЧОП', cost: 90, inc: 3, kind: 'w', good: ['industry', 'elite'], from: 1993, def: 8, rec: 1, one: true, perk: 'Легальные стволы: оборона района +8, +1 новобранец в месяц', desc: 'Охранное агентство с лицензией' },
+    prem: { name: 'Помещения', cost: 70, inc: 6, kind: 'w', good: ['center', 'industry'], from: 1992, fx: { cap: 3 }, perk: 'Общаги и склады: мест в бригаде +3', desc: 'Приватизация первых этажей под аренду' },
+    chop: { name: 'ЧОП', cost: 90, inc: 3, kind: 'w', good: ['industry', 'elite'], from: 1993, def: 8, rec: 1, one: true, perk: 'Легальные стволы: оборона района +8, новобранцев +1 в месяц', desc: 'Охранное агентство с лицензией' },
     casino: { name: 'Казино', cost: 130, inc: 18, kind: 'g', good: ['center', 'tourist'], need: ['center', 'elite', 'tourist', 'station'], from: 1993, heat: 1, one: true, fx: { wash: 10 }, perk: 'Отмывка: 10% чёрного дохода становится белым', desc: 'Рулетка и автоматы' },
     // особые точки: строятся только там, где к месту (need — нужна хотя бы одна из особенностей района)
-    vokzal: { name: 'Вокзальная крыша', cost: 30, inc: 7, kind: 'b', need: ['station'], heat: 1, one: true, rec: 2, perk: 'Вокзальная шпана: +2 новобранца в месяц', desc: 'Носильщики, бомбилы, напёрстки и камеры хранения' },
+    vokzal: { name: 'Вокзальная крыша', cost: 30, inc: 7, kind: 'b', need: ['station'], heat: 1, one: true, rec: 2, perk: 'Вокзальная шпана: новобранцев +2 в месяц', desc: 'Носильщики, бомбилы, напёрстки и камеры хранения' },
     exchange: { name: 'Обменник', cost: 40, inc: 6, kind: 'g', need: ['center', 'station', 'tourist'], from: 1992, fx: { wash: 5 }, perk: 'Валюта мимо кассы: 5% чёрного дохода отмывается', desc: 'Будка «Обмен валют»: курс свой, кидалово на сдаче' },
     hotel: { name: 'Гостиница', cost: 120, inc: 14, kind: 'g', need: ['center', 'tourist'], from: 1992, one: true, fx: { conn: 1 }, perk: 'Чиновники гуляют в номерах: связи +1', desc: 'Номера для иностранцев, валютные девочки, банкеты для начальства' },
     club: { name: 'Ночной клуб', cost: 80, inc: 10, kind: 'g', need: ['center', 'elite', 'students'], from: 1994, heat: 1, one: true, fx: { kid: 5 }, perk: 'Сынки богатых папаш на виду: похищения удачнее на 5%', desc: 'Дискотека до утра, фейсконтроль, вип-ложа' },
     boutique: { name: 'Бутик', cost: 90, inc: 11, kind: 'w', need: ['elite', 'center'], from: 1995, perk: 'Белые деньги: весь доход легальный', desc: 'Итальянские шмотки для жён и подруг. Касса чистая' },
-    dorm: { name: 'Общага', cost: 15, inc: 2, kind: 'w', need: ['students'], one: true, rec: 2, perk: 'Голодные студенты: +2 новобранца в месяц', desc: 'Комнаты сдаются, студенты подрабатывают кем скажут' },
-    video: { name: 'Видеосалон', cost: 15, inc: 3, kind: 'g', need: ['sleep', 'students'], one: true, rec: 1, perk: 'Пацаны с района: +1 новобранец в месяц', desc: 'Боевики с гнусавым переводом, три сеанса за вечер' },
+    dorm: { name: 'Общага', cost: 15, inc: 2, kind: 'w', need: ['students'], one: true, rec: 2, perk: 'Голодные студенты: новобранцев +2 в месяц', desc: 'Комнаты сдаются, студенты подрабатывают кем скажут' },
+    video: { name: 'Видеосалон', cost: 15, inc: 3, kind: 'g', need: ['sleep', 'students'], one: true, rec: 1, perk: 'Пацаны с района: новобранцев +1 в месяц', desc: 'Боевики с гнусавым переводом, три сеанса за вечер' },
     factory: { name: 'Подпольный цех', cost: 35, inc: 8, kind: 'b', need: ['industry'], heat: 1, perk: 'Чистая прибыль, но розыск +1 при открытии', desc: 'Палёная водка, джинсы «Монтана», кроссовки «Абибас»' },
-    warehouse: { name: 'Оптовый склад', cost: 45, inc: 5, kind: 'w', need: ['industry', 'highway', 'river'], fx: { cap: 2 }, perk: 'Ночлег для пацанов: бригада больше на 2 человека', desc: 'Фуры с ширпотребом, крыша над оптом' },
+    warehouse: { name: 'Оптовый склад', cost: 45, inc: 5, kind: 'w', need: ['industry', 'highway', 'river'], fx: { cap: 2 }, perk: 'Ночлег для пацанов: мест в бригаде +2', desc: 'Фуры с ширпотребом, крыша над оптом' },
     scrap: { name: 'Цветмет', cost: 30, inc: 6, kind: 'b', need: ['industry', 'river'], from: 1992, heat: 1, fx: { car: 10 }, perk: 'Угнанные разбирают на металл: тачки дешевле на 10%', desc: 'Приём меди и алюминия. Провода снимают по всей области' },
     fuel: { name: 'Бензоколонка', cost: 60, inc: 7, kind: 'g', need: ['highway'], from: 1992, fx: { upkeep: 5 }, perk: 'Бензин бригаде бесплатно: содержание бойцов −5%', desc: 'Колонка на выезде: бодяжный бензин и касса наликом' },
     port: { name: 'Причал', cost: 50, inc: 8, kind: 'b', need: ['river'], from: 1992, heat: 1, one: true, fx: { gun: 10 }, perk: 'Баржи без досмотра: стволы дешевле на 10%', desc: 'Свои баржи и склады у воды: груз никто не досматривает' },
@@ -267,7 +267,17 @@
     { id: 'metal', kind: 'w', name: 'Алюминий на экспорт', from: 1993, rep: 40, where: 'Красноярск', who: 'директор комбината', trip: 50, buyLabel: 'Пакет акций', buy: 450, inc: 55, heat: 0 },
     { id: 'oil', kind: 'w', name: 'Нефтетрейдинг', from: 1994, rep: 50, where: 'Нижневартовск', who: 'нефтяной генерал', trip: 60, buyLabel: 'Пакет акций', buy: 650, inc: 85, heat: 0 },
     { id: 'media', kind: 'w', name: 'Телеканал', from: 1995, rep: 45, where: 'Лондон', who: 'медиамагнат в изгнании', trip: 60, buyLabel: 'Пакет акций', buy: 400, inc: 15, heat: -2, repTurn: 1, note: 'Розыск −2 и авторитет +1 каждый ход' },
-    { id: 'mall', kind: 'w', name: 'Торговые центры', from: 1998, rep: 50, where: 'Стамбул', who: 'турецкий застройщик', trip: 50, buyLabel: 'Уставной капитал', buy: 550, inc: 70, heat: 0 }
+    { id: 'mall', kind: 'w', name: 'Торговые центры', from: 1998, rep: 50, where: 'Стамбул', who: 'турецкий застройщик', trip: 50, buyLabel: 'Уставной капитал', buy: 550, inc: 70, heat: 0 },
+    // после дефолта: большие деньги ищут, куда вложиться
+    { id: 'gsm', kind: 'w', name: 'Сотовая связь', from: 1998, rep: 45, where: 'Хельсинки', who: 'финский поставщик вышек', trip: 50, buyLabel: 'Лицензия на регион', buy: 700, inc: 90, heat: -1, note: 'Мобильник есть у каждого, абонентская плата капает' },
+    { id: 'coal', kind: 'g', name: 'Уголь Кузбасса', from: 1998, rep: 50, where: 'Кемерово', who: 'директор разреза', trip: 60, buyLabel: 'Контроль над разрезом', buy: 800, inc: 115, heat: 1 },
+    { id: 'avtoz', kind: 'b', name: 'Дилерство «Жигулей»', from: 1998, rep: 40, where: 'Тольятти', who: 'смотрящий автозавода', trip: 40, buyLabel: 'Доля в схеме', buy: 500, inc: 80, heat: 2, cars: 1, carK: 'nine', note: 'Машины с конвейера мимо кассы. +1 тачка каждый ход' },
+    { id: 'slots', kind: 'g', name: 'Сеть игровых залов', from: 1999, rep: 45, where: 'Лас-Вегас', who: 'производитель автоматов', trip: 60, buyLabel: 'Партия автоматов', buy: 600, inc: 95, heat: 2 },
+    { id: 'seaport', kind: 'w', name: 'Морской порт', from: 1999, rep: 55, where: 'Новороссийск', who: 'начальник порта', trip: 60, buyLabel: 'Пакет акций', buy: 1100, inc: 150, heat: 0 },
+    { id: 'club', kind: 'w', name: 'Футбольный клуб', from: 2000, rep: 55, where: 'Монако', who: 'агент футболистов', trip: 70, buyLabel: 'Покупка клуба', buy: 900, inc: 40, heat: -2, repTurn: 2, note: 'Авторитет +2 и розыск −2 каждый ход' },
+    { id: 'gold', kind: 'b', name: 'Золотой прииск', from: 2001, rep: 55, where: 'Магадан', who: 'артель старателей', trip: 70, buyLabel: 'Доля в артели', buy: 1200, inc: 185, heat: 3 },
+    { id: 'tower', kind: 'w', name: 'Башня в Сити', from: 2002, rep: 60, where: 'Дубай', who: 'арабский девелопер', trip: 90, buyLabel: 'Доля в стройке', buy: 2000, inc: 270, heat: 0 },
+    { id: 'olymp', kind: 'w', name: 'Олимпийская стройка', from: 2006, rep: 65, where: 'Сочи', who: 'госкорпорация', trip: 80, buyLabel: 'Генподряд', buy: 2500, inc: 380, heat: -1, note: 'Город выиграл Олимпиаду. Подряды на годы вперёд' }
   ];
 
   // Арсенал: q — сколько боец с этим стволом добавляет к силе (голый боец = 1), price — за штуку, pack — сколько в партии
@@ -281,13 +291,21 @@
   const VEST = { name: 'Бронежилет', alt: 'армейский, второй класс', price: 6, pack: 5, from: 1993, desc: 'Потери в бою ниже до 35%, если броники есть у всех, кто едет' };
   // Гараж: seats — мест на разборку, q — сколько добавляет к силе каждый боец на колёсах
   const CARS = {
-    nine: { name: 'Девятка', alt: 'ВАЗ-21099', seats: 4, q: 0.5, price: 8, from: 1991, col: '#7a2430', desc: 'Тонировка в круг. Классика района' },
-    uaz: { name: 'Буханка', alt: 'УАЗ-452', seats: 8, q: 0.4, price: 14, from: 1991, col: '#4c5b3c', desc: 'Восемь мест. Пройдёт там, где «Мерседес» застрянет' },
-    audi: { name: 'Ауди-бочка', alt: 'Audi 100 из Германии', seats: 4, q: 0.6, price: 14, from: 1991, col: '#5b6470', desc: 'Пригнали через Брест. Чуть быстрее «девятки»' },
-    bmw: { name: 'Бэха', alt: 'BMW 525', seats: 4, q: 0.8, price: 26, from: 1992, rep: 1, col: '#1f2b3d', desc: 'Быстрая, злая, все знают, чья' },
-    jeep: { name: 'Чероки', alt: 'Jeep Grand Cherokee', seats: 5, q: 0.9, price: 42, from: 1994, rep: 2, col: '#20262b', desc: 'Пять мест и бампер, который пробьёт шлагбаум' },
-    merc: { name: 'Шестисотый', alt: 'Mercedes S600', seats: 4, q: 0.7, price: 85, from: 1993, rep: 4, talk: 3, col: '#141418', desc: 'Знак статуса. Переговоры +3% за машину, до +15%' },
-    gelik: { name: 'Бронированный гелик', alt: 'Mercedes G, броня B6', seats: 5, q: 1, price: 150, from: 1997, rep: 3, armor: true, col: '#2b2e26', desc: 'Глава и бригадиры в бою ранятся и гибнут вдвое реже' }
+    nine: { name: 'Девятка', wear: 1.4, alt: 'ВАЗ-21099', seats: 4, q: 0.5, price: 8, from: 1991, col: '#7a2430', desc: 'Тонировка в круг. Классика района' },
+    uaz: { name: 'Буханка', wear: 1.2, alt: 'УАЗ-452', seats: 8, q: 0.4, price: 14, from: 1991, col: '#4c5b3c', desc: 'Восемь мест. Пройдёт там, где «Мерседес» застрянет' },
+    audi: { name: 'Ауди-бочка', wear: 1.1, alt: 'Audi 100 из Германии', seats: 4, q: 0.6, price: 14, from: 1991, col: '#5b6470', desc: 'Пригнали через Брест. Чуть быстрее «девятки»' },
+    bmw: { name: 'Бэха', wear: 1, alt: 'BMW 525', seats: 4, q: 0.8, price: 26, from: 1992, rep: 1, col: '#1f2b3d', desc: 'Быстрая, злая, все знают, чья' },
+    jeep: { name: 'Чероки', wear: 1, alt: 'Jeep Grand Cherokee', seats: 5, q: 0.9, price: 42, from: 1994, rep: 2, col: '#20262b', desc: 'Пять мест и бампер, который пробьёт шлагбаум' },
+    merc: { name: 'Шестисотый', wear: 0.8, alt: 'Mercedes S600', seats: 4, q: 0.7, price: 85, from: 1993, rep: 4, talk: 3, col: '#141418', desc: 'Знак статуса. Переговоры +3% за машину, до +15%' },
+    gelik: { name: 'Бронированный гелик', wear: 0.7, alt: 'Mercedes G, броня B6', seats: 5, q: 1, price: 150, from: 1997, rep: 3, armor: true, col: '#2b2e26', desc: 'Глава и бригадиры в бою ранятся и гибнут вдвое реже' },
+    // после 1997-го: новые поколения, ломаются реже, стоят дороже
+    lc100: { name: 'Крузак «сотка»', wear: 0.5, alt: 'Toyota Land Cruiser 100', seats: 6, q: 1, price: 70, from: 1998, rep: 3, shape: 'jeep', col: '#3a3d36', desc: 'Шесть мест, не ломается, проходит всё. Любимец бригадиров' },
+    w220: { name: 'Двести двадцатый', wear: 0.6, alt: 'Mercedes S600 (W220)', seats: 4, q: 0.8, price: 120, from: 1999, rep: 5, talk: 4, shape: 'merc', col: '#1a1c22', desc: 'Новый шестисотый: тише, быстрее, солиднее. Переговоры +4% за машину' },
+    x5: { name: 'Икс-пятый', wear: 0.6, alt: 'BMW X5', seats: 5, q: 1, price: 80, from: 2000, rep: 3, shape: 'jeep', col: '#2b3340', desc: 'Джип для тех, кто вырос из «бэхи»' },
+    e65: { name: 'Семёрка', wear: 0.6, alt: 'BMW 7 (E65)', seats: 4, q: 0.9, price: 100, from: 2002, rep: 4, talk: 3, shape: 'merc', col: '#1f2b3d', desc: 'Представительский седан для разговоров в Белом доме' },
+    escalade: { name: 'Эскалейд', wear: 0.6, alt: 'Cadillac Escalade', seats: 7, q: 1, price: 95, from: 2002, rep: 4, shape: 'jeep', col: '#141418', desc: 'Семь мест и хром. Охрана помещается целиком' },
+    rr: { name: 'Рендж', wear: 0.7, alt: 'Range Rover', seats: 5, q: 1.1, price: 115, from: 2002, rep: 5, shape: 'jeep', col: '#2e3a30', desc: 'Английская классика для новой знати' },
+    cayenne: { name: 'Кайен', wear: 0.6, alt: 'Porsche Cayenne', seats: 5, q: 1.2, price: 110, from: 2003, rep: 5, shape: 'jeep', col: '#5b6470', desc: 'Самый быстрый джип в городе' }
   };
 
   // Легенды эпохи: отсылки к настоящим людям девяностых, имена изменены, клички свои.

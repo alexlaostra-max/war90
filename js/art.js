@@ -384,7 +384,7 @@
     const C0 = G.DATA.CARS[k]; if (!C0) return '';
     const ph = photo('car-' + k, C0.name); if (ph) return ph;
     const key = 'car' + k; if (cache[key]) return cache[key];
-    const kind = CAR_SHAPES[k] ? k : 'nine', len = CAR_SHAPES[kind].len || 60, s = Math.min(1.6, 100 / len);
+    const kind = CAR_SHAPES[k] ? k : CAR_SHAPES[C0.shape] ? C0.shape : 'nine', len = CAR_SHAPES[kind].len || 60, s = Math.min(1.6, 100 / len);
     const bg = R(0, 0, 120, 48, '#1d1a24') + R(0, 38, 120, 10, '#24202b') + R(0, 38, 120, 0.8, '#3a3446') + [8, 38, 68, 98].map(x => R(x, 43.4, 14, 0.8, '#4a4352')).join('');
     return (cache[key] = svg('0 0 120 48', bg + carBody(kind, C0.col, (120 - len * s) / 2, 40, s), C0.name, 'car'));
   }
@@ -548,6 +548,79 @@
       return h + pl.svg + boarding(pl, ['#2c4a8a', '#5a2e4a', '#1d1b22'], 5, { hand: 'bag' }) + chelnok(158) + chelnok(170) + chelnok(164, GY - 7) + chelnok(184);
     }
   };
+  // ---------- крупные дела после дефолта ----------
+  const crane = (x, h, col) => R(x, GY - h, 2.4, h, col) + L(x + 1.2, GY - h + 2, x + 30, GY - h + 6, col, 1.4) + L(x + 1.2, GY - h + 2, x - 10, GY - h + 4, col, 1.2) + L(x + 28, GY - h + 6, x + 28, GY - h + 22, '#888', 0.4) + R(x - 12, GY - h + 3, 5, 4, '#555');
+  const tower = (x, w, h, col, seed, lit) => R(x, GY - h, w, h, col) + wins(x + 1.5, GY - h + 2, Math.floor((w - 2) / 3), Math.floor((h - 4) / 3), 1.4, 1.6, 1.6, 1.4, seed, lit || 0.4, '#f0c968');
+  Object.assign(DEAL, {
+    // Хельсинки: зимний вечер, вышка связи, джет
+    gsm() {
+      let h = sky('dg-gsm', '#1c2236', '#5a6a8a') + stars(401, 20, 30) + R(0, 64, 240, 18, '#33405a') + [10, 60, 120, 180].map(x => R(x, 70 + (x % 4), 22, 0.7, '#9fb3c8', 'opacity=".4"')).join('');
+      h += P('M196 82L204 18L212 82Z', 'none', 'stroke="#b9bcc6" stroke-width="1.2"') + [30, 42, 54, 66].map(y => L(196 + (82 - y) / 64 * 8, y, 212 - (82 - y) / 64 * 8, y, '#b9bcc6', 0.6)).join('') + C(204, 16, 1.6, '#ff4d4d') + C(204, 16, 5, '#ff4d4d', 'opacity=".2"') + [-1, 1].map(d => P('M' + (204 + d * 7) + ' 12q' + d * 4 + ' 4 0 9', 'none', 'stroke="#6ccff0" stroke-width=".8" opacity=".7"')).join('');
+      h += tarmac('#2a2d36') + [0, 1, 2, 3, 4].map(i => C(rng(403 + i)() * 240, 20 + i * 12, 0.6, '#fff', 'opacity=".7"')).join('');
+      const pl = bizjet(60, 1.1, '#e8e6e0', '#3f6fb1');
+      return h + pl.svg + boarding(pl, ['#2a2e3a', '#141418', '#3a3d4a'], 4, { hand: 'case' });
+    },
+    // Кемерово: угольный разрез, серое небо, Ми-8
+    coal() {
+      let h = sky('dg-coal', '#6a6e78', '#a8a8a8') + ridge([[0, 60], [40, 52], [90, 58], [150, 48], [200, 56], [240, 50]], '#3a3a3e') + ridge([[0, 72], [30, 66], [70, 70], [120, 64], [170, 72], [240, 66]], '#1c1c20');
+      h += R(150, 40, 4, 42, '#5a5560') + L(152, 42, 200, 70, '#5a5560', 2) + P('M196 70l10 0l-2 6h-6z', '#2a2a2e') + R(0, GY, 240, 14, '#2a2826') + [12, 40, 70].map(x => P('M' + x + ' 82q8 -10 16 0z', '#141416')).join('');
+      const pl = heli(88, 0.95, '#4c5b3c');
+      return h + pl.svg + boarding(pl, ['#3a2e24', '#1d1b22'], 4, { hat: 'ush', hand: 'case', ladder: '#4a4d43' });
+    },
+    // Тольятти: автозавод, ряды новых «девяток» у проходной
+    avtoz() {
+      let h = sky('dg-avtoz', '#7fa6c8', '#d8e2ea') + glowSun(200, 20, 6, '#fff3c4') + R(110, 40, 130, 42, '#8a8590') + wins(114, 44, 20, 3, 4, 3, 2, 3, 411, 0.3, '#c8d4e0') + [130, 170, 210].map(x => R(x, 24, 4, 16, '#6a6470')).join('') + board(140, 33, 60, 6, 'АВТОЗАВОД', '#c2343c', '#f3ede0', 4.6) + tarmac('#4a4752');
+      const cars = [['#7a2430', 112], ['#e8e2d6', 146], ['#2d4a6a', 180], ['#5aa867', 214]].map(c => carBody('nine', c[0], c[1], 92, 0.42)).join('');
+      const pl = airliner(30, 0.82, '#e6e4de', '#c2343c', { short: 1, tail: 'RA-87' });
+      return h + pl.svg + boarding(pl, ['#2c4a8a', '#1d1b22'], 3, { hand: 'bag' }) + cars;
+    },
+    // Лас-Вегас: неон в пустыне
+    slots() {
+      let h = sky('dg-slots', '#120c22', '#4a2a5a') + stars(421, 30, 30) + ridge([[0, 66], [60, 58], [130, 64], [200, 56], [240, 62]], '#2a1a30');
+      h += tower(150, 20, 46, '#24182e', 423, 0.6) + tower(174, 26, 58, '#2a1a36', 425, 0.7) + tower(204, 18, 40, '#24182e', 427, 0.6) + R(150, 30, 74, 8, '#0c0810', 'rx="1"') + NEON(187, 36.4, 'CASINO ★ SLOTS', 5.6, '#ffcf5a') + [152, 166, 180, 194, 208, 222].map((x, i) => C(x, 42, 1, ['#ff4fa3', '#6ccff0', '#ffcf5a'][i % 3])).join('') + tarmac('#1c1820');
+      const pl = bizjet(20, 1.1, '#f0eee8', '#c2343c');
+      return h + pl.svg + boarding(pl, ['#9a1f3c', '#141418', '#3a3d4a'], 4, { hand: 'case' });
+    },
+    // Новороссийск: краны, контейнеры, море
+    seaport() {
+      let h = sky('dg-port', '#6ca0d0', '#d0e4f0') + glowSun(30, 18, 6, '#fff3c4') + ridge([[0, 54], [50, 44], [110, 52], [170, 42], [240, 50]], '#6a7a6a') + R(0, 56, 240, 12, '#2f6f98');
+      h += crane(150, 50, '#c2343c') + crane(196, 44, '#e3b341') + [[140, '#3f6fb1'], [152, '#c2343c'], [164, '#5aa867'], [146, '#e3b341'], [158, '#3f6fb1']].map((c, i) => R(c[0], GY - 6 - (i > 2 ? 6 : 0), 11, 6, c[1])).join('') + R(0, 68, 240, 14, '#5a5560') + tarmac('#4a4752');
+      const pl = airliner(4, 0.88, '#e6e4de', '#2b5aa8', { tail: 'RA-85' });
+      return h + pl.svg + boarding(pl, ['#1d1b22', '#3a3d4a'], 3, { hand: 'case' });
+    },
+    // Монако: яхты, пальмы, джет
+    club() {
+      let h = sky('dg-club', '#3a9ae0', '#c8e8f8') + glowSun(40, 16, 6, '#fff6c8') + ridge([[0, 50], [50, 38], [100, 46], [150, 34], [240, 46]], '#6a8a5a') + R(0, 58, 240, 14, '#2a7ab8');
+      const yacht = (x, s) => P('M' + x + ' 64l' + 30 * s + ' 0l-' + 4 * s + ' ' + 5 * s + 'h-' + 24 * s + 'z', '#f3ede0') + R(x + 6 * s, 59, 14 * s, 5 * s, '#e8e2d6') + R(x + 9 * s, 56, 7 * s, 3 * s, '#d0c8b8') + R(x + 8 * s, 60, 10 * s, 1.4 * s, '#26304a');
+      h += yacht(10, 1) + yacht(54, 0.8) + yacht(196, 1.1) + palm(110, 0.9) + palm(232, 1) + R(0, 72, 240, 10, '#e8d6a0') + tarmac('#56535c');
+      const pl = bizjet(120, 1.05, '#f0eee8', '#c2343c');
+      return h + pl.svg + boarding(pl, ['#9a1f3c', '#e8e2d6', '#141418'], 4, { hand: 'case' });
+    },
+    // Магадан: сопки в снегу, Ми-8, мешки с намытым
+    gold() {
+      const M = [[0, 54], [40, 36, 7], [80, 48], [120, 30, 8], [170, 46], [210, 34, 7], [240, 44]];
+      let h = sky('dg-gold', '#2a3048', '#8a90a8') + stars(431, 16, 26) + ridge(M, '#5a6070') + caps(M) + R(0, 70, 240, 26, '#d8dce4') + R(0, GY, 240, 14, '#c8ccd4');
+      const sack = x => P('M' + x + ' 82q-1 -7 4 -8q5 1 4 8z', '#8a7a5a') + C(x + 4, 74, 1.2, '#e3b341');
+      const pl = heli(84, 0.95, '#c2343c');
+      const r = rng(433); let snow = ''; for (let i = 0; i < 50; i++) snow += C(r() * 240, r() * 90, 0.6, '#fff', 'opacity=".7"');
+      return h + pl.svg + boarding(pl, ['#3a2e24', '#4a3a2e'], 4, { hat: 'ush', hand: 'gun', ladder: '#4a4d55' }) + sack(164) + sack(174) + sack(184) + snow;
+    },
+    // Дубай: пустыня, стеклянные башни, джет
+    tower() {
+      let h = sky('dg-tower', '#e08a4a', '#f6d8a0') + glowSun(30, 40, 10, '#fff0b0') + R(0, 66, 240, 16, '#e0b878');
+      h += P('M188 66L192 2L196 66Z', '#8aa8c0') + R(191.4, -4, 1.2, 8, '#8aa8c0') + tower(150, 18, 40, '#6a8aa8', 441, 0.3) + tower(206, 16, 48, '#7a98b4', 443, 0.3) + tower(226, 14, 30, '#6a8aa8', 445, 0.3) + crane(130, 40, '#e3b341') + tarmac('#6a6470');
+      const pl = bizjet(8, 1.1, '#f0eee8', '#dbb45c');
+      return h + pl.svg + boarding(pl, ['#e8e2d6', '#3a3d4a', '#141418'], 4, { hand: 'case' });
+    },
+    // Сочи: море, горы в снегу, краны олимпийской стройки
+    olymp() {
+      const M = [[0, 44], [40, 26, 7], [90, 38], [140, 22, 8], [190, 36], [240, 28, 6]];
+      let h = sky('dg-olymp', '#5aa0e0', '#d0e8f6') + glowSun(210, 14, 6, '#fff6c8') + ridge(M, '#5a7088') + caps(M) + ridge([[0, 62], [60, 54], [140, 60], [240, 52]], '#3d6a48') + R(0, 62, 240, 8, '#2a7ab8');
+      h += crane(150, 50, '#e3b341') + crane(200, 56, '#c2343c') + P('M160 70q20 -14 40 0z', '#d8dce4') + R(160, 69, 40, 3, '#b9bcc6') + palm(14, 0.8) + tarmac('#56535c');
+      const pl = airliner(24, 0.9, '#f0eee8', '#3f6fb1', { tail: 'RA-96' });
+      return h + pl.svg + boarding(pl, ['#141418', '#3a3d4a', '#9a1f3c'], 4, { hand: 'case' });
+    }
+  });
   function deal(id) {
     const fn = DEAL[id]; if (!fn) return '';
     const key = 'deal' + id; if (cache[key]) return cache[key];
