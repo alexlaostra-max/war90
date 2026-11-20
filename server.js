@@ -12,6 +12,8 @@ const MAX_ROOMS = 200, ROOM_TTL = 14 * 24 * 3600e3;
 const IDLE = +process.env.ROOM_IDLE_MS || 10 * 60e3;
 const FIDS = D.FACTIONS.map(f => f.id);
 // чат комнаты: хранится 100 последних сообщений, игрокам уходят 50, писать не чаще раза в секунду
+// таймер хода (минуты; 0 — без таймера) и через сколько офлайна бригаду забирает бот
+const TIMERS = [0, 3, 5, 10], AUTO_MS = +process.env.AUTO_MS || 3 * 60e3, MIN = +process.env.TIMER_UNIT_MS || 60e3;
 const CHAT_KEEP = 100, CHAT_SHOW = 50, CHAT_GAP = 1000;
 const rooms = new Map();    // id -> room
 const streams = new Map();  // roomId -> Map(token -> Set(res))
@@ -46,7 +48,8 @@ function lobby(r, token) {
     id: r.id, name: r.name, started: r.started, host: r.host === token, slots: r.slots, diff: r.diff || 'norm', scen: r.scen || 's91',
     me: r.players[token] ? { nick: r.players[token].nick, fid: r.players[token].fid, cid: cidOf(r.players[token]) } : null,
     players: Object.keys(r.players).map(t => ({ nick: r.players[t].nick, fid: r.players[t].fid, host: t === r.host, online: online(r, t) })),
-    chat: (r.chat || []).slice(-CHAT_SHOW)
+    chat: (r.chat || []).slice(-CHAT_SHOW),
+    timer: r.timer == null ? 3 : r.timer, left: r.started && r.deadline ? Math.max(0, r.deadline - Date.now()) : null
   };
 }
 function payload(r, token) {
@@ -55,6 +58,8 @@ function payload(r, token) {
 }
 function push(r) {
   r.touched = Date.now(); save();
+  // новый месяц — таймер заново
+  if (r.started && r.S && r.lastTurn !== r.S.turn) { r.lastTurn = r.S.turn; r.deadline = r.timer !== 0 ? Date.now() + (r.timer || 3) * MIN : null; }
   const m = streams.get(r.id); if (!m) return;
   m.forEach((set, token) => { if (!set.size) return; const data = 'data: ' + payload(r, token) + '\n\n'; set.forEach(res => res.write(data)); });
 }
@@ -105,6 +110,7 @@ const api = {
     const r = newRoom(name), token = id(16);
     r.diff = E.DIFF[b.diff] ? b.diff : 'norm';
     r.scen = D.SCENARIOS[b.scen] ? b.scen : 's91';
+    r.timer = TIMERS.includes(+b.timer) ? +b.timer : 3;
     r.host = token; r.players[token] = { nick, fid: null };
     save(); return { room: r.id, token };
   },
@@ -129,6 +135,12 @@ const api = {
     if (taken(r, b.fid)) return { err: 'Бригаду ведёт игрок' };
     r.slots[b.fid] = b.mode; push(r); return { ok: true };
   },
+  timer(b, r, token) { // хост: время на месяц
+    if (r.host !== token) return { err: 'Таймер ставит создатель комнаты' };
+    if (!TIMERS.includes(+b.min)) return { err: 'Неверный таймер' };
+    r.timer = +b.min; r.deadline = r.started && r.timer ? Date.now() + r.timer * MIN : null;
+    push(r); return { ok: true };
+  },
   start(b, r, token) {
     if (r.host !== token) return { err: 'Начать может создатель комнаты' };
     if (r.started) return { err: 'Игра уже идёт' };
@@ -144,7 +156,7 @@ const api = {
   act(b, r, token) {
     const p = r.players[token]; if (!r.started || !p.fid) return { ok: false, msg: 'Игра не началась' };
     const fn = Object.prototype.hasOwnProperty.call(E.ACTIONS, b.name) && E.ACTIONS[b.name];
-    const args = Array.isArray(b.args) ? b.args.slice(0, 3) : [];
+    const args = Array.isArray(b.args) ? b.args.slice(0, 4) : [];
     if (!fn || args.some(a => a !== null && !['string', 'number'].includes(typeof a))) return { ok: false, msg: 'Неизвестное действие' };
     const res = fn(r.S, p.fid, ...args);
     if (res.ok) push(r);
@@ -228,4 +240,23 @@ setInterval(() => {
   const now = Date.now();
   emptySince.forEach((t, rid) => { const r = rooms.get(rid); if (!r) { emptySince.delete(rid); return; } if (now - t >= IDLE && !live(r)) { closeRoom(r); console.log('комната закрыта, никого нет ' + Math.round(IDLE / 60e3) + ' мин: ' + r.name); } });
 }, Math.min(30e3, IDLE / 4)).unref();
+// раз в две секунды: кто пропал — за того бот, кто вернулся — снова сам; вышло время — месяц закрывается за всех
+setInterval(() => {
+  const now = Date.now();
+  rooms.forEach(r => {
+    if (!r.started || !r.S || r.S.done) return;
+    let changed = false; r.off = r.off || {};
+    Object.keys(r.players).forEach(t => {
+      const fid = r.players[t].fid; if (!fid || !r.S.f[fid]) return;
+      if (online(r, t)) { delete r.off[t]; if (E.setAuto(r.S, fid, false)) changed = true; }
+      else { if (!r.off[t]) r.off[t] = now; if (now - r.off[t] >= AUTO_MS && E.setAuto(r.S, fid, true)) changed = true; }
+    });
+    if (changed && E.allReady(r.S)) E.endTurn(r.S, false);
+    if (r.deadline && now >= r.deadline) {
+      const someone = Object.keys(r.players).some(t => online(r, t));
+      if (someone) { E.endTurn(r.S, true); changed = true; } else r.deadline = now + 30e3; // без людей не спешим
+    }
+    if (changed) push(r);
+  });
+}, 2000).unref();
 server.listen(PORT, () => console.log('Передел: http://localhost:' + PORT));

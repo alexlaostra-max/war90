@@ -444,7 +444,7 @@
     if (!S.d[i] || !SHARES[lvl]) return fail('Нет такой цели');
     if (!attackable(S, fid, i)) return fail('Нападать можно только на районы, которые граничат с твоими');
     const d = S.d[i], dd = D.DISTRICTS[i], p = S.f[fid];
-    if (d.o && !S.f[d.o].human && inTruce(S, fid, d.o)) return fail('С этой бригадой перемирие');
+    if (d.o && inTruce(S, fid, d.o)) return fail('С этой бригадой перемирие' + (S.f[d.o].human ? ' до ' + date(S.f[fid].truce[d.o]).label : ''));
     if (p.men < 3) return fail('Некого посылать');
     p.ap--;
     const men = strike(p, SHARES[lvl]), a = power(p) * men / Math.max(1, p.men) * atkMult(S, fid, i) * rr(S, 0.9, 1.1), dv = districtDef(S, i) * rr(S, 0.9, 1.1);
@@ -1178,13 +1178,14 @@
     p.ready = !!v;
     return { ok: true, msg: v ? 'Ждём остальных' : 'Можно ходить дальше' };
   }
-  const allReady = S => active(S).length > 0 && active(S).every(h => S.f[h].ready);
+  const allReady = S => active(S).length > 0 && active(S).some(h => !S.f[h].auto) && active(S).every(h => S.f[h].ready || S.f[h].auto);
 
   function endTurn(S, force) {
     if (S.done) return fail('Игра окончена');
+    active(S).forEach(h => autoPlay(S, h));
     if (!force && active(S).some(h => S.f[h].event)) return fail('Сначала реши, что делать с событием');
     active(S).forEach(h => { if (S.f[h].battle) { if (S.f[h].battle.def) defendEnd(S, h, false, 'Месяц кончился'); else finishBattle(S, h, false, 'Месяц кончился'); } (S.f[h].assaults || []).slice().forEach(x => resolveAssault(S, h, x, 'auto')); snapshot(S, h); S.f[h].event = null; S.f[h].queue = []; humanPhase(S, h); });
-    S.hits = {};
+    S.hits = {}; S.offers = [];
     D.FACTIONS.forEach(f => { if (!S.f[f.id].human) aiTurn(S, f.id); });
     active(S).forEach(h => { if (count(S, h) === 0) eliminate(S, h); });
     if (S.turn >= LAST_TURN) active(S).forEach(h => finale(S, h));
@@ -1199,8 +1200,8 @@
 
   // Что сервер показывает игроку: без сида и без чужих секретов
   function viewFor(S, fid) {
-    const V = JSON.parse(JSON.stringify(S)); delete V.seed; V.me = fid;
-    S.humans.forEach(h => { if (h !== fid) { const x = S.f[h]; V.f[h] = { id: h, men: x.men, guns: x.guns, cars: x.cars, arms: x.arms, garage: x.garage, vests: x.vests, rep: x.rep, alive: x.alive, human: true, ready: x.ready, nick: x.nick, over: x.over ? { title: x.over.title, score: x.over.score } : null }; } });
+    const V = JSON.parse(JSON.stringify(S)); delete V.seed; V.me = fid; V.offers = (S.offers || []).filter(o => o.from === fid || o.to === fid);
+    S.humans.forEach(h => { if (h !== fid) { const x = S.f[h]; V.f[h] = { id: h, men: x.men, guns: x.guns, cars: x.cars, arms: x.arms, garage: x.garage, vests: x.vests, rep: x.rep, alive: x.alive, human: true, ready: x.ready, auto: !!x.auto, nick: x.nick, over: x.over ? { title: x.over.title, score: x.over.score } : null }; } });
     V.log = S.log.filter(l => !l.to || l.to === fid).slice(0, 80);
     return V;
   }
@@ -1246,7 +1247,119 @@
     if (p.hist.length > 220) p.hist.shift();
     p.month = { acts: {}, ev: [] };
   }
-  const ACTIONS = { defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
+
+  // ---------- свои люди: казнь и подстава ----------
+  // казнить: человек погибает, бригада боится (авторитет +2), часть семьи затаит обиду; раз в месяц
+  function execute(S, fid, id) {
+    const e = spend(S, fid, 0); if (e) return fail(e);
+    const p = S.f[fid], c = crew(S, fid).find(x => x.id === id); if (!c) return fail('Нет такого человека');
+    if (c.st === 'jail') return fail('Он сидит: до него не дотянуться');
+    if (p.execTurn === S.turn) return fail('Одной казни в месяц хватит: пацаны и так напуганы');
+    p.execTurn = S.turn;
+    const nm = cname(c);
+    fate(S, fid, c, 'dead', 'казнён по твоему приказу');
+    if (!p.flags) p.flags = {}; p.flags.exec = true;
+    addRep(S, fid, 2); addHeat(S, fid, 4);
+    let hurt = 0; crew(S, fid).forEach(x => { if (rnd(S) < 0.25) { x.loy = Math.max(1, x.loy - 1); hurt++; } });
+    log(S, nm + ' казнён. Пацаны теперь ходят тише.' + (hurt ? ' Кое-кто в семье затаил обиду: верность −1 у ' + hurt + '.' : ''), 'bad', fid);
+    return { ok: true, msg: nm + ' казнён. Авторитет +2, розыск +4' + (hurt ? ', у ' + hurt + ' из семьи верность −1' : '') };
+  }
+  // подбросить наркоту: человека сажают надолго и он уходит из семьи без крови; стоит денег на ментов
+  const frameCost = S => Math.round(8 * era(S));
+  function frame(S, fid, id) {
+    const e = spend(S, fid, 0); if (e) return fail(e);
+    const p = S.f[fid], c = crew(S, fid).find(x => x.id === id); if (!c) return fail('Нет такого человека');
+    if (c.st === 'jail') return fail('Он уже сидит');
+    if (p.frameTurn === S.turn) return fail('Операм хватит одного заказа в месяц');
+    const cost = frameCost(S); if (p.money < cost) return fail('Операм нужно ' + cost + ' тыс.');
+    p.money -= cost; p.frameTurn = S.turn;
+    const nm = cname(c);
+    p.crew = p.crew.filter(x => x !== c);
+    p.dead.unshift({ n: nm, pos: c.pos, t: S.turn, how: 'уехал на зону: подбросили наркоту', gone: true }); if (p.dead.length > 12) p.dead.length = 12;
+    let s2 = 'У ' + nm + ' при обыске нашли пакет. Восемь лет строгого режима, в семью он не вернётся.';
+    if (c.loy <= 3 && rnd(S) < 0.5) { addHeat(S, fid, 8); s2 += ' На допросах понял, откуда пакет, и заговорил: розыск +8.'; }
+    log(S, s2, 'bad', fid);
+    return { ok: true, msg: nm + ' уехал на зону. Отдано операм ' + cost + ' тыс.' };
+  }
+
+  // ---------- онлайн: сделки между живыми игроками ----------
+  // kind: truce — мир на x месяцев; pay — отдать x тыс.; ask — попросить x тыс.; sell — продать свой район i за x; buy — купить их район i за x
+  const OFFER_KINDS = ['truce', 'pay', 'ask', 'sell', 'buy'];
+  const peer = (S, fid, to) => { const f = S.f[to]; return f && f.human && f.alive && !f.over && to !== fid; };
+  function offerCheck(S, o) {
+    const a = S.f[o.from], b = S.f[o.to];
+    if (!peer(S, o.from, o.to) || !a.alive || a.over) return 'Сделка больше невозможна';
+    if (o.kind === 'truce') return inTruce(S, o.from, o.to) ? 'Перемирие уже действует' : null;
+    if (o.kind === 'pay') return a.money < o.x ? 'Не хватает денег: нужно ' + o.x + ' тыс.' : null;
+    if (o.kind === 'ask') return b.money < o.x ? 'Не хватает ' + o.x + ' тыс.' : null;
+    const seller = o.kind === 'sell' ? o.from : o.to, buyer = o.kind === 'sell' ? o.to : o.from, d = S.d[o.i];
+    if (!d || d.o !== seller) return 'Район уже не у продавца';
+    if (isHome(S, seller, o.i)) return 'Родной район не продают';
+    if (count(S, seller) < 2) return 'Последний район не продают';
+    if (!attackable(S, buyer, o.i)) return 'Купить можно только район рядом со своими';
+    if (S.f[buyer].money < o.x) return 'У покупателя не хватает денег: нужно ' + o.x + ' тыс.';
+    return null;
+  }
+  const months = n => n + ' ' + (n % 10 === 1 && n % 100 !== 11 ? 'месяц' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'месяца' : 'месяцев');
+  const offerText = o => { const dn = o.i != null ? D.DISTRICTS[o.i].name : ''; return { truce: 'предлагает мир на ' + months(o.x), pay: 'дарит ' + o.x + ' тыс. $', ask: 'просит ' + o.x + ' тыс. $', sell: 'продаёт район ' + dn + ' за ' + o.x + ' тыс. $', buy: 'хочет купить район ' + dn + ' за ' + o.x + ' тыс. $' }[o.kind]; };
+  function offer(S, fid, to, kind, x, i) {
+    const p = S.f[fid]; if (!p || !p.human || p.over || S.done) return fail('Игра окончена');
+    if (!peer(S, fid, to)) return fail('Сделки — только с живыми игроками');
+    if (!OFFER_KINDS.includes(kind)) return fail('Нет такой сделки');
+    x = Math.round(+x); if (!(x > 0 && x <= (kind === 'truce' ? 36 : 100000))) return fail(kind === 'truce' ? 'Срок от 1 до 36 месяцев' : 'Сумма должна быть больше нуля');
+    S.offers = S.offers || [];
+    if (S.offers.filter(o => o.from === fid).length >= 3) return fail('Не больше трёх предложений за раз');
+    const o = { id: (S.oid = (S.oid || 0) + 1), from: fid, to, kind, x, i: kind === 'sell' || kind === 'buy' ? +i : null, t: S.turn };
+    const why = offerCheck(S, o); if (why) return fail(why);
+    S.offers.push(o);
+    return { ok: true, msg: 'Предложение отправлено. Ждём ответа' };
+  }
+  function answer(S, fid, id, yes) {
+    S.offers = S.offers || [];
+    const o = S.offers.find(x => x.id === +id); if (!o) return fail('Предложение уже неактуально');
+    if (o.from === fid && !yes) { S.offers = S.offers.filter(x => x !== o); return { ok: true, msg: 'Предложение отозвано' }; }
+    if (o.to !== fid) return fail('Это не тебе');
+    S.offers = S.offers.filter(x => x !== o);
+    const A = fdef(o.from).name, B = fdef(o.to).name;
+    if (!yes) { log(S, B + ' отказались. Ты ' + offerText(o).replace(/^(\S+)/, w => ({ 'предлагает': 'предлагал', 'дарит': 'дарил', 'просит': 'просил', 'продаёт': 'продавал', 'хочет': 'хотел' })[w] || w) + '.', '', o.from); return { ok: true, msg: 'Отказано' }; }
+    const why = offerCheck(S, o); if (why) return fail(why);
+    const a = S.f[o.from], b = S.f[o.to];
+    if (o.kind === 'truce') { a.truce[o.to] = S.turn + o.x; b.truce[o.from] = S.turn + o.x; }
+    else if (o.kind === 'pay') { a.money -= o.x; b.money += o.x; }
+    else if (o.kind === 'ask') { b.money -= o.x; a.money += o.x; }
+    else { const seller = o.kind === 'sell' ? o.from : o.to, buyer = o.kind === 'sell' ? o.to : o.from; S.f[buyer].money -= o.x; S.f[seller].money += o.x; S.d[o.i].o = buyer; S.d[o.i].ent = false; crew(S, seller).forEach(c => { if (c.pos === 'watch' && c.ok === watchKey(o.i)) { c.pos = null; c.ok = null; } }); }
+    const dn = o.i != null ? D.DISTRICTS[o.i].name : '', byr = fdef(o.kind === 'sell' ? o.to : o.from).name;
+    const s2 = 'Сделка ' + A + ' и ' + B + ': ' + { truce: 'мир на ' + months(o.x), pay: A + ' передали ' + o.x + ' тыс. $', ask: B + ' передали ' + o.x + ' тыс. $', sell: dn + ' перешёл к ' + byr + ' за ' + o.x + ' тыс. $', buy: dn + ' перешёл к ' + byr + ' за ' + o.x + ' тыс. $' }[o.kind] + '.';
+    log(S, s2, 'good', o.from); log(S, s2, 'good', o.to);
+    return { ok: true, msg: 'По рукам' };
+  }
+
+  // ---------- онлайн: бригаду ушедшего игрока ведёт бот ----------
+  function setAuto(S, fid, v) {
+    const p = S.f[fid]; if (!p || !p.human || p.over) return false;
+    if (!!p.auto === !!v) return false;
+    p.auto = !!v;
+    log(S, v ? fdef(fid).name + ': игрок пропал, бригаду ведёт бот.' : fdef(fid).name + ': игрок вернулся и снова сам ведёт бригаду.', '');
+    return true;
+  }
+  // бот за человека: отвечает на события, отбивается, нанимает, вооружает, ставит людей и строит; сам не нападает
+  function autoPlay(S, fid) {
+    const p = S.f[fid]; if (!p.auto || p.over) return;
+    for (let k = 0; k < 6 && p.event; k++) { const ev = currentEvent(S, fid); if (!ev) { p.event = null; break; } const ok = ev.opts.map((o, j) => j).filter(j => !optState(S, fid, ev.opts[j]).lock); if (!ok.length) { p.event = null; break; } choose(S, fid, ok[Math.floor(rnd(S) * ok.length)]); }
+    if (p.battle) { if (p.battle.def) defendEnd(S, fid, false, 'Бот отступил'); else finishBattle(S, fid, false, 'Бот отступил'); }
+    (p.assaults || []).slice().forEach(x => resolveAssault(S, fid, x, 'auto'));
+    p.ready = false;
+    const n = Math.min(pool(S, fid), menCap(S, fid) - p.men, Math.floor(p.money * 0.3 / Math.max(1, recruitPrice(S)))); if (n > 0) recruit(S, fid, n);
+    const bare = p.men - p.guns; if (bare > 0) buyGuns(S, fid, 'pm', Math.min(bare, Math.floor(p.money * 0.2 / Math.max(1, gunPrice(S, fid)))));
+    const bench = () => crew(S, fid).filter(c => !c.pos && c.st === 'ok');
+    ['right', 'treas', 'cons', 'lawyer'].forEach(pos => { if (post(S, fid, pos)) return; const b = bench().filter(c => c.loy > 3).sort((x, y) => (pos === 'right' ? y.str - x.str : y.wit - x.wit))[0]; if (b) assign(S, fid, b.id, pos); });
+    Object.keys(D.OKRUGS).forEach(ok => { if (capoOf(S, fid, ok) || !owned(S, fid).some(i => D.DISTRICTS[i].ok === ok)) return; const b = bench().sort((x, y) => y.str - x.str)[0]; if (b) assign(S, fid, b.id, 'capo', ok); });
+    const own = owned(S, fid), bi = own.length ? bestInvest(S, fid, own, Math.floor(p.money * 0.35), 0) : null;
+    if (bi) { if (bi.k) doBuild(S, fid, bi.i, bi.k); else doUpgrade(S, fid, bi.i, bi.x); }
+    p.ready = true;
+  }
+
+  const ACTIONS = { execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
-  G.Engine = { defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);

@@ -131,8 +131,9 @@
       '<button class="st heat l' + L + '" data-go="law" title="Розыск">' + A.icon('heat') + '<b class="hnum">' + R(p.heat) + '</b><div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></button>' +
       '';
     $('#perks').innerHTML = fxStrip();
-    $('#apm').innerHTML = '<div class="pips">' + pips + '</div>';
-    $('#ap').innerHTML = '<span>Ходы</span><div class="pips">' + pips + '</div><b>' + p.ap + ' из ' + E.apMax(S, me) + '</b>';
+    $('#apm').innerHTML = '<div class="pips">' + pips + '</div><span class="tmr" hidden></span>';
+    $('#ap').innerHTML = '<span>Ходы</span><div class="pips">' + pips + '</div><b>' + p.ap + ' из ' + E.apMax(S, me) + '</b><span class="tmr" hidden></span>';
+    tickTimer();
     const end = $('#end');
     end.disabled = !!p.event || !!p.over || S.done;
     if (net) { const act = E.active(S), rd = act.filter(h => S.f[h].ready).length; end.textContent = p.ready ? 'Жду остальных ' + rd + '/' + act.length + ' · отменить' : 'Готов'; end.classList.toggle('waiting', !!p.ready); }
@@ -348,6 +349,20 @@
     return '<div class="quest' + (done ? ' done' : '') + '"><div class="qhead"><span class="ava">' + A.legendFace('hasan') + '</span><div><p class="eyebrow">Путь наверх · ' + n + ' из ' + D.QUESTS.length + '</p><b>' + q.title + '</b><small>Дед Хасан объясняет</small></div></div><p>' + q.text + '</p><p class="qhow">' + (done ? '✓ Сделано. ' : 'Задание: ') + q.how + '</p><div class="row">' +
       (done ? '<button class="btn sm primary" data-a="quest">Забрать: +' + m + ' тыс., авторитет +' + q.rep + '</button>' : '<button class="btn sm" data-a="qgo" data-k="' + q.go + '">Показать, где</button>') + '<button class="btn sm ghost" data-a="qskip">Пропустить обучение</button></div></div>';
   }
+  // расправа над своим: казнить или подбросить наркоту (без крови, уезжает на зону)
+  let doom = null;
+  function doomHTML(c) {
+    const p = P(), fc = E.frameCost(S);
+    if (doom && doom.id === c.id) {
+      const txt = doom.kind === 'frame'
+        ? 'Подбросить «' + esc(c.nick) + '» наркоту? Операм ' + fc + ' тыс. Он уедет на зону и в семью не вернётся.' + (c.loy <= 3 ? ' Он неверен и может догадаться: тогда заговорит, розыск +8.' : '')
+        : 'Казнить «' + esc(c.nick) + '»? Авторитет +2, розыск +4. Часть семьи затаит обиду: верность −1 у каждого четвёртого.';
+      return '<div class="box doom"><p>' + txt + '</p><div class="grid">' + btn(doom.kind === 'frame' ? 'Да, подбросить' : 'Да, казнить', 'doom1', '', false, 'danger') + btn('Отмена', 'doom0', '', false, 'ghost') + '</div></div>';
+    }
+    return '<h3>Расправа</h3><div class="row doomrow">' +
+      btn('Казнить', 'doom', 'data-id="' + c.id + '" data-k="exec"', p.execTurn === S.turn ? 'в этом месяце уже казнили' : false, 'sm danger') +
+      btn('Подбросить наркоту · ' + fc + ' тыс.', 'doom', 'data-id="' + c.id + '" data-k="frame"', p.frameTurn === S.turn ? 'раз в месяц' : p.money < fc ? 'не хватает денег' : false, 'sm') + '</div>';
+  }
   const paneDossier = () => questCard() + dossierInner();
   function dossierInner() {
     const cr = E.crew(S, me);
@@ -370,6 +385,7 @@
         const top = INNER.map(x => [x]).concat(myOkrugs().map(ok => ['capo', ok])).filter(s => !same(s));
         h += '<h3>Назначить</h3><select class="pick" data-a="reassign" data-id="' + c.id + '" aria-label="Назначить на должность"><option value="">Выбрать должность…</option><optgroup label="Ближний круг и бригадиры">' + top.map(opt).join('') + '</optgroup></select><p class="muted">Смотрящих на районы ставят бригадиры сами.</p>';
         if (!c.pos) h += '<button class="btn sm ghost" data-a="dismiss" data-id="' + c.id + '">Вернуть в рядовые</button>';
+        h += doomHTML(c);
       }
       const hist = S.log.filter(l => (!l.to || l.to === me) && l.s.indexOf('«' + c.nick + '»') >= 0).slice(0, 8);
       if (hist.length) h += '<h3>История</h3><ul class="log">' + hist.map(l => '<li class="' + l.k + '"><time>' + E.date(l.t).label + '</time>' + esc(l.s) + '</li>').join('') + '</ul>';
@@ -390,7 +406,7 @@
   function deadList() {
     const p = P();
     if (!p.dead || !p.dead.length) return '';
-    return '<h3>Кладбище</h3><ul class="log">' + p.dead.map(d => '<li class="bad"><time>' + E.date(d.t).label + '</time>' + esc(d.n) + (d.pos ? ', ' + POSTS[d.pos].name.toLowerCase() : '') + ': ' + esc(d.how) + '</li>').join('') + '</ul>';
+    return '<h3>Выбыли из семьи</h3><ul class="log">' + p.dead.map(d => '<li class="' + (d.gone ? '' : 'bad') + '"><time>' + E.date(d.t).label + '</time>' + esc(d.n) + (d.pos ? ', ' + POSTS[d.pos].name.toLowerCase() : '') + ': ' + esc(d.how) + '</li>').join('') + '</ul>';
   }
 
   // Власть: наверху люди во власти (слева человек, справа что он даёт), «занести» отдельной кнопкой, ниже ступени розыска
@@ -543,15 +559,68 @@
     netCall('say', { text }).then(r => { if (r.ok) { const i = $('#chatin'); if (i && i.value.trim() === text) i.value = ''; } });
   }
 
+  // ---------- сделки между живыми игроками ----------
+  let dealWith = null, dealKind = 'truce', offersSeen = {};
+  const DEAL_KINDS = [['truce', 'Мир'], ['pay', 'Отдать деньги'], ['ask', 'Попросить денег'], ['sell', 'Продать район'], ['buy', 'Купить район']];
+  const dealDistricts = (kind, other) => kind === 'sell'
+    ? E.owned(S, me).filter(i => !E.isHome(S, me, i) && E.attackable(S, other, i))
+    : E.owned(S, other).filter(i => !E.isHome(S, other, i) && E.attackable(S, me, i));
+  function offersHTML() {
+    const mine = (S.offers || []).filter(o => o.from === me);
+    if (!net || !mine.length) return '';
+    return '<div class="box"><h3>Твои предложения</h3>' + mine.map(o => '<div class="row offrow"><span>' + who(o.to) + ': ' + esc(E.offerText(o)) + '</span>' + btn('Отозвать', 'ocancel', 'data-k="' + o.id + '"', false, 'sm ghost') + '</div>').join('') + '<p class="muted">Предложения сгорают в конце месяца.</p></div>';
+  }
+  function showDeal() {
+    const x = S.f[dealWith]; if (!x || !x.alive || x.over) { dealWith = null; closeModal(); return; }
+    const key = 'deal:' + dealWith + ':' + dealKind + ':' + S.turn + ':' + (S.offers || []).length; if (modalKey === key) return;
+    const f = fd(dealWith), p = P();
+    let h = '<div class="dhero"><span class="ava big">' + A.bossFace(f) + '</span><div><p class="eyebrow">Сделка с живым игроком</p><h2>' + esc(f.name) + '</h2><p class="sub">' + esc(x.nick || 'игрок') + (x.auto ? ' · сейчас за него бот, ответит, когда вернётся' : '') + '</p></div></div>';
+    if (E.inTruce(S, me, dealWith)) h += '<p class="good">Мир до ' + E.date(p.truce[dealWith]).label + '.</p>';
+    h += '<div class="seg dkinds">' + DEAL_KINDS.map(k => '<button class="' + (k[0] === dealKind ? 'on' : '') + '" data-a="dkind" data-k="' + k[0] + '">' + k[1] + '</button>').join('') + '</div>';
+    if (dealKind === 'truce') h += '<label class="field"><span>Срок мира</span><select id="dx">' + [3, 6, 12, 24].map(m => '<option value="' + m + '"' + (m === 12 ? ' selected' : '') + '>' + m + ' мес.</option>').join('') + '</select></label><p class="muted">Пока действует мир, вы не можете нападать на районы друг друга.</p>';
+    else if (dealKind === 'pay' || dealKind === 'ask') h += '<label class="field"><span>Сумма, тыс. $' + (dealKind === 'pay' ? ' (у тебя ' + R(p.money) + ')' : '') + '</span><input id="dx" type="number" inputmode="numeric" min="1" value="50"></label>';
+    else {
+      const ds = dealDistricts(dealKind, dealWith);
+      if (!ds.length) h += '<p class="muted">' + (dealKind === 'sell' ? 'Нет районов на продажу: продать можно не родной район, который граничит с их землёй.' : 'Купить нечего: можно только их не родной район рядом с твоими.') + '</p>';
+      else h += '<label class="field"><span>Район</span><select id="di">' + ds.map(i => '<option value="' + i + '">' + D.DISTRICTS[i].name + ' · ' + D.OKRUGS[D.DISTRICTS[i].ok].short + ' · точек ' + S.d[i].b.length + '</option>').join('') + '</select></label><label class="field"><span>Цена, тыс. $</span><input id="dx" type="number" inputmode="numeric" min="1" value="100"></label>';
+    }
+    h += '<div class="grid">' + btn('Предложить', 'dsend', '', dealKind !== 'truce' && dealKind !== 'pay' && dealKind !== 'ask' && !dealDistricts(dealKind, dealWith).length, 'primary') + btn('Закрыть', 'dclose', '', false, 'ghost') + '</div>';
+    h += '<p class="muted">Игрок увидит предложение и решит сам. Ходов не тратит.</p>';
+    openModal(h, '', key);
+  }
+  const incoming = () => (S.offers || []).find(o => o.to === me);
+  function showOffer() {
+    const o = incoming(); if (!o) return;
+    const key = 'offer:' + o.id; if (modalKey === key) return;
+    if (!offersSeen[o.id]) { offersSeen[o.id] = 1; haptic('medium'); if (G.Sfx) G.Sfx.play('msg'); }
+    const f = fd(o.from), x = S.f[o.from];
+    let h = '<div class="dhero"><span class="ava big">' + A.bossFace(f) + '</span><div><p class="eyebrow">Предложение</p><h2>' + esc(f.name) + '</h2><p class="sub">' + esc(x.nick || 'игрок') + '</p></div></div>';
+    h += '<p class="lead2">' + esc(f.boss) + ' ' + esc(E.offerText(o)) + '.</p>';
+    if (o.kind === 'sell') h += '<p class="muted">Ты платишь ' + o.x + ' тыс. и получаешь ' + D.DISTRICTS[o.i].name + '.</p>';
+    if (o.kind === 'buy') h += '<p class="muted">Ты получаешь ' + o.x + ' тыс. и отдаёшь ' + D.DISTRICTS[o.i].name + '.</p>';
+    if (o.kind === 'ask') h += '<p class="muted">У тебя ' + R(P().money) + ' тыс.</p>';
+    if (o.kind === 'truce') h += '<p class="muted">Ни ты, ни они не сможете нападать друг на друга до ' + E.date(S.turn + o.x).label + '.</p>';
+    h += '<div class="grid">' + btn('Принять', 'oyes', 'data-k="' + o.id + '"', false, 'primary') + btn('Отказаться', 'ono', 'data-k="' + o.id + '"', false, 'ghost') + '</div>';
+    openModal(h, '', key);
+  }
+
+  // ---------- таймер хода в онлайне ----------
+  const mmss = ms => { const t = Math.ceil(ms / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+  function tickTimer() {
+    const els = document.querySelectorAll('.tmr'); if (!els.length) return;
+    const left = net && net.endAt ? net.endAt - Date.now() : null;
+    els.forEach(el => { el.hidden = left == null; if (left == null) return; el.textContent = '⏱ ' + mmss(Math.max(0, left)); el.classList.toggle('bad', left < 30e3); });
+  }
+  setInterval(tickTimer, 1000);
+
   function paneClans() {
     const p = P();
-    let h = '<h2>Группировки</h2><p class="sub">Сложность: ' + E.dif(S).name.toLowerCase() + '. Первые ' + E.dif(S).grace + ' месяцев боты не нападают на живых игроков. Родной район держится в ' + E.dif(S).home + ' раза крепче.</p><table class="tbl clans"><tr><th>Бригада</th><th>Районы</th><th>Сила</th><th></th></tr>';
-    h += chatHTML();
+    let h = '<h2>Группировки</h2><p class="sub">Сложность: ' + E.dif(S).name.toLowerCase() + '. Первые ' + E.dif(S).grace + ' месяцев боты не нападают на живых игроков. Родной район держится в ' + E.dif(S).home + ' раза крепче.</p>' + chatHTML() + offersHTML() + '<table class="tbl clans"><tr><th>Бригада</th><th>Районы</th><th>Сила</th><th></th></tr>';
     D.FACTIONS.filter(f => !S.f[f.id].absent).sort((a, b) => E.count(S, b.id) - E.count(S, a.id)).forEach(f => {
       const x = S.f[f.id], mine = f.id === me;
       h += '<tr class="' + (x.alive ? '' : 'dead') + '"><td><span class="ava xs">' + A.bossFace(f) + '</span><i class="dot" style="background:' + f.color + '"></i>' + f.name + (mine ? ' (ты)' : x.human ? ' · ' + esc(x.nick || 'игрок') : '') + (!mine && !x.human && x.alive ? '<br><small class="' + relCls(E.rel(S, me, f.id)) + '">' + relName(E.rel(S, me, f.id)) + (E.inTruce(S, me, f.id) ? ' · мир до ' + E.date(p.truce[f.id]).label : '') + '</small>' : '') + '</td><td>' + E.count(S, f.id) + '</td><td>' + (x.alive ? R(E.power(x)) : '—') + '</td><td>';
       if (!mine && x.alive) {
-        if (x.human) h += '<span class="' + (x.ready ? 'good' : 'muted') + '">' + (x.ready ? 'готов' : 'ходит') + '</span>';
+        if (x.human) h += '<span class="' + (x.auto ? 'bad' : x.ready ? 'good' : 'muted') + '">' + (x.auto ? 'ведёт бот' : x.ready ? 'готов' : 'ходит') + '</span>' + (E.inTruce(S, me, f.id) ? '<br><small class="good">мир до ' + E.date(p.truce[f.id]).label + '</small>' : '') + (net && !x.over ? ' ' + btn('Сделка', 'deal', 'data-k="' + f.id + '"', false, 'sm') : '');
         else h += '<button class="btn sm" data-a="parley" data-k="' + f.id + '">Стрелка</button>';
       }
       h += '</td></tr>';
@@ -602,7 +671,7 @@
       host.innerHTML = split ? fn() : '<div class="inner' + (section === 'big' ? ' wide' : '') + '">' + fn() + '</div>';
       host.dataset.key = pk; host.scrollTop = keep; chatBottom();
     }
-    if (P().over) showOver(); else if (P().battle) showBattle(); else if ((P().assaults || []).length) showAssault(); else if (P().event) showEvent(); else if (parleyWith) showParley();
+    if (P().over) showOver(); else if (P().battle) showBattle(); else if ((P().assaults || []).length) showAssault(); else if (P().event) showEvent(); else if (net && incoming()) showOffer(); else if (dealWith) showDeal(); else if (parleyWith) showParley(); else if (/^(offer|deal):/.test(modalKey)) closeModal();
   }
 
   // ---------- действия ----------
@@ -670,6 +739,16 @@
     else if (a === 'raid') act('raid', [di]);
     else if (a === 'unassign') act('unassign', [+b.dataset.id]);
     else if (a === 'dismiss') act('dismiss', [+b.dataset.id]);
+    else if (a === 'doom') { doom = { id: +b.dataset.id, kind: k }; render(); }
+    else if (a === 'doom0') { doom = null; render(); }
+    else if (a === 'doom1') { const d = doom; doom = null; act(d.kind === 'frame' ? 'frame' : 'execute', [d.id]); }
+    else if (a === 'deal') { dealWith = k; dealKind = 'truce'; showDeal(); }
+    else if (a === 'dkind') { dealKind = k; showDeal(); }
+    else if (a === 'dclose') { dealWith = null; closeModal(); render(); }
+    else if (a === 'dsend') { const x = +(($('#dx') || {}).value || 0), i = $('#di') ? +$('#di').value : null; const to = dealWith; dealWith = null; closeModal(); act('offer', [to, dealKind, x, i]); }
+    else if (a === 'oyes' || a === 'ono') { closeModal(); act('answer', [+k, a === 'oyes' ? 1 : 0]); }
+    else if (a === 'ocancel') act('answer', [+k, 0]);
+    else if (a === 'tmr') netCall('timer', { min: +k });
     else if (a === 'recruit') act('recruit', [+b.dataset.n || 1]);
     else if (a === 'guns') act('buyGuns', [k || 'pm', +b.dataset.n || 5]);
     else if (a === 'vests') act('buyVests', [+b.dataset.n || 5]);
@@ -921,6 +1000,7 @@
     if (!net) return;
     const prevT = net.lobby && net.lobby.chat && net.lobby.chat.length ? net.lobby.chat[net.lobby.chat.length - 1].t : 0;
     net.lobby = msg.lobby; chatNews(prevT);
+    net.endAt = msg.lobby.left != null ? Date.now() + msg.lobby.left : null;
     if (!msg.state) { S = null; showLobby(); return; }
     const first = !S; S = msg.state; me = S.me; if (first) achShown = null;
     if (first) { sel = E.owned(S, me)[0]; if (sel == null) sel = null; section = 'gang'; focus = { pos: 'right' }; if (modalKey === 'lobby') closeModal(); }
@@ -945,6 +1025,8 @@
       h += '</div></div>';
     });
     h += '</div>';
+    const TM = [[0, 'нет'], [3, '3 мин'], [5, '5 мин'], [10, '10 мин']];
+    h += '<h3>Таймер хода</h3><p class="muted">Время на месяц. Кончилось — месяц закрывается за всех. Кто пропал дольше 3 минут, за того играет бот, пока не вернётся.</p>' + (L.host ? '<div class="seg">' + TM.map(t => '<button class="' + (t[0] === L.timer ? 'on' : '') + '" data-a="tmr" data-k="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>' : '<p>' + (L.timer ? L.timer + ' мин на месяц' : 'без таймера') + '</p>');
     if (L.host) h += btn('Начать игру', 'go', '', humans ? false : 'сначала займи бригаду', 'primary wide');
     else h += '<p class="muted">Игру начнёт создатель комнаты.</p>';
     if (modalKey === 'lobby' && chatOnly()) return;
