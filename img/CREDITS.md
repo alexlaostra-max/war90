@@ -20,3 +20,5 @@
 | car-gelik.jpg | Mercedes-Benz 300 GE (W463) | Alexander Migl | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Mercedes-Benz W463 Cabriolet 300 GE](https://commons.wikimedia.org/wiki/File:Mercedes-Benz_W463_Cabriolet_300_GE_1X7A0244.jpg) |
 | car-w220.jpg | Mercedes-Benz S600 L (W220) | nakhon100 | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Mercedes-Benz S600 L W220](https://commons.wikimedia.org/wiki/File:Mercedes-Benz_S600_L_W220_(12373237945).jpg) |
 | car-lc100.jpg | Toyota Land Cruiser 100 | Dinkun Chen | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [TOYOTA LAND CRUISER (J100) China](https://commons.wikimedia.org/wiki/File:TOYOTA_LAND_CRUISER_(J100)_China.jpg) |
+
+vest.jpg — бронежилет: фото прислал владелец проекта, источник и лицензия не указаны. Права на него — на владельце проекта; при сомнениях замените фото со свободной лицензией.

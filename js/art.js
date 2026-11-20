@@ -366,7 +366,7 @@
   const xesc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function photo(key, label) {
     const F = (G.DATA.PHOTOS || {})[key]; if (!F) return null;
-    return '<figure class="photo"><img src="' + F.src + '" alt="' + xesc(label) + '" loading="lazy" decoding="async"' + (F.pos ? ' style="object-position:' + F.pos + '"' : '') + '><figcaption><a href="' + xesc(F.url) + '" target="_blank" rel="noopener noreferrer">Фото: ' + xesc(F.author) + ' · ' + xesc(F.license) + '</a></figcaption></figure>';
+    return '<figure class="photo"><img src="' + F.src + '" alt="' + xesc(label) + '" loading="lazy" decoding="async"' + (F.pos ? ' style="object-position:' + F.pos + '"' : '') + '>' + (F.url ? '<figcaption><a href="' + xesc(F.url) + '" target="_blank" rel="noopener noreferrer">Фото: ' + xesc(F.author) + ' · ' + xesc(F.license) + '</a></figcaption>' : '') + '</figure>';
   }
   function arm(k) {
     const A = G.DATA.ARMS[k]; if (!A) return '';
