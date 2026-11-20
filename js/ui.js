@@ -572,7 +572,7 @@
     const L = net.lobby, list = L.chat || [], my = L.me && L.me.cid;
     if (net.seenT == null) { chatSeen(); return; } // история при входе непрочитанной не считается
     const fresh = list.filter(m => m.t > (prev || 0) && m.c !== my);
-    const shown = (!S && modalKey === 'lobby') || (S && section === 'clans');
+    const shown = (!S && modalKey === 'lobby') || (S && section === 'log');
     if (shown) { chatSeen(); return; }
     if (!fresh.length) return;
     net.unread = (net.unread || 0) + fresh.length;
@@ -639,7 +639,7 @@
 
   function paneClans() {
     const p = P();
-    let h = '<h2>Группировки</h2><p class="sub">Сложность: ' + E.dif(S).name.toLowerCase() + '. Первые ' + E.dif(S).grace + ' месяцев боты не нападают на живых игроков. Родной район держится в ' + E.dif(S).home + ' раза крепче.</p>' + chatHTML() + offersHTML() + '<table class="tbl clans"><tr><th>Бригада</th><th>Районы</th><th>Сила</th><th></th></tr>';
+    let h = '<h2>Группировки</h2><p class="sub">Сложность: ' + E.dif(S).name.toLowerCase() + '. Первые ' + E.dif(S).grace + ' месяцев боты не нападают на живых игроков. Родной район держится в ' + E.dif(S).home + ' раза крепче.</p>' + offersHTML() + '<table class="tbl clans"><tr><th>Бригада</th><th>Районы</th><th>Сила</th><th></th></tr>';
     D.FACTIONS.filter(f => !S.f[f.id].absent).sort((a, b) => E.count(S, b.id) - E.count(S, a.id)).forEach(f => {
       const x = S.f[f.id], mine = f.id === me;
       h += '<tr class="' + (x.alive ? '' : 'dead') + '"><td><span class="ava xs">' + A.bossFace(f) + '</span><i class="dot" style="background:' + f.color + '"></i>' + f.name + (mine ? ' (ты)' : x.human ? ' · ' + esc(x.nick || 'игрок') : '') + (!mine && !x.human && x.alive ? '<br><small class="' + relCls(E.rel(S, me, f.id)) + '">' + relName(E.rel(S, me, f.id)) + (E.inTruce(S, me, f.id) ? ' · мир до ' + E.date(p.truce[f.id]).label : '') + '</small>' : '') + '</td><td>' + E.count(S, f.id) + '</td><td>' + (x.alive ? R(E.power(x)) : '—') + '</td><td>';
@@ -667,7 +667,7 @@
     toast('Запись партии сохранена: ' + a.download);
   }
   function paneLog() {
-    let h = '<h2>Хроника</h2>' + cloudHTML() + '<div class="box">' + achHTML() + '</div><div class="box rec"><p>Запись партии: что было каждый месяц, какие решения ты принимал. Пришли файл разработчику — по нему настроят баланс.</p>' + btn('Скачать запись партии', 'export', '', false, 'wide') + '</div><ul class="log">' + S.log.filter(l => !l.to || l.to === me).slice(0, 60).map(l => '<li class="' + l.k + '"><time>' + E.date(l.t).label + '</time>' + esc(l.s) + '</li>').join('') + '</ul>';
+    let h = (net ? '<div class="chatpage">' + chatHTML() + '</div>' : '') + '<h2>Хроника</h2>' + cloudHTML() + '<div class="box">' + achHTML() + '</div><div class="box rec"><p>Запись партии: что было каждый месяц, какие решения ты принимал. Пришли файл разработчику — по нему настроят баланс.</p>' + btn('Скачать запись партии', 'export', '', false, 'wide') + '</div><ul class="log">' + S.log.filter(l => !l.to || l.to === me).slice(0, 60).map(l => '<li class="' + l.k + '"><time>' + E.date(l.t).label + '</time>' + esc(l.s) + '</li>').join('') + '</ul>';
     if (net) return h + btn('Выйти в меню', 'menu', '', false, 'wide ghost') + '<p class="muted">Комната останется, вернуться можно с этого же устройства.</p>';
     h += confirmNew ? '<div class="box"><p>Начать заново? Текущая партия пропадёт.</p><div class="grid"><button class="btn" data-a="new2">Да, заново</button><button class="btn" data-a="new0">Отмена</button></div></div>' : btn('Новая игра', 'new1', '', false, 'wide ghost');
     return h;
@@ -677,10 +677,11 @@
     if (!S) return;
     renderTop(); paintMap(); achSync(); tgSync();
     // меню разделов под шапкой; у «Банды» и «Районов» справа панель, остальные разделы во всю ширину
-    if (net && section === 'clans') chatSeen();
-    const un = v => v === 'clans' && net && net.unread ? '<i class="unread">' + net.unread + '</i>' : '';
-    $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + v[1] + un(v[0]) + '</button>').join('');
-    $('#tabbar').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(TABS[v[0]][0]) + '<span>' + TABS[v[0]][1] + '</span>' + un(v[0]) + '</button>').join('');
+    if (net && section === 'log') chatSeen();
+    const un = v => v === 'log' && net && net.unread ? '<i class="unread">' + net.unread + '</i>' : '';
+    const vname = v => net && v[0] === 'log' ? 'Чат' : v[1], tab = v => net && v === 'log' ? ['chat', 'Чат'] : TABS[v];
+    $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + vname(v) + un(v[0]) + '</button>').join('');
+    $('#tabbar').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(tab(v[0])[0]) + '<span>' + tab(v[0])[1] + '</span>' + un(v[0]) + '</button>').join('');
     if (section !== 'gang' && section !== 'map') sheet = false;
     $('#main').classList.toggle('msheet', sheet);
     $('#sheettitle').textContent = section === 'map' ? (sel == null ? 'Мои районы' : D.DISTRICTS[sel].name) : focus && focus.view ? { boss: 'Общак', men: 'Бойцы', arms: 'Арсенал', cars: 'Гараж' }[focus.view] : 'Досье';
@@ -691,7 +692,7 @@
     if (section === 'gang') renderOrg();
     const host = split ? $('#pane') : $('#page'), pk = section + ':' + (section === 'map' ? sel : section === 'gang' ? JSON.stringify(focus) : ''), keep = host.dataset.key === pk ? host.scrollTop : 0;
     const fn = { gang: paneDossier, map: paneDistrict, big: paneBig, law: paneLaw, clans: paneClans, log: paneLog }[section];
-    if (!(section === 'clans' && chatOnly())) {
+    if (!(section === 'log' && chatOnly())) {
       host.innerHTML = split ? fn() : '<div class="inner' + (section === 'big' ? ' wide' : '') + '">' + fn() + '</div>';
       host.dataset.key = pk; host.scrollTop = keep; chatBottom();
     }

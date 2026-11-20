@@ -703,3 +703,8 @@ html.tg #app { padding-top: 4px; }
   .xclose:active { background: #3a3446; }
   #side.drag { transition: none !important; }
 }
+
+/* вкладка «Чат» в онлайне: переписка крупно, хроника ниже */
+.chatpage .chat { margin: 0 0 18px; }
+.chatpage .chatlog { max-height: none; height: min(52vh, 460px); }
+.chatpage .chat h3 { display: none; }
