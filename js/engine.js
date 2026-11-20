@@ -207,6 +207,19 @@
       }
       if (c.pos === 'capo' && !owned(S, fid).some(i => D.DISTRICTS[i].ok === c.ok)) { log(S, 'Бригадир ' + cname(c) + ' остался без округа и ушёл в резерв.', '', fid); c.pos = null; c.ok = null; }
       if (c.pos === 'watch' && S.d[watchDist(c)].o !== fid) { log(S, 'Смотрящий ' + cname(c) + ' остался без района (' + D.DISTRICTS[watchDist(c)].name + ') и ушёл в резерв.', '', fid); c.pos = null; c.ok = null; }
+      // переворот: сильная и неверная правая рука; бронированный гелик бережёт главу
+      if (!p.over && c.st === 'ok' && c.pos === 'right' && c.loy <= 2 && c.str >= 7 && rnd(S) < 0.05 * armorK(p)) {
+        owned(S, fid).forEach(i => { S.d[i].o = null; S.d[i].ent = false; });
+        eliminate(S, fid, { type: 'dead', title: 'Убит на стрелке', text: 'Правая рука назначил стрелку «по общему делу». Ты приехал без охраны. ' + cname(c) + ' теперь сам ведёт бригаду, а тебя хоронят на Хованском с оркестром и венками от тех, кто стрелял. Верность нужно было проверять раньше.', score: scoreOf(S, fid) });
+        log(S, cname(c) + ' устроил переворот. Глава бригады убит на стрелке.', 'big'); return;
+      }
+      // казначей с общаком: ненадёжный исчезает со всей кассой
+      if (!p.over && c.st === 'ok' && c.pos === 'treas' && c.loy <= 2 && p.money >= 300 && rnd(S) < 0.03) {
+        const m = Math.round(p.money); p.money = 0; p.clean = 0;
+        owned(S, fid).forEach(i => { S.d[i].o = null; S.d[i].ent = false; });
+        eliminate(S, fid, { type: 'lost', title: 'Казначей в бегах с общаком', text: cname(c) + ' не вышел на связь в понедельник. Вместе с ним исчезли ' + m + ' тысяч долларов, ключи от сейфа и бухгалтерия. Платить бойцам нечем, бригада разошлась по соседям за неделю. Ты остался ни с чем: долги, пустой офис и пейджер, который больше не пищит.', score: scoreOf(S, fid) });
+        log(S, 'Казначей ' + cname(c) + ' сбежал с общаком: ' + m + ' тыс.', 'big'); return;
+      }
       if (c.st === 'ok' && c.loy <= 2 && rnd(S) < 0.04) {
         const m = Math.max(0, Math.round(p.money * 0.1)); p.money -= m; p.crew = p.crew.filter(x => x !== c);
         log(S, cfull(c).charAt(0).toUpperCase() + cfull(c).slice(1) + ' ушёл к конкурентам' + (m ? ' и прихватил из общака ' + m + ' тыс.' : '.'), 'bad', fid);
@@ -536,6 +549,18 @@
     const m = Math.round(q.$ * era(S)); p.money += m; addRep(S, fid, q.rep); p.quest = (p.quest || 0) + 1;
     log(S, 'Дед Хасан доволен: «' + q.title + '». +' + m + ' тыс., авторитет +' + q.rep + '.', 'good', fid);
     return { ok: true, msg: 'Задание «' + q.title + '» выполнено: +' + m + ' тыс., авторитет +' + q.rep };
+  }
+  // «Тихий пенсионер»: с 2000 года можно выйти из игры с белыми деньгами и чистым досье
+  const retireLock = (S, fid) => { const p = S.f[fid], w = cash(p).white; return date(S.turn).year < 2000 ? 'с 2000 года' : w < 1500 ? 'нужно белого нала 1500, есть ' + w : p.heat >= 20 ? 'розыск должен быть ниже 20' : null; };
+  function retire(S, fid) {
+    const e = spend(S, fid, 0) || retireLock(S, fid); if (e) return fail(e);
+    const p = S.f[fid], w = cash(p).white, score = scoreOf(S, fid);
+    owned(S, fid).forEach(i => { S.d[i].o = null; S.d[i].ent = false; });
+    p.alive = false; p.men = 0;
+    p.over = { type: 'end', title: 'Тихий пенсионер', text: 'Ты раздал районы, закрыл точки и перевёл ' + w + ' тысяч белых долларов на счета в трёх банках. Теперь у тебя дача под Звенигородом, внуки по выходным и ни одной строчки в оперативных сводках. Соседи думают, что ты бывший директор завода. Иногда ты и сам в это веришь.', score, stats: { money: Math.round(p.money), districts: 0, rep: Math.round(p.rep), conn: conn(S, fid), white: 100 } };
+    log(S, fdef(fid).name + ': глава отошёл от дел. Районы отошли местным.', 'big');
+    checkDone(S);
+    return { ok: true, msg: 'Ты отошёл от дел.' };
   }
   // машины ломаются: сломанная не возит бойцов, пока её не починят; автосервисы берегут парк
   const repairCost = (S, fid, k) => Math.max(2, Math.round(D.CARS[k].price * 0.3 * (1 - fxp(S, fid, 'car'))));
@@ -1013,11 +1038,13 @@
     }
   }
 
+  function scoreOf(S, fid) { const p = S.f[fid], inc = income(S, fid); return Math.round(p.money / 10 + count(S, fid) * 20 + p.rep * 5 + conn(S, fid) * 30 + inc.white * 5); }
   function finale(S, fid) {
     const p = S.f[fid], inc = income(S, fid), c = conn(S, fid), n = count(S, fid), tot = inc.white + inc.black || 1, wshare = inc.white / tot;
-    const score = Math.round(p.money / 10 + n * 20 + p.rep * 5 + c * 30 + inc.white * 5);
+    const score = scoreOf(S, fid), live = id => ((p.proj || {})[id] || {}).stage === 3;
     let title, text;
-    if (c >= 12 && wshare >= 0.5 && p.heat < 40) { title = 'Сенатор'; text = 'Декабрь 2007-го. У тебя кабинет в Совете Федерации, мигалка и неприкосновенность. Бригада называется холдингом, бойцы носят галстуки. Криминал не проиграл власти. Он ею стал.'; }
+    if (live('olymp') && live('seaport') && c >= 10 && p.heat < 50) { title = 'Губернатор'; text = 'Декабрь 2007-го. Олимпийские подряды, порт на Чёрном море и правильные люди в Кремле сделали своё дело: тебя назначили губернатором. На инаугурации в первом ряду сидят те, с кем ты делил районы в девяносто втором. Теперь они называют тебя по имени-отчеству.'; }
+    else if (c >= 12 && wshare >= 0.5 && p.heat < 40) { title = 'Сенатор'; text = 'Декабрь 2007-го. У тебя кабинет в Совете Федерации, мигалка и неприкосновенность. Бригада называется холдингом, бойцы носят галстуки. Криминал не проиграл власти. Он ею стал.'; }
     else if (wshare >= 0.5 && p.money > 3000) { title = 'Олигарх'; text = 'Декабрь 2007-го. Ты в списке журнала о богатых людях. О девяностых в интервью говоришь коротко: «Время было такое». Половина твоих партнёров носит погоны.'; }
     else if (p.heat >= 60) { title = 'Беглец'; text = 'Декабрь 2007-го. Ты смотришь новости из России на вилле под Марбельей. Интерпол прислал запрос, адвокаты пока справляются. Домой дороги нет.'; }
     else if (n >= 15) { title = 'Смотрящий'; text = 'Декабрь 2007-го. Ты остался тем, кем был: хозяином улиц. Но улицы теперь принадлежат людям с удостоверениями, и тебе всё чаще напоминают об этом.'; }
@@ -1064,6 +1091,6 @@
     return V;
   }
 
-  const ACTIONS = { quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
-  G.Engine = { questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  const ACTIONS = { retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
+  G.Engine = { retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);

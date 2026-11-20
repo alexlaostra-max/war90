@@ -6,7 +6,7 @@
   // телефон: подробности (досье, район) выезжают поверх экрана отдельной панелью
   const mobile = () => matchMedia('(max-width: 860px)').matches;
   const DONATE = '+79936338436', DONATE_SHOW = '+7 993 633-84-36'; // донат автору: Т-Банк по номеру
-  let sheet = false, perksOpen = false;
+  let sheet = false, perksOpen = false, confirmRetire = false;
   let net = null;          // онлайн: { room, token, lobby }
   let modalKey = '';       // что сейчас в модальном окне
   const FULL = GEO.box.slice(); let view = FULL.slice();
@@ -180,6 +180,9 @@
     if (tot) h += '<p class="muted">Белый доход: ' + R(inc.white / tot * 100) + '%. К 2007 году выживут те, кто успел легализоваться.</p>';
     if (p.later.length) h += '<h3>Вложения и долги</h3><table class="tbl">' + p.later.map(l => '<tr><td>' + esc(l.why) + '<br><span class="muted">' + E.date(l.t).label + '</span></td><td class="' + (l.amt < 0 ? 'bad' : 'good') + '">' + sign(l.amt) + '</td></tr>').join('') + '</table>';
     if (p.jail.length) h += '<h3>На зоне</h3><table class="tbl">' + p.jail.map(j => '<tr><td>' + j.n + ' чел.</td><td>выйдут: ' + E.date(j.t + 1).label + '</td></tr>').join('') + '</table>';
+    // концовка по своему решению
+    const rl = E.retireLock(S, me);
+    h += '<h3>Отойти от дел</h3><p class="muted">С белыми деньгами и чистым досье можно уйти на покой: районы отойдут местным, игра закончится концовкой «Тихий пенсионер».</p>' + (confirmRetire && !rl ? '<div class="box"><p>Точно уйти? Партия закончится.</p><div class="grid"><button class="btn primary" data-a="retire2">Да, на дачу</button><button class="btn" data-a="retire0">Нет, ещё повоюем</button></div></div>' : btn('Отойти от дел', 'retire1', '', rl || false, 'wide ghost'));
     return h + deadList();
   }
   // рядовые: вербовка
@@ -311,6 +314,8 @@
       h += '<div class="dhero"><span class="ava big">' + A.face(c) + '</span><div><p class="eyebrow">' + (c.pos ? slotName(c.pos, c.ok) : 'Резерв') + (c.leg ? ' · легенда эпохи' : '') + '</p><h2>' + esc(E.cname(c)) + '</h2><p class="sub">' + c.age + ' лет · в семье с ' + E.date(c.since).label + (c.st === 'hurt' ? ' · ранен, встанет: ' + E.date(c.until + 1).label : c.st === 'jail' ? ' · сидит, выйдет: ' + E.date(c.until + 1).label : '') + '</p></div></div>';
       h += '<p class="lead2">' + esc(c.bio) + '.</p><div class="stats">' + statBar('Сила', c.str) + statBar('Ум', c.wit) + statBar('Верность', c.loy) + '</div>';
       if (c.loy <= 3) h += '<p class="bad">Ненадёжен: может сдать на допросе или уйти с общаком.</p>';
+      if (c.pos === 'right' && c.loy <= 2 && c.str >= 7) h += '<p class="bad">Опасен: сильный и неверный — может устроить переворот и убить тебя на стрелке. Сними его или подними верность.</p>';
+      if (c.pos === 'treas' && c.loy <= 2) h += '<p class="bad">Может исчезнуть со всей кассой. Держи казначеем верного.</p>';
       if (c.pos) h += '<h3>Что даёт</h3>' + postEffect(c) + '<button class="btn sm" data-a="unassign" data-id="' + c.id + '">Снять в резерв</button>';
       if (c.st === 'ok') {
         const same = s => c.pos === s[0] && (c.ok || null) === (s[1] || null);
@@ -552,6 +557,9 @@
     else if (a === 'car') act('buyCar', [k || 'nine']);
     else if (a === 'repair') act('repairCar', [k]);
     else if (a === 'quest') act('quest', [0]);
+    else if (a === 'retire1') { confirmRetire = true; render(); }
+    else if (a === 'retire0') { confirmRetire = false; render(); }
+    else if (a === 'retire2') { confirmRetire = false; act('retire', []); }
     else if (a === 'qskip') act('quest', [1]);
     else if (a === 'qgo') { const g = k.split(':'); if (g[0] === 'vacant') { focus = { pos: g[1], ok: g[1] === 'capo' ? myOkrugs()[0] || null : null }; section = 'gang'; sheet = true; } else if (g[0] === 'unit') { focus = { view: g[1] }; section = 'gang'; sheet = true; } else { section = g[1]; sheet = false; if (g[1] === 'map') sel = null; } render(); if (section === 'map') applyView(); }
     else if (a === 'sellcar') act('sellCar', [k, b.dataset.n === '1' ? 1 : 0]);
