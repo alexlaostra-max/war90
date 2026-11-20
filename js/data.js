@@ -272,7 +272,7 @@
 
   // Арсенал: q — сколько боец с этим стволом добавляет к силе (голый боец = 1), price — за штуку, pack — сколько в партии
   const ARMS = {
-    obrez: { name: 'Обрез', alt: 'двустволка без приклада', q: 0.6, price: 1.2, pack: 5, from: 1991, desc: 'Дёшево и громко. Для первой разборки сойдёт' },
+    obrez: { name: 'Обрез', alt: 'ружьё с отпиленным стволом', q: 0.6, price: 1.2, pack: 5, from: 1991, desc: 'Дёшево и громко. Для первой разборки сойдёт' },
     pm: { name: 'ПМ «Макаров»', alt: 'пистолет', q: 1, price: 3, pack: 5, from: 1991, desc: 'Табельный, списанный, ворованный. Рабочая лошадка' },
     aks: { name: 'АКС-74У «Ксюха»', alt: 'укороченный автомат', q: 1.6, price: 7, pack: 5, from: 1992, desc: 'Помещается под куртку. Из армейских складов' },
     svd: { name: 'СВД', alt: 'снайперская винтовка', q: 2.2, price: 18, pack: 1, from: 1994, desc: 'Работает с чердака. Главное — уйти с позиции' },
@@ -320,5 +320,20 @@
     ]
   };
 
-  G.DATA = { RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };
+  // Фото снаряжения и машин с Викисклада (свободные лицензии). Обрезаны и тонированы под игру; список авторов — img/CREDITS.md
+  const W = 'https://commons.wikimedia.org/wiki/File:';
+  const PHOTOS = {
+    'arm-obrez': { src: 'img/arm-obrez.jpg', author: 'ATF (США)', license: 'общественное достояние', url: W + 'Shinkosha_short_barrel_shotgun.jpg' },
+    'arm-pm': { src: 'img/arm-pm.jpg', author: 'Agazoo', license: 'CC BY-SA 3.0', url: W + 'Makarov_Pistol_Parkerized_and_Painted.jpg' },
+    'arm-aks': { src: 'img/arm-aks.jpg', author: 'Vitaly V. Kuzmin', license: 'CC BY-SA 4.0', url: W + 'AKS74U_(noBG).jpg' },
+    'arm-svd': { src: 'img/arm-svd.jpg', author: 'Hokos', license: 'CC BY-SA 4.0', url: W + 'SVD_Dragunov.jpg' },
+    'arm-rpg': { src: 'img/arm-rpg.jpg', author: 'Michal Maňas', license: 'CC BY 2.5', url: W + 'RPG-7_detached.jpg' },
+    'car-uaz': { src: 'img/car-uaz.jpg', author: 'Nikolai Bulykin', license: 'CC BY-SA 4.0', url: W + 'Бишкек,_УАЗ-452_на_Турусбекова.jpg' },
+    'car-audi': { src: 'img/car-audi.jpg', author: 'Preiselbeere', license: 'CC BY-SA 3.0', url: W + 'Audi_100_C3,_BJ_1987.JPG' },
+    'car-bmw': { src: 'img/car-bmw.jpg', author: 'Elveres', license: 'CC BY-SA 4.0', url: W + '1991_BMW_E34.jpg' },
+    'car-jeep': { src: 'img/car-jeep.jpg', author: 'IFCAR', license: 'общественное достояние', url: W + '1993-1995_Jeep_Grand_Cherokee_--_03-30-2012.JPG' },
+    'car-merc': { src: 'img/car-merc.jpg', author: 'Alexxx1979', license: 'CC BY-SA 4.0', url: W + 'Moscow._Museum_of_The_Special_Purpose_Garage._Mercedes-Benz_S600_Pullman_Guard_(W140)_P4111702_2600.jpg' }
+  };
+
+  G.DATA = { PHOTOS, RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));
