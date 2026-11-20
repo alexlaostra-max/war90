@@ -719,3 +719,9 @@ html.tg #app { padding-top: 4px; }
 #upd div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 #upd b { font: 400 16px var(--display); color: var(--gold); } #upd span { font-size: 13px; color: var(--fg); }
 #upd .btn { flex: none; }
+/* фото точек: кадр как у рисунков 5:3; уровень I тусклее, III — в полном цвете */
+.photo.bph { aspect-ratio: 5 / 3; width: 100%; border-radius: 3px; }
+.photo.bph.l1 img { filter: saturate(.55) brightness(.82) contrast(1.05); }
+.photo.bph.l2 img { filter: saturate(.8) brightness(.93); }
+.photo.bph.l3 img { filter: saturate(1.1) contrast(1.05); }
+.pnext .photo.bph { width: 100%; display: block; border-radius: 0; }

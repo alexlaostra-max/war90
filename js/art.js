@@ -244,8 +244,11 @@
   };
   const LVL = ['', 'I', 'II', 'III'];
   const cache = {};
-  function build(k, lvl) {
+  // точка: настоящее фото (если есть), уровень — тонировкой; без подписи там, где фото внутри кнопки
+  function build(k, lvl, nocap) {
     lvl = Math.max(1, Math.min(3, lvl || 1));
+    const F = (G.DATA.PHOTOS || {})['b-' + k];
+    if (F) { const nm = (G.DATA.BUILDS[k] || {}).name || k; return '<figure class="photo bph l' + lvl + '"><img src="' + F.src + '" alt="' + xesc(nm) + '" loading="lazy" decoding="async"' + (F.pos ? ' style="object-position:' + F.pos + '"' : '') + '>' + (!nocap && F.url ? '<figcaption><a href="' + xesc(F.url) + '" target="_blank" rel="noopener noreferrer">Фото: ' + xesc(F.author) + ', ' + xesc(F.license) + '</a></figcaption>' : '') + '</figure>'; }
     const key = k + lvl; if (cache[key]) return cache[key];
     const B = (G.DATA.BUILDS[k] || {}).name || k, fn = BUILD[k];
     const body = fn ? fn(lvl) : '';
