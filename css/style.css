@@ -681,7 +681,6 @@ html.tg #app { padding-top: 4px; }
   #side, #side[hidden] { top: calc(8vh + var(--safe-top)); bottom: calc(var(--tabh, 58px) + var(--toph, 78px)); }
   #toast { bottom: calc(var(--tabh, 58px) + var(--toph, 78px) + 10px); }
   #modal { padding-top: max(16px, calc(var(--safe-top) + 8px)); }
-  .tg #sheethead .btn { display: none; }
 }
 
 /* таймер хода, сделки, расправа */
@@ -694,3 +693,13 @@ html.tg #app { padding-top: 4px; }
 .btn.danger:hover:not(:disabled) { background: #3a1c22; }
 .doom { border-color: var(--bad); margin-top: 12px; } .doom p { margin: 0 0 10px; }
 .doomrow { gap: 8px; flex-wrap: wrap; }
+
+/* шторка досье: ручка сверху, крестик справа, закрывается свайпом вниз */
+@media (max-width: 860px) {
+  #sheethead { position: relative; padding: 16px 12px 10px 14px; touch-action: none; }
+  #sheethead .grab { position: absolute; left: 50%; top: 6px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: #4a4458; }
+  #sheethead b { flex: 1; min-width: 0; }
+  .xclose { flex: none; width: 36px; height: 36px; margin: -4px -4px -4px 0; border: 1px solid var(--line); border-radius: 50%; background: var(--raise); color: var(--fg); font: 400 24px/1 var(--body); display: grid; place-items: center; padding: 0 0 2px; }
+  .xclose:active { background: #3a3446; }
+  #side.drag { transition: none !important; }
+}

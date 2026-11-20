@@ -15,6 +15,30 @@
     TG.BackButton.onClick(() => { if (sheet) { sheet = false; render(); } else if (modalKey === 'records' || modalKey === 'lawinfo') { closeModal(); if (S) render(); else showStart(); } });
   }
   if (TG) document.documentElement.classList.add('tg');
+  // шторку досье на телефоне можно смахнуть вниз: за шапку всегда, за содержимое — когда оно прокручено к началу
+  (function swipe() {
+    const side = document.getElementById('side'), pane = document.getElementById('pane'); if (!side) return;
+    let y0 = null, dy = 0, t0 = 0, armed = false;
+    side.addEventListener('touchstart', e => {
+      if (!sheet || e.touches.length !== 1 || e.target.closest('.xclose, input, select, textarea')) return;
+      const head = e.target.closest('#sheethead'); armed = !!head || pane.scrollTop <= 0;
+      if (!armed) return; y0 = e.touches[0].clientY; dy = 0; t0 = Date.now();
+    }, { passive: true });
+    side.addEventListener('touchmove', e => {
+      if (y0 == null) return;
+      dy = e.touches[0].clientY - y0;
+      if (dy <= 0) { if (!e.target.closest('#sheethead')) { y0 = null; side.classList.remove('drag'); side.style.transform = ''; } return; } // тянут вверх — это прокрутка
+      if (pane.scrollTop > 0 && !e.target.closest('#sheethead')) { y0 = null; return; }
+      e.preventDefault(); side.classList.add('drag'); side.style.transform = 'translateY(' + dy + 'px)';
+    }, { passive: false });
+    const end = () => {
+      if (y0 == null) return; y0 = null; side.classList.remove('drag');
+      const fast = dy > 40 && dy / Math.max(1, Date.now() - t0) > 0.5;
+      side.style.transform = '';
+      if (dy > Math.min(140, side.offsetHeight * 0.25) || fast) { sheet = false; render(); }
+    };
+    side.addEventListener('touchend', end); side.addEventListener('touchcancel', end);
+  })();
   // высота нижней панели и вкладок: под неё поджимаются экран, шторка и всплывашки
   if (window.ResizeObserver) {
     const rs = document.documentElement.style, ro = new ResizeObserver(() => {
