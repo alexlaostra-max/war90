@@ -516,7 +516,7 @@ svg.art.face { aspect-ratio: 1; }
   #stats .st .hnum { display: block; }
   /* меню разделов — внизу экрана */
   #bar { display: none; }
-  #tabbar { display: grid; grid-template-columns: repeat(6, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #120f17; border-top: 1px solid var(--line); padding: 4px max(4px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
+  #tabbar { display: grid; grid-template-columns: repeat(6, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #120f17; border-top: 1px solid var(--line); padding: 4px max(4px, env(safe-area-inset-right, 0px)) calc(4px + var(--safe-bot, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
   #tabbar button { background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 0 3px; color: var(--dim); font-size: 10px; min-width: 0; border-radius: 6px; }
   #tabbar .ico { width: 22px; height: 22px; }
   #tabbar button.on { color: var(--fg); background: var(--raise); }
@@ -626,8 +626,6 @@ svg.art.face { aspect-ratio: 1; }
 .units { font: 12px var(--mono); color: var(--dim); margin: 4px 0 8px; } .units b { color: var(--fg); font-weight: 400; }
 .blog .dice { display: block; font: 12px var(--mono); color: var(--dim); margin-top: 2px; }
 .blog .dice i { font-style: normal; font-size: 18px; color: var(--gold); letter-spacing: 1px; vertical-align: -2px; }
-/* Telegram: свой заголовок у Телеграма, отступы под его панели */
-html.tg #app { padding-top: 4px; }
 
 /* чат комнаты */
 .chat h3 { margin-top: 0; }
@@ -670,7 +668,7 @@ html.tg #app { padding-top: 4px; }
 .cand > .ava + div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 
 /* верх экрана под системными кнопками (Телеграм на весь экран, вырез айфона) */
-:root { --safe-top: max(env(safe-area-inset-top, 0px), calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px))); }
+:root { --safe-top: max(env(safe-area-inset-top, 0px), var(--tgtop, 0px), calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px))); --safe-bot: max(env(safe-area-inset-bottom, 0px), var(--tgbot, 0px)); }
 /* телефон: шапка с показателями и кнопкой месяца — внизу, над вкладками */
 @media (max-width: 860px) {
   #app { padding-top: calc(6px + var(--safe-top)); padding-bottom: calc(var(--tabh, 58px) + var(--toph, 78px)); }

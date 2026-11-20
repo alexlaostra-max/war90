@@ -39,15 +39,25 @@
     };
     side.addEventListener('touchend', end); side.addEventListener('touchcancel', end);
   })();
-  // высота нижней панели и вкладок: под неё поджимаются экран, шторка и всплывашки
-  if (window.ResizeObserver) {
-    const rs = document.documentElement.style, ro = new ResizeObserver(() => {
-      const t = document.getElementById('top'), b = document.getElementById('tabbar');
-      if (b) rs.setProperty('--tabh', b.offsetHeight + 'px');
-      if (t) rs.setProperty('--toph', (getComputedStyle(t).position === 'fixed' ? t.offsetHeight : 0) + 'px');
-    });
-    ['top', 'tabbar'].forEach(id => { const el = document.getElementById(id); if (el) ro.observe(el); });
+  // Раскладка телефона: высота нижней панели и вкладок (под неё поджимаются экран, шторка и всплывашки)
+  // и отступы под системные кнопки Телеграма сверху и полоску «домой» снизу
+  const rs = document.documentElement.style;
+  function fitDock() {
+    if (TG) {
+      const sa = TG.safeAreaInset || {}, ca = TG.contentSafeAreaInset || {};
+      let top = (sa.top || 0) + (ca.top || 0);
+      // на весь экран Телеграм кладёт поверх свои кнопки «Закрыть» и «⌄ •••»; старые клиенты не сообщают их высоту
+      if (!top && TG.isFullscreen) top = /android/i.test(TG.platform || navigator.userAgent) ? 80 : 92;
+      rs.setProperty('--tgtop', top + 'px'); rs.setProperty('--tgbot', (sa.bottom || 0) + 'px');
+    }
+    const t = document.getElementById('top'), b = document.getElementById('tabbar');
+    if (b) rs.setProperty('--tabh', b.offsetHeight + 'px');
+    if (t) rs.setProperty('--toph', (getComputedStyle(t).position === 'fixed' ? t.offsetHeight : 0) + 'px');
   }
+  if (window.ResizeObserver) { const ro = new ResizeObserver(fitDock); ['top', 'tabbar'].forEach(id => { const el = document.getElementById(id); if (el) ro.observe(el, { box: 'border-box' }); }); }
+  window.addEventListener('resize', fitDock); window.addEventListener('orientationchange', () => setTimeout(fitDock, 300));
+  if (TG && TG.onEvent) ['safeAreaChanged', 'contentSafeAreaChanged', 'fullscreenChanged', 'viewportChanged'].forEach(ev => { try { TG.onEvent(ev, fitDock); } catch (e) { /* старый клиент */ } });
+  [0, 300, 1000, 2500].forEach(ms => setTimeout(fitDock, ms));
   const tgSync = () => { if (!TG) return; if (sheet || modalKey === 'records' || modalKey === 'lawinfo') TG.BackButton.show(); else TG.BackButton.hide(); };
   const haptic = kind => { try { if (TG && TG.HapticFeedback) TG.HapticFeedback.impactOccurred(kind || 'medium'); } catch (e) { /* ignore */ } };
   const DONATE = '+79936338436', DONATE_SHOW = '+7 993 633-84-36'; // донат автору: Т-Банк по номеру
