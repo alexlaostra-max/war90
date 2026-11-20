@@ -494,7 +494,7 @@
     toast('Запись партии сохранена: ' + a.download);
   }
   function paneLog() {
-    let h = '<h2>Хроника</h2><div class="box rec"><p>Запись партии: что было каждый месяц, какие решения ты принимал. Пришли файл разработчику — по нему настроят баланс.</p>' + btn('Скачать запись партии', 'export', '', false, 'wide') + '</div><ul class="log">' + S.log.filter(l => !l.to || l.to === me).slice(0, 60).map(l => '<li class="' + l.k + '"><time>' + E.date(l.t).label + '</time>' + esc(l.s) + '</li>').join('') + '</ul>';
+    let h = '<h2>Хроника</h2><div class="box">' + achHTML() + '</div><div class="box rec"><p>Запись партии: что было каждый месяц, какие решения ты принимал. Пришли файл разработчику — по нему настроят баланс.</p>' + btn('Скачать запись партии', 'export', '', false, 'wide') + '</div><ul class="log">' + S.log.filter(l => !l.to || l.to === me).slice(0, 60).map(l => '<li class="' + l.k + '"><time>' + E.date(l.t).label + '</time>' + esc(l.s) + '</li>').join('') + '</ul>';
     if (net) return h + btn('Выйти в меню', 'menu', '', false, 'wide ghost') + '<p class="muted">Комната останется, вернуться можно с этого же устройства.</p>';
     h += confirmNew ? '<div class="box"><p>Начать заново? Текущая партия пропадёт.</p><div class="grid"><button class="btn" data-a="new2">Да, заново</button><button class="btn" data-a="new0">Отмена</button></div></div>' : btn('Новая игра', 'new1', '', false, 'wide ghost');
     return h;
@@ -502,7 +502,7 @@
 
   function render() {
     if (!S) return;
-    renderTop(); paintMap();
+    renderTop(); paintMap(); achSync();
     // меню разделов под шапкой; у «Банды» и «Районов» справа панель, остальные разделы во всю ширину
     $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + v[1] + '</button>').join('');
     $('#tabbar').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(TABS[v[0]][0]) + '<span>' + TABS[v[0]][1] + '</span></button>').join('');
@@ -547,12 +547,16 @@
     const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
     const a = b.dataset.a, k = b.dataset.k;
     // меню и лобби
-    if (a === 'start') { S = E.newGame(k, (Math.random() * 2e9) | 0, null, null, diff); me = k; net = null; sel = D.DISTRICTS.find(d => d.name === fd(k).home).id; section = 'gang'; focus = { pos: 'right' }; view = FULL.slice(); applyView(); save(); closeModal(); render(); return; }
-    if (a === 'continue') { const sv = load(); if (sv) { S = sv; me = S.humans[0]; net = null; closeModal(); render(); } return; }
+    if (a === 'start') { S = E.newGame(k, (Math.random() * 2e9) | 0, null, null, diff, scen); achShown = null; me = k; net = null; sel = D.DISTRICTS.find(d => d.name === fd(k).home).id; section = 'gang'; focus = { pos: 'right' }; view = FULL.slice(); applyView(); save(); closeModal(); render(); return; }
+    if (a === 'continue') { const sv = load(); if (sv) { S = sv; me = S.humans[0]; net = null; achShown = null; closeModal(); render(); } return; }
     if (a === 'menu') { leaveToMenu(); return; }
-    if (a === 'create') { const nick = nickValue(); Net.post('create', { name: $('#roomname').value, nick, diff }).then(r => r.room ? enterRoom(r.room, r.token) : toast(r.err, true)); return; }
+    if (a === 'create') { const nick = nickValue(); Net.post('create', { name: $('#roomname').value, nick, diff, scen }).then(r => r.room ? enterRoom(r.room, r.token) : toast(r.err, true)); return; }
     if (a === 'join') { Net.post('join', { room: k, nick: nickValue(), token: (Net.recall() || {})[k] }).then(r => r.room ? enterRoom(r.room, r.token) : toast(r.err, true)); return; }
     if (a === 'refresh') { showStart(); return; }
+    if (a === 'scen') { scen = k; try { localStorage.setItem('war90.scen', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=scen]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#scennote').textContent = D.SCENARIOS[k].desc; return; }
+    if (a === 'records') { showRecords(); return; }
+    if (a === 'menu0') { showStart(); return; }
+    if (a === 'sendscore') { const nk = ($('#scorenick') || {}).value || ''; const o = P().over; try { localStorage.setItem('war90.nick', nk.trim()); } catch (er) { /* ignore */ } Net.post('score', { nick: nk, fid: me, title: o.title, score: o.score || E.scoreOf(S, me), date: E.date(S.turn).label, scen: S.scen || 's91', diff: S.diff }).then(r => { if (r.ok) { P().scoreSent = true; save(); toast('Ты в таблице рекордов: ' + r.place + '-е место'); const box = $('#scorebox'); if (box) box.innerHTML = '<p class="good">Записано: ' + r.place + '-е место в зале славы.</p>'; } else toast(r.err || 'Не вышло', true); }); return; }
     if (a === 'diff') { diff = k; try { localStorage.setItem('war90.diff', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=diff]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#diffnote').textContent = DIFF_NOTE[k]; return; }
     if (a === 'pick') { netCall('pick', { fid: k || null }); return; }
     if (a === 'slot') { netCall('slot', { fid: k, mode: b.dataset.m }); return; }
@@ -715,6 +719,7 @@
       h += '<h3>Игроки</h3><table class="tbl">' + S.humans.map(f => { const x = S.f[f]; return '<tr><td><i class="dot" style="background:' + fd(f).color + '"></i>' + who(f) + '</td><td>' + (x.over ? esc(x.over.title) + (x.over.score ? ' · ' + x.over.score : '') : 'ещё играет') + '</td></tr>'; }).join('') + '</table>';
       if (!S.done) h += '<p class="muted">Остальные доигрывают. Итоги обновятся здесь.</p>';
     }
+    if (Net.available() && !P().scoreSent && o.title && D.ENDINGS.includes(o.title)) h += '<div class="box" id="scorebox"><h3>Зал славы</h3><div class="row"><label class="field"><span>Имя в таблице рекордов</span><input id="scorenick" maxlength="20" value="' + esc(savedNick()) + '"></label><button class="btn primary" data-a="sendscore">Записать · ' + (o.score || E.scoreOf(S, me)) + '</button></div></div>';
     h += '<div class="donate"><p>Понравилась игра? Поддержи автора — каждый перевод идёт на новые районы, события и музыку.</p><div class="drow"><span><b>Т-Банк</b><small>перевод по номеру телефона</small></span><button class="btn" data-a="copyphone" title="Скопировать номер">' + DONATE_SHOW + '<small>нажми, чтобы скопировать</small></button></div></div>';
     openModal(h + '<button class="btn wide" data-a="export">Скачать запись партии</button><button class="btn primary wide" data-a="menu">В меню</button>', 'event', key);
   }
@@ -724,10 +729,48 @@
   const DIFF_NOTE = { easy: 'Боты не трогают тебя два года, родной район почти не взять', norm: 'Полтора года тишины, потом не больше одного района в месяц', hard: 'Через год боты приходят всерьёз и могут отнять три района за месяц' };
   let diff = (() => { try { const v = localStorage.getItem('war90.diff'); return E.DIFF[v] ? v : 'norm'; } catch (e) { return 'norm'; } })();
   const diffHTML = () => '<div class="seg" role="group" aria-label="Сложность"><span>Сложность</span>' + Object.keys(E.DIFF).map(k => '<button class="' + (k === diff ? 'on' : '') + '" data-a="diff" data-k="' + k + '" aria-pressed="' + (k === diff) + '">' + E.DIFF[k].name + '</button>').join('') + '<small id="diffnote">' + DIFF_NOTE[diff] + '</small></div>';
+  let scen = (() => { try { const v = localStorage.getItem('war90.scen'); return D.SCENARIOS[v] ? v : 's91'; } catch (e) { return 's91'; } })();
+  const scenHTML = () => '<div class="seg" role="group" aria-label="Начало"><span>Начало</span>' + Object.keys(D.SCENARIOS).map(k => '<button class="' + (k === scen ? 'on' : '') + '" data-a="scen" data-k="' + k + '" aria-pressed="' + (k === scen) + '">' + D.SCENARIOS[k].name + '</button>').join('') + '<small id="scennote">' + D.SCENARIOS[scen].desc + '</small></div>';
+  // достижения за все партии хранятся в браузере; концовки идут как отдельные достижения
+  const ACH_KEY = 'war90.ach';
+  const achAll = () => { try { return JSON.parse(localStorage.getItem(ACH_KEY)) || {}; } catch (e) { return {}; } };
+  const achSave = m => { try { localStorage.setItem(ACH_KEY, JSON.stringify(m)); } catch (e) { /* ignore */ } };
+  let achShown = null;
+  function achSync() {
+    const p = S && me && S.f[me]; if (!p) return;
+    const got = Object.keys(p.ach || {}), all = achAll();
+    if (!achShown) achShown = new Set(got); // при загрузке партии старые не показываем заново
+    const fresh = got.filter(id => !achShown.has(id));
+    got.forEach(id => { achShown.add(id); all[id] = all[id] || Date.now(); });
+    if (p.over && p.over.title) all['end:' + p.over.title] = all['end:' + p.over.title] || Date.now();
+    achSave(all);
+    fresh.forEach((id, i) => { const a = D.ACH.find(x => x.id === id); if (a) setTimeout(() => { toast('🏆 Достижение: «' + a.name + '»'); if (G.Sfx) G.Sfx.play('ach'); }, 400 + i * 1800); });
+  }
+  function achHTML() {
+    const p = S && me ? S.f[me] : null, mine = (p && p.ach) || {}, all = achAll(), groups = {};
+    D.ACH.forEach(a => { (groups[a.group] = groups[a.group] || []).push(a); });
+    const total = D.ACH.length + D.ENDINGS.length, got = D.ACH.filter(a => all[a.id]).length + D.ENDINGS.filter(t => all['end:' + t]).length;
+    let h = '<h3>Достижения <span class="muted">' + got + ' из ' + total + ' за все партии' + (p ? ' · в этой: ' + Object.keys(mine).length : '') + '</span></h3>';
+    Object.keys(groups).forEach(g => { h += '<p class="achg">' + g + '</p><div class="achs">' + groups[g].map(a => '<div class="ach' + (mine[a.id] != null ? ' now' : all[a.id] ? ' got' : '') + '" title="' + esc(a.desc) + '"><b>' + (mine[a.id] != null || all[a.id] ? '🏆 ' : '') + a.name + '</b><small>' + a.desc + '</small></div>').join('') + '</div>'; });
+    h += '<p class="achg">Концовки</p><div class="achs">' + D.ENDINGS.map(t => '<div class="ach' + (all['end:' + t] ? ' got' : '') + '"><b>' + (all['end:' + t] ? '🏁 ' : '') + t + '</b></div>').join('') + '</div>';
+    return h;
+  }
+  // таблица рекордов с сервера
+  function showRecords() {
+    const keepS = S; S = null;
+    let h = '<p class="eyebrow">Зал славы</p><h2>Рекорды и достижения</h2><div id="records"><p class="muted">Загружаю таблицу…</p></div>' + achHTML();
+    S = keepS;
+    openModal(h + btn('Назад', 'menu0', '', false, 'wide'), 'start', 'records');
+    fetch('api/scores').then(r => r.json()).then(j => {
+      const box = $('#records'); if (!box) return;
+      const list = j.scores || [];
+      box.innerHTML = list.length ? '<table class="tbl recs"><tr><th>#</th><th>Игрок</th><th>Концовка</th><th>Счёт</th></tr>' + list.map((x, i) => '<tr><td>' + (i + 1) + '</td><td><i class="dot" style="background:' + fd(x.fid).color + '"></i>' + esc(x.nick) + '<br><small class="muted">' + fd(x.fid).name + ' · ' + esc(x.date) + '</small></td><td>' + esc(x.title) + '</td><td>' + x.score + '</td></tr>').join('') + '</table>' : '<p class="muted">Пока пусто. Закончи партию и впиши своё имя первым.</p>';
+    }).catch(() => { const box = $('#records'); if (box) box.innerHTML = '<p class="muted">Таблица рекордов работает, когда игра открыта с сервера.</p>'; });
+  }
   const savedNick = () => { try { return localStorage.getItem('war90.nick') || ''; } catch (e) { return ''; } };
   function showStart() {
     const sv = load();
-    let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + diffHTML();
+    let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + diffHTML() + scenHTML() + '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button>';
     h += '<div class="modes"><section><h3>Онлайн</h3><div id="online"><p class="muted">Ищу сервер…</p></div></section><section><h3>Одиночная игра</h3>';
     if (sv) h += '<button class="btn primary wide" data-a="continue">Продолжить: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
     h += '<p class="muted">Выбери бригаду. Остальных ведут боты.</p><div class="factions">';
@@ -760,7 +803,7 @@
     if (!net) return;
     net.lobby = msg.lobby;
     if (!msg.state) { S = null; showLobby(); return; }
-    const first = !S; S = msg.state; me = S.me;
+    const first = !S; S = msg.state; me = S.me; if (first) achShown = null;
     if (first) { sel = E.owned(S, me)[0]; if (sel == null) sel = null; section = 'gang'; focus = { pos: 'right' }; if (modalKey === 'lobby') closeModal(); }
     render();
   }

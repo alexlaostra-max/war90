@@ -36,7 +36,7 @@
   const active = S => S.humans.filter(h => !S.f[h].over);
 
   // humans — бригады живых игроков, absent — бригады вне игры, остальные ведёт бот
-  function newGame(humans, seed, nicks, absent, diff) {
+  function newGame(humans, seed, nicks, absent, diff, scen) {
     if (typeof humans === 'string') humans = [humans];
     absent = absent || [];
     const S = { v: 4, seed: seed | 0 || 1, turn: 0, humans: humans.slice(), f: {}, d: [], log: [], done: false, diff: DIFF[diff] ? diff : 'norm' };
@@ -53,10 +53,17 @@
       if (f.id === 'tag') x.off.uch = 1;
     });
     migrate(S);
-    humans.forEach(h => { for (let k = 0; k < 3; k++) genPerson(S, h); S.f[h].pool = inflow(S, h).total; S.f[h].ap = apMax(S, h); pickEvent(S, h); log(S, 'Декабрь 1991-го. Ты глава бригады, у тебя один район и горстка пацанов.', 'big', h); });
+    if (D.SCENARIOS[scen] && D.SCENARIOS[scen].turn) applyScenario(S, scen);
+    humans.forEach(h => { for (let k = 0; k < 3; k++) genPerson(S, h); S.f[h].pool = inflow(S, h).total; S.f[h].ap = apMax(S, h); pickEvent(S, h); log(S, S.scen ? date(S.turn).label.charAt(0).toUpperCase() + date(S.turn).label.slice(1) + '. ' + D.SCENARIOS[S.scen].desc + '.' : 'Декабрь 1991-го. Ты глава бригады, у тебя один район и горстка пацанов.', 'big', h); });
     return S;
   }
 
+  // Поздний старт: дата, районы вокруг родного и силы у всех бригад
+  function applyScenario(S, key) {
+    const X = D.SCENARIOS[key]; S.turn = X.turn; S.t0 = X.turn; S.scen = key;
+    const grow = (fid, n) => { for (let k = 0; k < n; k++) { const own = owned(S, fid), c = []; own.forEach(i => GEO.adj[i].forEach(j => { if (!S.d[j].o && !c.includes(j)) c.push(j); })); if (!c.length) return; S.d[c[Math.floor(rnd(S) * c.length)]].o = fid; } };
+    D.FACTIONS.forEach(f => { const x = S.f[f.id]; if (!x.alive) return; if (x.human) { grow(f.id, X.extra); Object.assign(x, { money: X.money, men: X.men, guns: X.guns, cars: X.cars, rep: X.rep }); if (x.arms) { x.arms = { pm: X.guns }; x.garage = { nine: X.cars }; } } else { grow(f.id, X.botExtra); x.men = X.botMen; x.guns = X.botMen; x.cars = Math.ceil(X.botMen / 5); } });
+  }
   // Старые сохранения и новые бригады: склад по моделям, броники, легенды
   function kitInit(f) { f.arms = { pm: f.guns || 0 }; f.garage = { nine: f.cars || 0 }; if (f.vests == null) f.vests = 0; }
   function migrate(S) {
@@ -558,7 +565,7 @@
     const p = S.f[fid], q = questNow(S, fid); if (!q) return fail('Заданий больше нет');
     if (skip) { p.quest = D.QUESTS.length; return { ok: true, msg: 'Дед Хасан пожал плечами: дальше сам.' }; }
     if (!questDone(S, fid, q)) return fail('Ещё не сделано: ' + q.how.charAt(0).toLowerCase() + q.how.slice(1));
-    const m = Math.round(q.$ * era(S)); p.money += m; addRep(S, fid, q.rep); p.quest = (p.quest || 0) + 1;
+    const m = Math.round(q.$ * era(S)); p.money += m; addRep(S, fid, q.rep); p.quest = (p.quest || 0) + 1; if (p.quest >= D.QUESTS.length) { if (!p.flags) p.flags = {}; p.flags.tutor = true; }
     log(S, 'Дед Хасан доволен: «' + q.title + '». +' + m + ' тыс., авторитет +' + q.rep + '.', 'good', fid);
     return { ok: true, msg: 'Задание «' + q.title + '» выполнено: +' + m + ' тыс., авторитет +' + q.rep };
   }
@@ -953,6 +960,7 @@
       if (res.wstr) { w.str = clamp(w.str + res.wstr, 1, 10); dl.str = res.wstr; }
       if (res.wwit) { w.wit = clamp(w.wit + res.wwit, 1, 10); dl.wit = res.wwit; }
       if (res.demote && !res.wfate) { w.pos = null; w.ok = null; dl.demote = cname(w); }
+      if (res.exec && res.wfate === 'dead') { if (!p.flags) p.flags = {}; p.flags.exec = true; if (res !== o) p.flags.framed = true; }
       if (res.wfate === 'leave') { p.crew = p.crew.filter(x => x !== w); dl.gone = cname(w); }
       else if (res.wfate) { fate(S, fid, w, res.wfate, res.exec ? 'казнён по приговору бригады' : title.charAt(0).toLowerCase() + title.slice(1)); if (res.wfate === 'dead') dl.dead = cname(w); }
     }
@@ -1138,7 +1146,31 @@
     m.acts[name] = (m.acts[name] || 0) + 1;
     if (name === 'choose') m.ev.push([evId, args[0], r.delta && r.delta.money || 0]);
   }
+  const PALS = ['malaya', 'chernysh', 'medved', 'kosoy', 'lobster', 'pyatigor', 'bordur'];
+  const ownsName = (S, fid, name) => { const d = D.DISTRICTS.find(x => x.name === name); return !!d && S.d[d.id].o === fid; };
+  const ACHC = {
+    first_blood: (S, f) => count(S, f) >= 2 + (S.scen && D.SCENARIOS[S.scen].extra || 0), okrug: (S, f) => okrugsHeld(S, f).length >= 1, ten: (S, f) => count(S, f) >= 10, quarter: (S, f) => count(S, f) >= 26,
+    center: (S, f) => okrugHeld(S, f, 'CAO'), kapotnya: (S, f) => ownsName(S, f, 'Капотня'), luzhniki: (S, f) => ownsName(S, f, 'Хамовники'),
+    army100: (S, f, p) => p.men >= 100, armory: (S, f, p) => p.guns >= 100, rpg: (S, f, p) => (p.arms || {}).rpg > 0, merc: (S, f, p) => (p.garage || {}).merc > 0 || (p.garage || {}).w220 > 0, fleet: (S, f, p) => p.cars >= 10,
+    grand: (S, f, p) => p.money >= 1000, ten_m: (S, f, p) => p.money >= 10000, white50: (S, f) => { const i = income(S, f); return i.white > 20 && i.white >= i.black; },
+    dollars: (S, f, p) => { const d = date(S.turn); return d.year === 1998 && d.month === 8 && p.usdK >= 0.8; }, default_survivor: (S, f, p) => { const d = date(S.turn); return d.year === 1998 && d.month >= 9 && p.money >= 1000; },
+    first_point: (S, f) => owned(S, f).some(i => S.d[i].b.length), points20: (S, f) => owned(S, f).reduce((a, i) => a + S.d[i].b.length, 0) >= 20, lvl3: (S, f) => owned(S, f).some(i => S.d[i].b.some((b, x) => pointLvl(S.d[i], x) >= 3)),
+    specials5: (S, f) => { const k = new Set(); owned(S, f).forEach(i => S.d[i].b.forEach(b => { if (D.BUILDS[b].need && b !== 'casino') k.add(b); })); return k.size >= 5; },
+    first_deal: (S, f, p) => Object.keys(p.proj || {}).some(k => p.proj[k].stage === 3), deals5: (S, f, p) => Object.keys(p.proj || {}).filter(k => p.proj[k].stage === 3).length >= 5,
+    ent: (S, f) => owned(S, f).some(i => S.d[i].ent), ent5: (S, f) => owned(S, f).filter(i => S.d[i].ent).length >= 5,
+    full_circle: (S, f) => ['right', 'cons', 'treas'].every(pos => post(S, f, pos)), capos3: (S, f) => crew(S, f).filter(c => c.pos === 'capo').length >= 3,
+    legend: (S, f) => crew(S, f).some(c => c.leg && !PALS.includes(c.leg)), pals3: (S, f) => crew(S, f).filter(c => PALS.includes(c.leg)).length >= 3, pals7: (S, f) => crew(S, f).filter(c => PALS.includes(c.leg)).length >= 7,
+    executed: (S, f, p) => !!(p.flags || {}).exec, framed: (S, f, p) => !!(p.flags || {}).framed, tutor: (S, f, p) => !!(p.flags || {}).tutor,
+    off_all: (S, f, p) => Object.keys(D.OFFICIALS).every(k => (p.off || {})[k] > 0), clean: (S, f, p) => date(S.turn).year >= 1995 && S.turn - (S.t0 || 0) >= 24 && p.heat < 1 && count(S, f) >= 5,
+    fsb_escape: (S, f, p) => (p.peakHeat || 0) >= 90 && p.heat < 30, duma: (S, f) => has(S, f, 'duma'), status_all: (S, f) => D.STATUS.every(X => has(S, f, X.id))
+  };
+  function checkAch(S, fid) {
+    const p = S.f[fid]; if (!p || !p.human) return; if (!p.ach) p.ach = {};
+    p.peakHeat = Math.max(p.peakHeat || 0, p.heat || 0);
+    D.ACH.forEach(a => { if (!p.ach[a.id] && ACHC[a.id] && ACHC[a.id](S, fid, p)) { p.ach[a.id] = S.turn; log(S, 'Достижение: «' + a.name + '» — ' + a.desc.toLowerCase() + '.', 'good', fid); } });
+  }
   function snapshot(S, fid) {
+    checkAch(S, fid);
     const p = S.f[fid], m = p.month || { acts: {}, ev: [] }, own = owned(S, fid), c = cash(p);
     if (!p.hist) p.hist = [];
     p.hist.push({ t: S.turn, money: Math.round(p.money), white: c.white, inc: income(S, fid).total, men: p.men, guns: p.guns, cars: p.cars, broken: Object.keys(p.broken || {}).reduce((a, k) => a + (p.broken[k] || 0), 0),
@@ -1149,6 +1181,6 @@
     p.month = { acts: {}, ev: [] };
   }
   const ACTIONS = { setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
-  Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) track(S, fid, n, a, evId, r); return r; }; });
-  G.Engine = { cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
+  G.Engine = { checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);

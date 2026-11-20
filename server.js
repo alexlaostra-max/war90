@@ -40,7 +40,7 @@ const online = (r, token) => { const m = streams.get(r.id); return !!(m && m.get
 const taken = (r, fid) => Object.keys(r.players).find(t => r.players[t].fid === fid);
 function lobby(r, token) {
   return {
-    id: r.id, name: r.name, started: r.started, host: r.host === token, slots: r.slots, diff: r.diff || 'norm',
+    id: r.id, name: r.name, started: r.started, host: r.host === token, slots: r.slots, diff: r.diff || 'norm', scen: r.scen || 's91',
     me: r.players[token] ? { nick: r.players[token].nick, fid: r.players[token].fid } : null,
     players: Object.keys(r.players).map(t => ({ nick: r.players[t].nick, fid: r.players[t].fid, host: t === r.host, online: online(r, t) }))
   };
@@ -62,6 +62,18 @@ function listRooms() {
 }
 function maybeEndTurn(r) { if (E.allReady(r.S)) E.endTurn(r.S, false); }
 
+// ---------- рекорды ----------
+const SCORES = path.join(path.dirname(STORE), 'scores.json');
+let scores = []; try { scores = JSON.parse(fs.readFileSync(SCORES, 'utf8')); } catch (e) { /* пусто */ }
+function addScore(b) {
+  const nick = clean(b.nick, 20), title = clean(b.title, 40), score = Math.round(+b.score), fid = FIDS.includes(b.fid) ? b.fid : null;
+  if (!nick || !title || !fid || !(score >= 0 && score < 1e6) || !D.ENDINGS.includes(title)) return { err: 'Неверные данные' };
+  const row = { nick, fid, title, score, date: clean(b.date, 20), scen: D.SCENARIOS[b.scen] ? b.scen : 's91', diff: E.DIFF[b.diff] ? b.diff : 'norm', at: Date.now() };
+  scores.push(row); scores.sort((a, c) => c.score - a.score); scores = scores.slice(0, 300);
+  fs.mkdir(path.dirname(SCORES), { recursive: true }, () => fs.writeFile(SCORES, JSON.stringify(scores), () => {}));
+  return { ok: true, place: scores.indexOf(row) + 1 };
+}
+
 // ---------- API ----------
 const api = {
   create(b) {
@@ -69,6 +81,7 @@ const api = {
     const name = clean(b.name, 40) || 'Без названия', nick = clean(b.nick, 20) || 'Безымянный';
     const r = newRoom(name), token = id(16);
     r.diff = E.DIFF[b.diff] ? b.diff : 'norm';
+    r.scen = D.SCENARIOS[b.scen] ? b.scen : 's91';
     r.host = token; r.players[token] = { nick, fid: null };
     save(); return { room: r.id, token };
   },
@@ -102,7 +115,7 @@ const api = {
     const absent = FIDS.filter(f => r.slots[f] === 'off' && !humans.includes(f));
     if (FIDS.length - absent.length < 2) return { err: 'Нужны хотя бы две бригады' };
     Object.keys(r.players).forEach(t => { if (!r.players[t].fid) delete r.players[t]; }); // зрителей нет
-    r.S = E.newGame(humans, crypto.randomBytes(4).readInt32LE(0), nicks, absent, r.diff); r.started = true;
+    r.S = E.newGame(humans, crypto.randomBytes(4).readInt32LE(0), nicks, absent, r.diff, r.scen); r.started = true;
     push(r); return { ok: true };
   },
   act(b, r, token) {
@@ -139,6 +152,7 @@ function send(res, code, obj) { const s = JSON.stringify(obj); res.writeHead(cod
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/api/rooms' && req.method === 'GET') return send(res, 200, { rooms: listRooms() });
+  if (url.pathname === '/api/scores' && req.method === 'GET') return send(res, 200, { scores: scores.slice(0, 50) });
   if (url.pathname === '/api/stream' && req.method === 'GET') {
     const r = rooms.get(url.searchParams.get('room')), token = url.searchParams.get('token');
     if (!r || !r.players[token]) return send(res, 404, { err: 'Комната не найдена или тебя в ней нет' });
@@ -152,12 +166,13 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname.startsWith('/api/') && req.method === 'POST') {
     const name = url.pathname.slice(5); let body = '';
-    if (!Object.prototype.hasOwnProperty.call(api, name)) return send(res, 404, { err: 'Нет такого метода' });
+    if (!Object.prototype.hasOwnProperty.call(api, name) && name !== 'score') return send(res, 404, { err: 'Нет такого метода' });
     req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
     req.on('end', () => {
       let b; try { b = JSON.parse(body || '{}'); } catch (e) { return send(res, 400, { err: 'Плохой запрос' }); }
       if (!b || typeof b !== 'object') return send(res, 400, { err: 'Плохой запрос' });
       if (name === 'create') return send(res, 200, api.create(b));
+      if (name === 'score') return send(res, 200, addScore(b));
       const r = rooms.get(b.room); if (!r) return send(res, 200, { err: 'Комната не найдена' });
       if (name !== 'join' && !r.players[b.token]) return send(res, 200, { err: 'Тебя нет в этой комнате' });
       try { send(res, 200, api[name](b, r, b.token)); } catch (e) { console.error(e); send(res, 500, { err: 'Ошибка сервера' }); }
