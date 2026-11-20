@@ -348,6 +348,8 @@
     'arm-rpg': { src: 'img/arm-rpg.jpg', author: 'Michal Maňas', license: 'CC BY 2.5', url: W + 'RPG-7_detached.jpg' },
     'car-nine': { src: 'img/car-nine.jpg', author: 'Throwawayacc222', license: 'CC0', url: W + '2003_VAZ_21099_blue_front.jpg' },
     'car-gelik': { src: 'img/car-gelik.jpg', author: 'Alexander Migl', license: 'CC BY-SA 4.0', url: W + 'Mercedes-Benz_W463_Cabriolet_300_GE_1X7A0244.jpg' },
+    'car-w220': { src: 'img/car-w220.jpg', author: 'nakhon100', license: 'CC BY 2.0', url: W + 'Mercedes-Benz_S600_L_W220_(12373237945).jpg' },
+    'car-lc100': { src: 'img/car-lc100.jpg', author: 'Dinkun Chen', license: 'CC BY-SA 4.0', url: W + 'TOYOTA_LAND_CRUISER_(J100)_China.jpg' },
     'car-uaz': { src: 'img/car-uaz.jpg', author: 'Nikolai Bulykin', license: 'CC BY-SA 4.0', url: W + 'Бишкек,_УАЗ-452_на_Турусбекова.jpg' },
     'car-audi': { src: 'img/car-audi.jpg', author: 'Preiselbeere', license: 'CC BY-SA 3.0', url: W + 'Audi_100_C3,_BJ_1987.JPG' },
     'car-bmw': { src: 'img/car-bmw.jpg', author: 'Elveres', license: 'CC BY-SA 4.0', url: W + '1991_BMW_E34.jpg' },
