@@ -641,8 +641,9 @@
       let h = sky('ev-l', '#0c0b14', '#1c1a28') + stars(521, 12, 26);
       let x = 6; while (x < 240) { const w = 26 + r() * 20, hh = 26 + r() * 30; h += R(x, 66 - hh, w, hh, '#1f1b28') + wins(x + 3, 70 - hh, Math.floor((w - 4) / 6), Math.floor(hh / 8), 3.4, 3.4, 2.6, 4.4, Math.floor(r() * 999), 0.3); x += w + 2; }
       h += R(0, 66, 240, 14, '#2a2730') + R(0, 66, 240, 1, '#3a3446');
-      h += '<g class="an-beam-r">' + P('M126 44L60 80H120Z', '#ff3b4f', 'opacity=".22"') + '</g><g class="an-beam-b">' + P('M140 44L206 80H146Z', '#3b7bff', 'opacity=".22"') + '</g>';
-      h += carBody('nine', '#e8e6e0', 100, 76, 0.75) + R(108, 63, 30, 2.4, '#2b5aa8') + R(124, 43.4, 6, 2.6, '#ff3b4f', 'class="an-blink-r"') + R(131, 43.4, 6, 2.6, '#3b7bff', 'class="an-blink-b"');
+      // мигалка стоит на крыше «девятки» (крыша на высоте 61), отсветы ложатся на асфальт по бокам
+      h += '<g class="an-beam-r">' + P('M111 59L66 80H106Z', '#ff3b4f', 'opacity=".22"') + '</g><g class="an-beam-b">' + P('M119 59L164 80H124Z', '#3b7bff', 'opacity=".22"') + '</g>';
+      h += carBody('nine', '#e8e6e0', 100, 76, 0.75) + R(102, 68.6, 41, 1.8, '#2b5aa8') + R(113.5, 59.6, 2.6, 1.6, '#3a3446') + R(110, 58.2, 4.4, 1.8, '#ff3b4f', 'class="an-blink-r"') + R(115.2, 58.2, 4.4, 1.8, '#3b7bff', 'class="an-blink-b"');
       return h + man(70, 76, '#2a3442', 1.4) + man(176, 76, '#2a3442', 1.4) + C(176, 61, 1.3, '#d9e2ea');
     },
     // внутри семьи: качающаяся лампа над столом, дым
@@ -659,7 +660,8 @@
       let x = -4; while (x < 244) { const w = 22 + r() * 22, hh = 30 + r() * 34; h += R(x, 68 - hh, w, hh, '#1e1a26') + wins(x + 3, 72 - hh, Math.floor((w - 4) / 6), Math.floor(hh / 8), 3.4, 3.4, 2.6, 4.4, Math.floor(r() * 999), 0.4); x += w + 1; }
       h += R(150, 28, 30, 9, '#0c0810', 'rx="1"') + '<g class="an-flicker">' + NEON(165, 35, 'БАР', 7, '#ff4fa3') + '</g>';
       h += R(0, 68, 240, 12, '#26222e') + R(0, 68, 240, 0.8, '#3a3446') + R(0, 74, 240, 6, '#6b5a8a', 'opacity=".08"');
-      h += '<g class="an-drive">' + P('M0 70L-60 66V74Z', '#ffe9a0', 'opacity=".25"') + carBody('bmw', '#141418', 0, 76, 0.5, 1) + '</g>';
+      // машина смотрит вправо и едет вправо, фары светят вперёд
+      h += '<g class="an-drive">' + P('M29.4 71.6L80 68V77Z', '#ffe9a0', 'opacity=".25"') + carBody('bmw', '#141418', 0, 76, 0.5) + '</g>';
       let rain = ''; for (let i = 0; i < 60; i++) { const rx = r() * 260, ry = r() * 80; rain += L(rx, ry, rx - 2, ry + 6, '#9fb3c8', 0.5, 'opacity=".45"'); }
       return h + '<g class="an-rain">' + rain + '</g><g class="an-rain an-d2">' + rain + '</g>';
     }
