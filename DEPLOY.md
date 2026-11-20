@@ -11,7 +11,9 @@
 | Ресурсы | 2 vCPU, 4 ГБ RAM, 20 ГБ диска |
 | IP | 95.163.222.96 |
 | Доступ | SSH под `root` |
-| Адрес игры | http://95.163.222.96/ (домена и HTTPS пока нет) |
+| Адрес игры | https://peredel-msk.ru/ (старый адрес http://95.163.222.96/ тоже работает) |
+| Домен | peredel-msk.ru, регистратор Reg.ru, DNS Reg.ru: A-записи `@` и `www` → 95.163.222.96 |
+| HTTPS | Let's Encrypt через certbot, продлевается сам (`certbot renew --dry-run` для проверки) |
 
 В панели Reg.ru включено резервное копирование и есть снэпшоты. Перед рискованными изменениями сделай снэпшот.
 
@@ -96,13 +98,14 @@ curl -s http://127.0.0.1/api/rooms
 nginx -t && systemctl reload nginx
 ```
 
-## Подключить домен и HTTPS
+## Домен и HTTPS
 
-1. Добавь в DNS домена A-запись на `95.163.222.96`.
-2. Когда домен начнёт открываться, впиши его в конфиг и выпусти сертификат. `ДОМЕН` замени на свой:
+Домен `peredel-msk.ru` подключён, сертификат Let's Encrypt выпущен через `certbot --nginx` и прописан в `/etc/nginx/sites-enabled/war90`; HTTP перенаправляется на HTTPS. В DNS есть TXT-запись `_globalsign-domain-verification` — это подтверждение домена для сертификата Reg.ru (GlobalSign), он не используется, запись ничему не мешает.
+
+Установка на телефон (PWA) и Telegram Mini App работают только по HTTPS.
+
+Перевыпустить сертификат вручную:
 
 ```bash
-sed -i 's/server_name _;/server_name ДОМЕН;/' /etc/nginx/sites-available/war90 && nginx -t && systemctl reload nginx && certbot --nginx -d ДОМЕН
+certbot --nginx -d peredel-msk.ru -d www.peredel-msk.ru
 ```
-
-HTTPS обязателен, чтобы запускать игру как Telegram Mini App.
