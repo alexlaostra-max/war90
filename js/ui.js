@@ -470,8 +470,18 @@
     return h + '</table><p class="muted">Округ целиком: дань удвоена, +1 ход в месяц, авторитет +10.</p>';
   }
 
+  // запись партии в файл: помесячная статистика, решения в событиях, хроника и полное состояние
+  function exportGame() {
+    const p = P(), data = { game: 'Передел', format: 1, exported: new Date().toISOString(), online: !!net, faction: me, name: fd(me).name, difficulty: E.dif(S).name, date: E.date(S.turn).label, turn: S.turn, over: p.over || null,
+      hist: p.hist || [], log: S.log.filter(l => !l.to || l.to === me), state: S };
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+    a.download = 'peredel-' + me + '-' + E.date(S.turn).label.replace(/\s+/g, '-') + '.json';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    toast('Запись партии сохранена: ' + a.download);
+  }
   function paneLog() {
-    let h = '<h2>Хроника</h2><ul class="log">' + S.log.filter(l => !l.to || l.to === me).slice(0, 60).map(l => '<li class="' + l.k + '"><time>' + E.date(l.t).label + '</time>' + esc(l.s) + '</li>').join('') + '</ul>';
+    let h = '<h2>Хроника</h2><div class="box rec"><p>Запись партии: что было каждый месяц, какие решения ты принимал. Пришли файл разработчику — по нему настроят баланс.</p>' + btn('Скачать запись партии', 'export', '', false, 'wide') + '</div><ul class="log">' + S.log.filter(l => !l.to || l.to === me).slice(0, 60).map(l => '<li class="' + l.k + '"><time>' + E.date(l.t).label + '</time>' + esc(l.s) + '</li>').join('') + '</ul>';
     if (net) return h + btn('Выйти в меню', 'menu', '', false, 'wide ghost') + '<p class="muted">Комната останется, вернуться можно с этого же устройства.</p>';
     h += confirmNew ? '<div class="box"><p>Начать заново? Текущая партия пропадёт.</p><div class="grid"><button class="btn" data-a="new2">Да, заново</button><button class="btn" data-a="new0">Отмена</button></div></div>' : btn('Новая игра', 'new1', '', false, 'wide ghost');
     return h;
@@ -535,6 +545,7 @@
     if (a === 'slot') { netCall('slot', { fid: k, mode: b.dataset.m }); return; }
     if (a === 'go') { netCall('start'); return; }
     if (a === 'leave') { netCall('leave').then(r => { if (r.ok) { forget(net.room); leaveToMenu(); } }); return; }
+    if (a === 'export') { if (S) exportGame(); return; }
     if (a === 'copyphone') { (navigator.clipboard ? navigator.clipboard.writeText(DONATE) : Promise.reject()).then(() => toast('Номер скопирован. Спасибо!'), () => toast(DONATE_SHOW)); return; }
     if (a === 'copy') { const t = location.origin + location.pathname + '#room-' + net.room; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Ссылка скопирована'), () => toast(t)); return; }
     if (!S) return;
@@ -689,7 +700,7 @@
       if (!S.done) h += '<p class="muted">Остальные доигрывают. Итоги обновятся здесь.</p>';
     }
     h += '<div class="donate"><p>Понравилась игра? Поддержи автора — каждый перевод идёт на новые районы, события и музыку.</p><div class="drow"><span><b>Т-Банк</b><small>перевод по номеру телефона</small></span><button class="btn" data-a="copyphone" title="Скопировать номер">' + DONATE_SHOW + '<small>нажми, чтобы скопировать</small></button></div></div>';
-    openModal(h + '<button class="btn primary wide" data-a="menu">В меню</button>', 'event', key);
+    openModal(h + '<button class="btn wide" data-a="export">Скачать запись партии</button><button class="btn primary wide" data-a="menu">В меню</button>', 'event', key);
   }
 
   // ---------- меню ----------

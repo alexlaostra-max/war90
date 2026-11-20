@@ -497,12 +497,16 @@
   }
   // что выгоднее всего построить или улучшить в этих районах: доход на вложенный доллар, польза точки сверху
   function bestInvest(S, fid, ids, budget, sloppy) {
-    const opts = [];
+    const opts = [], have = {};
+    owned(S, fid).forEach(i => S.d[i].b.forEach(k => { have[k] = (have[k] || 0) + 1; }));
     ids.forEach(i => {
       const d = S.d[i];
       Object.keys(D.BUILDS).forEach(k => {
         const c = buildCost(S, k); if (!c || c > budget || canBuild(S, fid, i, k)) return;
-        const B = D.BUILDS[k]; opts.push({ v: (pointInc(fid, k, i) + (B.fx || B.rec || B.def ? 2 : 0)) / c * (B.need ? 1.2 : 1), i, k, c });
+        const B = D.BUILDS[k];
+        // разнообразие: такая же точка в этом районе почти не нужна, а одинаковые по всей империи — всё менее выгодны
+        const mix = (d.b.includes(k) ? 0.25 : 1) / (1 + (have[k] || 0) / 3);
+        opts.push({ v: (pointInc(fid, k, i) + (B.fx || B.rec || B.def ? 2 : 0)) / c * (B.need ? 1.2 : 1) * mix, i, k, c });
       });
       d.b.forEach((k, x) => { if (pointLvl(d, x) >= MAX_LVL) return; const c = upgradeCost(S, i, x); if (c > budget) return; opts.push({ v: (pointInc(fid, k, i) + (D.BUILDS[k].fx ? 1 : 0)) / c, i, x, c }); });
     });
@@ -1070,7 +1074,7 @@
   function endTurn(S, force) {
     if (S.done) return fail('Игра окончена');
     if (!force && active(S).some(h => S.f[h].event)) return fail('Сначала реши, что делать с событием');
-    active(S).forEach(h => { if (S.f[h].battle) finishBattle(S, h, false, 'Месяц кончился'); S.f[h].event = null; S.f[h].queue = []; humanPhase(S, h); });
+    active(S).forEach(h => { if (S.f[h].battle) finishBattle(S, h, false, 'Месяц кончился'); snapshot(S, h); S.f[h].event = null; S.f[h].queue = []; humanPhase(S, h); });
     S.hits = {};
     D.FACTIONS.forEach(f => { if (!S.f[f.id].human) aiTurn(S, f.id); });
     active(S).forEach(h => { if (count(S, h) === 0) eliminate(S, h); });
@@ -1091,6 +1095,24 @@
     return V;
   }
 
+  // Запись партии для разбора: действия и решения за месяц, раз в месяц — снимок состояния (p.hist)
+  function track(S, fid, name, args, evId, r) {
+    const p = S.f[fid]; if (!p || !p.human) return;
+    const m = p.month || (p.month = { acts: {}, ev: [] });
+    m.acts[name] = (m.acts[name] || 0) + 1;
+    if (name === 'choose') m.ev.push([evId, args[0], r.delta && r.delta.money || 0]);
+  }
+  function snapshot(S, fid) {
+    const p = S.f[fid], m = p.month || { acts: {}, ev: [] }, own = owned(S, fid), c = cash(p);
+    if (!p.hist) p.hist = [];
+    p.hist.push({ t: S.turn, money: Math.round(p.money), white: c.white, inc: income(S, fid).total, men: p.men, guns: p.guns, cars: p.cars, broken: Object.keys(p.broken || {}).reduce((a, k) => a + (p.broken[k] || 0), 0),
+      d: own.length, pts: own.reduce((a, i) => a + S.d[i].b.length, 0), lv: own.reduce((a, i) => a + S.d[i].b.reduce((x, b, j) => x + pointLvl(S.d[i], j), 0), 0),
+      heat: Math.round(p.heat), rep: Math.round(p.rep), conn: conn(S, fid), apLeft: p.ap, crew: (p.crew || []).length, posts: (p.crew || []).filter(x => x.pos).length,
+      proj: Object.keys(p.proj || {}).filter(k => p.proj[k].stage === 3), acts: m.acts, ev: m.ev });
+    if (p.hist.length > 220) p.hist.shift();
+    p.month = { acts: {}, ev: [] };
+  }
   const ACTIONS = { retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
+  Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) track(S, fid, n, a, evId, r); return r; }; });
   G.Engine = { retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);
