@@ -5,6 +5,17 @@
   let S = null, me = null, sel = null, section = 'gang', confirmNew = false;
   // телефон: подробности (досье, район) выезжают поверх экрана отдельной панелью
   const mobile = () => matchMedia('(max-width: 860px)').matches;
+  // Telegram Mini App: на весь экран, цвета игры, «Назад» Телеграма закрывает панели, ник из профиля
+  const TG_BOT = 'peredelmskbot';
+  const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
+  const tgUser = () => (TG && TG.initDataUnsafe && TG.initDataUnsafe.user) || null;
+  if (TG) {
+    try { TG.ready(); TG.expand(); TG.setHeaderColor('#15121a'); TG.setBackgroundColor('#15121a'); if (TG.disableVerticalSwipes) TG.disableVerticalSwipes(); } catch (e) { /* старый клиент */ }
+    document.documentElement.classList.add('tg');
+    TG.BackButton.onClick(() => { if (sheet) { sheet = false; render(); } else if (modalKey === 'records' || modalKey === 'lawinfo') { closeModal(); if (S) render(); else showStart(); } });
+  }
+  const tgSync = () => { if (!TG) return; if (sheet || modalKey === 'records' || modalKey === 'lawinfo') TG.BackButton.show(); else TG.BackButton.hide(); };
+  const haptic = kind => { try { if (TG && TG.HapticFeedback) TG.HapticFeedback.impactOccurred(kind || 'medium'); } catch (e) { /* ignore */ } };
   const DONATE = '+79936338436', DONATE_SHOW = '+7 993 633-84-36'; // донат автору: Т-Банк по номеру
   let sheet = false, perksOpen = false, confirmRetire = false;
   let net = null;          // онлайн: { room, token, lobby }
@@ -515,7 +526,7 @@
 
   function render() {
     if (!S) return;
-    renderTop(); paintMap(); achSync();
+    renderTop(); paintMap(); achSync(); tgSync();
     // меню разделов под шапкой; у «Банды» и «Районов» справа панель, остальные разделы во всю ширину
     $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + v[1] + '</button>').join('');
     $('#tabbar').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(TABS[v[0]][0]) + '<span>' + TABS[v[0]][1] + '</span></button>').join('');
@@ -542,7 +553,7 @@
     const msg = r.msg || r.err;
     if (r.event && r.ok) { save(); showResult(r); return; }
     if (r.battleEnd && r.ok) { if (G.Sfx) G.Sfx.play(r.win ? 'cash' : 'shot'); save(); showBattleEnd(r); if (!net) render(); return; }
-    if (r.ok && (r.battle || r.round)) { if (G.Sfx) G.Sfx.play('shot'); if (!net) { save(); render(); } return; }
+    if (r.ok && (r.battle || r.round)) { haptic('heavy'); if (G.Sfx) G.Sfx.play('shot'); if (!net) { save(); render(); } return; }
     if (msg) toast(msg, !r.ok || r.win === false);
     if (r.ok && !net) { save(); render(); }
   }
@@ -580,7 +591,8 @@
     if (a === 'leave') { netCall('leave').then(r => { if (r.ok) { forget(net.room); leaveToMenu(); } }); return; }
     if (a === 'export') { if (S) exportGame(); return; }
     if (a === 'copyphone') { (navigator.clipboard ? navigator.clipboard.writeText(DONATE) : Promise.reject()).then(() => toast('Номер скопирован. Спасибо!'), () => toast(DONATE_SHOW)); return; }
-    if (a === 'copy') { const t = location.origin + location.pathname + '#room-' + net.room; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Ссылка скопирована'), () => toast(t)); return; }
+    if (a === 'tgshare') { const link = 'https://t.me/' + TG_BOT + '?startapp=room-' + net.room; TG.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent('Заходи в «Передел»: комната «' + net.lobby.name + '»')); return; }
+    if (a === 'copy') { const t = TG ? 'https://t.me/' + TG_BOT + '?startapp=room-' + net.room : location.origin + location.pathname + '#room-' + net.room; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Ссылка скопирована'), () => toast(t)); return; }
     if (!S) return;
     const di = b.dataset.i != null ? +b.dataset.i : sel;
     if (a === 'attack') act('attack', [sel, +b.dataset.l]);
@@ -808,8 +820,8 @@
   let installEv = null;
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; const b = $('#installbox'); if (b) b.hidden = false; });
   const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-  const installHTML = () => standalone() ? '' : '<div class="box install" id="installbox"' + (installEv || /iPhone|iPad/.test(navigator.userAgent) ? '' : ' hidden') + '><b>Игра на телефоне как приложение</b><p class="muted">' + (/iPhone|iPad/.test(navigator.userAgent) ? 'В Safari нажми «Поделиться» и выбери «На экран „Домой“».' : 'Иконка на рабочем столе, запуск на весь экран, одиночная игра без интернета.') + '</p>' + (/iPhone|iPad/.test(navigator.userAgent) ? '' : btn('Установить', 'install', '', false, 'primary')) + '</div>';
-  const savedNick = () => { try { return localStorage.getItem('war90.nick') || ''; } catch (e) { return ''; } };
+  const installHTML = () => standalone() || TG ? '' : '<div class="box install" id="installbox"' + (installEv || /iPhone|iPad/.test(navigator.userAgent) ? '' : ' hidden') + '><b>Игра на телефоне как приложение</b><p class="muted">' + (/iPhone|iPad/.test(navigator.userAgent) ? 'В Safari нажми «Поделиться» и выбери «На экран „Домой“».' : 'Иконка на рабочем столе, запуск на весь экран, одиночная игра без интернета.') + '</p>' + (/iPhone|iPad/.test(navigator.userAgent) ? '' : btn('Установить', 'install', '', false, 'primary')) + '</div>';
+  const savedNick = () => { let v = ''; try { v = localStorage.getItem('war90.nick') || ''; } catch (e) { /* ignore */ } const u = tgUser(); return v || (u ? (u.first_name || u.username || '').slice(0, 20) : ''); };
   function showStart() {
     const sv = load();
     let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + diffHTML() + scenHTML() + '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button>' + installHTML();
@@ -854,6 +866,7 @@
     const L = net.lobby, my = L.me && L.me.fid, humans = L.players.filter(p => p.fid).length;
     let h = '<p class="eyebrow">Комната · набор игроков · сложность: ' + (E.DIFF[L.diff] || E.DIFF.norm).name.toLowerCase() + '</p><h2>' + esc(L.name) + '</h2>';
     h += '<p class="muted">Игроки: ' + L.players.map(p => '<span class="' + (p.online ? 'good' : '') + '">' + esc(p.nick) + (p.host ? ' (создатель)' : '') + '</span>').join(', ') + '</p>';
+    if (TG) h += btn('Позвать друзей в Телеграме', 'tgshare', '', false, 'wide primary');
     h += btn('Скопировать ссылку на комнату', 'copy', '', false, 'wide ghost');
     h += '<h3>Бригады</h3><p class="muted">Займи бригаду. Свободные ведёт бот' + (L.host ? '; ты можешь убрать любую из игры.' : '; создатель комнаты может убрать любую из игры.') + '</p><div class="factions">';
     D.FACTIONS.forEach(f => {
@@ -878,7 +891,7 @@
   buildMap();
   function boot(data) {
     if (data && data.S) { S = E.migrate(data.S); me = S.humans[0]; sel = data.sel; render(); return; }
-    const m = /^#room-([\w-]+)$/.exec(location.hash), rec = Net.recall() || {};
+    const sp = TG && TG.initDataUnsafe && TG.initDataUnsafe.start_param, m = /^#room-([\w-]+)$/.exec(location.hash) || (sp && /^room-([\w-]+)$/.exec(sp)), rec = Net.recall() || {};
     if (m && rec[m[1]]) { enterRoom(m[1], rec[m[1]]); return; }
     showStart();
     if (m) Net.rooms().then(l => { if (l) Net.post('join', { room: m[1], nick: savedNick() }).then(r => r.room ? enterRoom(r.room, r.token) : toast(r.err, true)); });

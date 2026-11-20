@@ -626,3 +626,5 @@ svg.art.face { aspect-ratio: 1; }
 .units { font: 12px var(--mono); color: var(--dim); margin: 4px 0 8px; } .units b { color: var(--fg); font-weight: 400; }
 .blog .dice { display: block; font: 12px var(--mono); color: var(--dim); margin-top: 2px; }
 .blog .dice i { font-style: normal; font-size: 18px; color: var(--gold); letter-spacing: 1px; vertical-align: -2px; }
+/* Telegram: свой заголовок у Телеграма, отступы под его панели */
+html.tg #app { padding-top: 4px; }

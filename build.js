@@ -5,11 +5,13 @@ const rd = f => fs.readFileSync(path.join(__dirname, f), 'utf8');
 const JS = ['data', 'events', 'geo', 'engine', 'art', 'net', 'music', 'sfx', 'ui'];
 const FONTS = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans:wght@400;700&family=Russo+One&display=swap">';
 const PWA = '<link rel="manifest" href="manifest.webmanifest">\n<meta name="theme-color" content="#15121a">\n<link rel="icon" href="icons/icon-192.png">\n<link rel="apple-touch-icon" href="icons/apple-180.png">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="Передел">';
+// Telegram Mini App: скрипт Телеграма грузится, только если игру открыли из Телеграма
+const TG = '<script>if (/tgWebApp/.test(location.hash + location.search)) document.write(\'<script src="https://telegram.org/js/telegram-web-app.js"><\\/script>\');</script>';
 const SW_REG = '<script>if (\'serviceWorker\' in navigator && location.protocol === \'https:\') navigator.serviceWorker.register(\'sw.js\');</script>';
 const body = rd('src/body.html');
 
 fs.writeFileSync(path.join(__dirname, 'index.html'),
-  '<!doctype html>\n<html lang="ru">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<title>Передел</title>\n' + PWA + '\n' + FONTS +
+  '<!doctype html>\n<html lang="ru">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<title>Передел</title>\n' + PWA + '\n' + TG + '\n' + FONTS +
   '\n<link rel="stylesheet" href="css/style.css">\n<style>body{margin:0}[hidden]{display:none!important}</style>\n</head>\n<body>\n' + body +
   JS.map(f => '<script src="js/' + f + '.js"></script>').join('\n') + '\n' + SW_REG + '\n</body>\n</html>\n');
 
