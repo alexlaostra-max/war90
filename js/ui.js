@@ -581,6 +581,8 @@
   function chatNews(prev) {
     const L = net.lobby, list = L.chat || [], my = L.me && L.me.cid;
     if (net.seenT == null) { chatSeen(); return; } // история при входе непрочитанной не считается
+    const alerts = list.filter(m => m.t > (prev || 0) && m.sys && m.alert);
+    if (alerts.length) { const a = alerts[alerts.length - 1]; toast(a.x + ' · открыть', false, 6500); chatToast = true; if (!(S && section === 'log')) net.unread = (net.unread || 0) + alerts.length; haptic('heavy'); if (G.Sfx) G.Sfx.play('event'); }
     const fresh = list.filter(m => m.t > (prev || 0) && m.c !== my && !m.sys);
     const shown = (!S && modalKey === 'lobby') || (S && section === 'log');
     if (shown) { chatSeen(); return; }
@@ -712,7 +714,7 @@
   // ---------- действия ----------
   let toastT = 0;
   let chatToast = false;
-  function toast(msg, bad) { chatToast = false; const t = $('#toast'); t.textContent = msg; t.className = bad ? 'bad' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); }
+  function toast(msg, bad, ms) { chatToast = false; const t = $('#toast'); t.textContent = msg; t.className = bad ? 'bad' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, ms || 3200); }
   function done(r) {
     if (!r) return;
     const msg = r.msg || r.err;

@@ -44,9 +44,9 @@ const live = r => { const m = streams.get(r.id); let n = 0; if (m) m.forEach(set
 function closeRoom(r) { rooms.delete(r.id); streams.delete(r.id); emptySince.delete(r.id); save(); }
 const online = (r, token) => { const m = streams.get(r.id); return !!(m && m.get(token) && m.get(token).size); };
 const taken = (r, fid) => Object.keys(r.players).find(t => r.players[t].fid === fid);
-function sysSay(r, text) {
+function sysSay(r, text, alert) {
   if (!r.chat) r.chat = [];
-  const now = Date.now(); r.chat.push({ id: now.toString(36) + id(2), t: now, n: '', f: null, c: null, sys: true, x: text });
+  const now = Date.now(); r.chat.push({ id: now.toString(36) + id(2), t: now, n: '', f: null, c: null, sys: true, alert: !!alert, x: text });
   if (r.chat.length > CHAT_KEEP) r.chat.splice(0, r.chat.length - CHAT_KEEP);
 }
 const cidOf = p => p.cid || (p.cid = id(3)); // метка автора в чате, чтобы не светить токен
@@ -63,8 +63,21 @@ function payload(r, token) {
   const p = r.players[token];
   return JSON.stringify({ ver: VER, lobby: lobby(r, token), state: r.started && p && p.fid ? E.viewFor(r.S, p.fid) : null });
 }
+// кто выбыл из партии: живой игрок (поражение, тюрьма, пенсия, победа) или бригада ботов — в чат и всплывашкой всем
+function outNews(r) {
+  if (!r.started || !r.S) return;
+  const first = !r.outSeen; if (first) r.outSeen = {};
+  D.FACTIONS.forEach(f => {
+    const x = r.S.f[f.id]; if (!x || r.outSeen[f.id]) return;
+    const gone = x.human ? !!x.over : !x.alive; if (!gone) return;
+    r.outSeen[f.id] = 1; if (first || x.absent) return;
+    if (!x.human) return sysSay(r, '☠️ ' + f.name + ' стёрты с карты: у бригады не осталось районов', true);
+    const pl = Object.values(r.players).find(p => p.fid === f.id), who = (pl ? pl.nick + ' · ' : '') + f.name;
+    sysSay(r, (x.over.type === 'win' ? '🏆 ' : '💀 ') + who + (x.over.type === 'win' ? ': ' : ' выбыл: ') + x.over.title, true);
+  });
+}
 function push(r) {
-  r.touched = Date.now(); save();
+  r.touched = Date.now(); outNews(r); save();
   // новый месяц — таймер заново
   if (r.started && r.S && r.lastTurn !== r.S.turn) { r.lastTurn = r.S.turn; r.deadline = r.timer !== 0 ? Date.now() + (r.timer || 3) * MIN : null; }
   const m = streams.get(r.id); if (!m) return;
