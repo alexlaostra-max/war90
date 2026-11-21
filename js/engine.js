@@ -266,7 +266,7 @@
     return Math.round(v);
   }
   function income(S, fid) {
-    const p = S.f[fid], rows = []; let white = 0, black = 0, dist = 0, pts = 0, ents = 0;
+    const p = S.f[fid], rows = []; let white = 0, black = 0, dist = 0, pts = 0, ptsUsd = 0, ents = 0;
     const held = okrugsHeld(S, fid);
     let wt = 0;
     owned(S, fid).forEach(i => {
@@ -274,24 +274,24 @@
       const base = Math.round(dd.inc * (held.includes(dd.ok) ? 2 : 1) * (1 + (cp ? cp.str * 0.05 : 0)));
       dist += base;
       let dp = 0;
-      S.d[i].b.forEach((b, x) => { const v = pointInc(fid, b, i) * pointLvl(S.d[i], x); dp += v; pts += v; if (D.BUILDS[b].kind === 'w') white += v; else black += v; });
+      S.d[i].b.forEach((b, x) => { const v = pointInc(fid, b, i) * pointLvl(S.d[i], x); dp += v; if (D.BUILDS[b].usd) ptsUsd += v; else pts += v; if (D.BUILDS[b].kind === 'w') white += v; else black += v; });
       // смотрящий: сильный поднимает дань, умный — доход точек; ненадёжный утаивает половину дани
       if (w) { const v = w.loy <= 3 ? -Math.round(base / 2) : Math.round(dp * w.wit * 0.04 + base * w.str * 0.03); wt += v; black += v; }
       if (S.d[i].ent) { ents += dd.ent.inc; white += dd.ent.inc; }
     });
     black += dist;
-    rows.push(['Дань с районов', dist], ['Точки и недвижимость', pts], ['Смотрящие', wt], ['Предприятия', ents]);
+    rows.push(['Дань с районов', dist], ['Точки', pts], ['Валютные точки', ptsUsd, 'usd'], ['Смотрящие', wt], ['Предприятия', ents]);
     let pj = 0;
     D.PROJECTS.forEach(pr => { const v = projIncome(S, fid, pr); pj += v; if (pr.kind === 'w') white += v; else black += v; });
-    rows.push(['Крупные дела', pj]);
+    rows.push(['Крупные дела', pj, 'usd']);
     const wash = Math.round(black * Math.min(0.8, fxp(S, fid, 'wash') + (has(S, fid, 'charity') ? 0.1 : 0))); black -= wash; white += wash;
-    const tr = post(S, fid, 'treas'), gross = dist + pts + wt + ents + pj, tv = tr ? Math.round(gross * (tr.loy <= 3 ? -0.05 : tr.wit * 0.02)) : 0;
+    const tr = post(S, fid, 'treas'), gross = dist + pts + ptsUsd + wt + ents + pj, tv = tr ? Math.round(gross * (tr.loy <= 3 ? -0.05 : tr.wit * 0.02)) : 0;
     rows.push(['Казначей', tv]);
     const upkeep = Math.round(p.men * 0.3 * era(S) * (1 - fxp(S, fid, 'upkeep'))), bribes = Object.keys(p.off).reduce((s, k) => s + p.off[k] * D.OFFICIALS[k].keep, 0);
     // большая империя дорого обходится: охрана и откаты растут с числом районов, с 2000 года силовики берут долю с чёрного
     const n = count(S, fid), guard = p.human ? Math.round(Math.max(0, n - 4) * 1.5 * era(S)) : 0, siloviki = p.human && lawK(S) > 1 ? Math.round(Math.max(0, black) * (lawK(S) - 1) * 0.25) : 0;
     rows.push(['Содержание бойцов', -upkeep], ['Зарплата людям во власти', -bribes], ['Охрана и откаты', -guard], ['Доля силовикам', -siloviki]);
-    return { rows, total: gross + tv - upkeep - bribes - guard - siloviki, white, black, wash };
+    return { rows, total: gross + tv - upkeep - bribes - guard - siloviki, usd: ptsUsd + pj, white, black, wash };
   }
   function heatDelta(S, fid) {
     const p = S.f[fid];
@@ -1108,7 +1108,7 @@
     p.report = { money: 0, law: null, lost: [] };
     const inc = income(S, fid), w0 = cash(p).white;
     const u0 = cur(p).usd;
-    p.money += inc.total; p.clean = w0 + Math.max(0, inc.white); p.clean = cash(p).white; p.usd = u0; p.usd = cur(p).usd;
+    p.money += inc.total; p.clean = w0 + Math.max(0, inc.white); p.clean = cash(p).white; p.usd = u0 + Math.max(0, inc.usd || 0); p.usd = cur(p).usd;
     // рубли дешевеют вслед за курсом доллара (автообмена нет: менять — в обменнике)
     { const r = cur(p).rub, loss = r > 0 ? Math.round(r * inflation(S)) : 0; if (loss) { p.money -= loss; p.report.infl = loss; } }
     p.usdK = 0;

@@ -200,6 +200,8 @@
     tir: { name: 'Тир и шашлычная', cost: 25, inc: 4, kind: 'g', need: ['park'], one: true, fx: { med: 5 }, perk: 'Пацаны пристреляны: потери в бою −5%', desc: 'Тир в парке, шашлык и пиво, бойцы тренируются по ночам' },
     land: { name: 'Земля', cost: 160, inc: 12, kind: 'w', good: ['park', 'highway', 'river'], from: 1993, needConn: 2, fx: { conn: 1 }, perk: 'Свои люди в префектуре: связи +1', desc: 'Приватизация участка. Нужны связи: 2' }
   };
+  // валютные точки: иностранцы, игроки и модники платят долларами, остальные точки — рублями
+  ['casino', 'hotel', 'exchange', 'boutique', 'club'].forEach(k => { BUILDS[k].usd = true; });
   // потолки бонусов в процентах
   const FX_CAP = { kid: 20, upkeep: 50, car: 60, gun: 60, med: 50, talk: 25, hide: 50, wash: 60 };
 
