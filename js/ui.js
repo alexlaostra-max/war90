@@ -554,7 +554,7 @@
 
   let showDone = false;
   // «Дела»: переключатель мелкие / крупные, внутри — раскрывающиеся группы по географии
-  let bigTab = 'small', bigOpen = { 'small:msk': 1, 'big:rus': 1 };
+  let bigTab = 'small', bigOpen = { 'small:msk': 1 };
   function dgroup(key, title, sub, body, n) {
     const open = !!bigOpen[key];
     return '<div class="dacc' + (open ? ' open' : '') + '"><button class="dacch" data-a="dacc" data-k="' + key + '" aria-expanded="' + open + '"><b>' + title + '</b><span>' + sub + '</span>' + (n != null ? '<em>' + n + '</em>' : '') + '<i>' + (open ? '▾' : '▸') + '</i></button>' + (open ? '<div class="daccb">' + body + '</div>' : '') + '</div>';
@@ -643,14 +643,12 @@
   // крупные дела: бизнес в Москве и по России и СНГ (поездка к нужным людям может быть и за границу)
   const MSK_DEALS = ['pyramid', 'bank', 'media', 'mall', 'gsm', 'slots', 'club', 'tower'];
   function bizBig() {
-    const grp = (key, title, sub, list) => {
-      const live = list.filter(pr => (E.projStatus(S, me, pr).st.stage || 0) === 3).length, open = list.filter(pr => !E.projStatus(S, me, pr).lock).length;
-      return dgroup(key, title, sub + ' · доступно ' + open + (live ? ' · в деле ' + live : ''), '<div class="projs">' + list.map(projHTML).join('') + '</div>', list.length);
-    };
     const u = E.usdOf(P());
+    // одним списком: сначала то, что уже работает или доступно, потом остальное по году
+    const rank = pr => { const ps = E.projStatus(S, me, pr), st = ps.st.stage || 0; return st === 3 ? 0 : st > 0 ? 1 : ps.lock ? 3 : 2; };
+    const list = D.PROJECTS.slice().sort((a, b) => rank(a) - rank(b) || (a.from || 0) - (b.from || 0));
     return '<p class="sub">Три шага: поездка, переговоры, вход в капитал. Один шаг в месяц.</p><div class="box usdnote"><b>$ ' + u + ' тыс.</b><span>Крупные дела платятся только долларами: рубли за границей и у серьёзных людей не берут.</span>' + btn('В обменник', 'gofx', '', false, 'sm') + '</div>' +
-      grp('big:msk', 'Москва', 'банки, ТВ, торговля, связь', D.PROJECTS.filter(pr => MSK_DEALS.includes(pr.id))) +
-      grp('big:rus', 'Россия и СНГ', 'водка, нефть, металл, порты, золото', D.PROJECTS.filter(pr => !MSK_DEALS.includes(pr.id)));
+      '<div class="projs">' + list.map(projHTML).join('') + '</div>';
   }
   function projHTML(pr) {
     const p = P(); let h = '';
