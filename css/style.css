@@ -821,3 +821,5 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 /* недвижимость */
 .estd { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; margin: 8px 0; } .estd ul { margin: 6px 0 0; }
 .lvb.sm { position: static; display: inline-block; font-size: 10px; padding: 0 4px; }
+
+.box.brk { border-color: #6b3a3a; } .box.brk p { margin: 0 0 8px; }

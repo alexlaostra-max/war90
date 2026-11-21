@@ -386,7 +386,7 @@
     const brk = p.broken || {}, nb = Object.keys(brk).reduce((a, k) => a + (brk[k] || 0), 0);
     let h = '<p class="eyebrow">Рядовые</p><h2>Гараж</h2><p class="sub">Мест ' + seats + ', на разборку едут до ' + (10 + seats) + ' бойцов, сила колёс +' + R(E.mobility(p)) + '</p>' + disc('car', 'от автосервисов: и на покупку, и на ремонт');
     h += '<p class="muted">Машины изнашиваются и ломаются: сломанная стоит в гараже и бойцов не возит. Почини или продай на запчасти. Советские ломаются чаще, иномарки поновее — реже, автосервисы на районах берегут парк.</p>';
-    if (nb) h += '<p class="bad">Сломано машин: ' + nb + '.</p>';
+    if (nb) { const ra = E.repairAllCost(S, me), sv = E.scrapAllValue(S, me); h += '<div class="box brk"><p class="bad">Сломано машин: ' + nb + '. Они стоят в гараже и бойцов не возят.</p><div class="grid">' + btn('Починить все · ' + ra + ' тыс.', 'repairall', '', p.money < E.repairCost(S, me, Object.keys(brk).find(k => brk[k] > 0)) ? 'не хватает денег' : false, 'primary') + btn('Сдать сломанные на металлолом · +' + sv + ' тыс.', 'scrapall', '', false) + '</div>' + (p.money < ra ? '<p class="muted">На все денег не хватит — починятся сначала самые дешёвые в ремонте.</p>' : '') + '</div>'; }
     h += '<div class="shop">';
     // сначала то, что уже есть в гараже, потом доступное, потом будущие модели
     const keys = Object.keys(D.CARS).sort((a, b) => ((gar[b] || 0) + (brk[b] || 0) > 0) - ((gar[a] || 0) + (brk[a] || 0) > 0) || (y >= D.CARS[b].from) - (y >= D.CARS[a].from) || D.CARS[a].from - D.CARS[b].from);
@@ -943,6 +943,8 @@
     else if (a === 'vests') act('buyVests', [+b.dataset.n || 5]);
     else if (a === 'car') act('buyCar', [k || 'nine']);
     else if (a === 'repair') act('repairCar', [k]);
+    else if (a === 'repairall') act('repairAll', []);
+    else if (a === 'scrapall') act('scrapAll', []);
     else if (a === 'quest') act('quest', [0]);
     else if (a === 'status') act('buyStatus', [k]);
     else if (a === 'usd') act('setUsd', [+k]);

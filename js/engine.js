@@ -707,6 +707,27 @@
     p.money -= c; p.broken[k]--; addCar(p, k, 1);
     return { ok: true, msg: D.CARS[k].name + ' снова на ходу. Ремонт: ' + c + ' тыс.' };
   }
+  // все сломанные разом: починить (сколько хватит денег, начиная с дешёвого ремонта) или сдать на металлолом
+  const brokenList = p => Object.keys(p.broken || {}).filter(k => p.broken[k] > 0 && D.CARS[k]);
+  const repairAllCost = (S, fid) => { const p = S.f[fid]; return brokenList(p).reduce((a, k) => a + repairCost(S, fid, k) * p.broken[k], 0); };
+  const scrapAllValue = (S, fid) => { const p = S.f[fid]; return brokenList(p).reduce((a, k) => a + carSale(k, true) * p.broken[k], 0); };
+  function repairAll(S, fid) {
+    const e = spend(S, fid, 0); if (e) return fail(e);
+    const p = S.f[fid], ks = brokenList(p).sort((a, b) => repairCost(S, fid, a) - repairCost(S, fid, b));
+    if (!ks.length) return fail('Чинить нечего');
+    let n = 0, c = 0;
+    ks.forEach(k => { while (p.broken[k] > 0 && p.money >= repairCost(S, fid, k)) { const v = repairCost(S, fid, k); p.money -= v; c += v; p.broken[k]--; addCar(p, k, 1); n++; } });
+    if (!n) return fail('Не хватает денег даже на один ремонт');
+    const left = brokenList(p).reduce((a, k) => a + p.broken[k], 0);
+    return { ok: true, msg: 'Починено машин: ' + n + ' за ' + c + ' тыс.' + (left ? ' На остальные ' + left + ' не хватило денег' : '') };
+  }
+  function scrapAll(S, fid) {
+    const e = spend(S, fid, 0); if (e) return fail(e);
+    const p = S.f[fid], ks = brokenList(p); if (!ks.length) return fail('Сломанных нет');
+    let n = 0, v = 0; ks.forEach(k => { n += p.broken[k]; v += carSale(k, true) * p.broken[k]; p.broken[k] = 0; });
+    p.money += v;
+    return { ok: true, msg: 'На металлолом ушло машин: ' + n + '. Выручка +' + v + ' тыс.' };
+  }
   function sellCar(S, fid, k, broken) {
     const e = spend(S, fid, 0); if (e) return fail(e);
     const p = S.f[fid]; if (!D.CARS[k]) return fail('Нет такой машины');
@@ -1394,7 +1415,7 @@
     p.ready = true;
   }
 
-  const ACTIONS = { exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
+  const ACTIONS = { repairAll, scrapAll, exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
-  G.Engine = { usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);
