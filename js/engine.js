@@ -1055,6 +1055,8 @@
       if (res.demote && !res.wfate) { w.pos = null; w.ok = null; dl.demote = cname(w); }
       if (res.exec && res.wfate === 'dead') { if (!p.flags) p.flags = {}; p.flags.exec = true; if (res !== o) p.flags.framed = true; }
       if (res.wfate === 'leave') { p.crew = p.crew.filter(x => x !== w); dl.gone = cname(w); }
+      else if (res.wfate === 'frame') { p.crew = p.crew.filter(x => x !== w); p.dead.unshift({ n: cname(w), pos: w.pos, t: S.turn, how: 'уехал на зону: подбросили наркоту', gone: true }); if (p.dead.length > 12) p.dead.length = 12; dl.gone = cname(w); }
+      else if (res.wfate === 'ranks') { p.crew = p.crew.filter(x => x !== w); p.men += 1; dl.gone = cname(w); }
       else if (res.wfate) { fate(S, fid, w, res.wfate, res.exec ? 'казнён по приговору бригады' : title.charAt(0).toLowerCase() + title.slice(1)); if (res.wfate === 'dead') dl.dead = cname(w); }
     }
     if (res.truce) { const nb = D.FACTIONS.filter(f => !S.f[f.id].human && S.f[f.id].alive && !inTruce(S, fid, f.id) && owned(S, f.id).some(i => GEO.adj[i].some(j => S.d[j].o === fid))); if (nb.length) { const f = nb[Math.floor(rnd(S) * nb.length)]; p.truce[f.id] = S.turn + res.truce; addRel(S, fid, f.id, 10); dl.truce = f.name; } }

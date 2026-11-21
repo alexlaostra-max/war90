@@ -153,7 +153,7 @@
   // ---------- шапка ----------
   function renderTop() {
     const p = P(), inc = E.income(S, me), L = E.lawLevel(p.heat), cap = E.menCap(S, me);
-    $('#date').textContent = E.date(S.turn).label + (net ? ' · ' + net.lobby.name : '');
+    $('#date').textContent = ''; // месяц и год — в карточке главы
     // показатель шапки: значок, подпись, число, пояснение
     // нажатие ведёт туда, где этим показателем управляют
     // рубли — настоящими рублями по курсу (68М, 2,4млрд), доллары — в тыс. $
@@ -296,7 +296,7 @@
   // общак: что приходит и уходит за месяц, вложения, кто на зоне
   function paneBoss() {
     const p = P(), inc = E.income(S, me), cap = E.menCap(S, me);
-    let h = '<p class="eyebrow">Глава · общак ' + tipAsk('cash') + '</p><h2>' + fd(me).name + '</h2><p class="sub">' + esc(fd(me).perk) + '</p>';
+    let h = '<p class="eyebrow">Общак ' + tipAsk('cash') + '</p><h2>' + fd(me).name + '</h2><p class="sub">' + esc(fd(me).perk) + '</p>';
     h += '<dl class="kv"><dt>Сила бригады</dt><dd>' + R(E.power(p)) + '</dd><dt>Касса</dt><dd>' + R(p.money) + ' тыс. $</dd><dt>Белый нал</dt><dd class="good">' + E.cash(p).white + '</dd><dt>Чёрный нал</dt><dd>' + E.cash(p).black + '</dd><dt>В долларах</dt><dd class="good">' + E.cur(p).usd + '</dd><dt>В рублях</dt><dd>' + E.cur(p).rub + '</dd><dt>Авторитет</dt><dd>' + R(p.rep) + '</dd><dt>Бойцы</dt><dd>' + p.men + ' из ' + cap + '</dd><dt>Районы</dt><dd>' + E.count(S, me) + ' из 102</dd></dl>';
     h += '<h3>Касса за месяц</h3><table class="tbl">' + inc.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="' + (r[1] < 0 ? 'bad' : 'good') + '">' + plus(r[1], r[2] === 'usd') + '</td></tr>').join('') + '<tr class="sum"><td>Итого</td><td>' + [inc.total - inc.usd ? plus(inc.total - inc.usd) : '', inc.usd ? plus(inc.usd, true) : ''].filter(Boolean).join(' и ') + '</td></tr></table>';
     const tot = inc.white + inc.black;
@@ -437,7 +437,7 @@
   function renderOrg() {
     const p = P(), cr = E.crew(S, me), total = E.count(S, me), capos = cr.filter(x => x.pos === 'capo'), max = E.capoMax(S, me), bench = cr.filter(x => !x.pos);
     const on = v => focus && focus.view === v ? ' sel' : '';
-    let h = '<div class="tier"><button class="node boss' + on('boss') + '" data-a="unit" data-u="boss"><span class="ava">' + A.bossFace(fd(me)) + '</span><span class="nb"><span class="role">Глава · общак</span><b>Ты</b><small>' + fd(me).name + '</small><span class="bossline">касса ' + R(p.money) + ' тыс. · ' + sign(E.income(S, me).total) + ' в мес. · районов ' + total + '</span></span></button></div>';
+    let h = '<div class="tier"><button class="node boss' + on('boss') + '" data-a="unit" data-u="boss"><span class="ava">' + A.bossFace(fd(me)) + '</span><span class="nb"><span class="role">Глава ОПГ «' + fd(me).name + '»</span><b>Ты</b><small class="bossdate">' + E.date(S.turn).label + (net ? ' · ' + esc(net.lobby.name) : '') + '</small><span class="bossline">районов ' + total + ' · бойцов ' + p.men + ' · авторитет ' + R(p.rep) + '</span></span></button></div>';
     // сразу под главой — сама бригада: рядовые бойцы, их стволы и тачки
     const cap = E.menCap(S, me), seats = E.seatsOf(p), unit = (v, ic, title, big, line, warn) => '<button class="unit' + on(v) + '" data-a="unit" data-u="' + v + '">' + A.icon(ic) + '<span class="nb"><span class="role">' + title + '</span><b>' + big + '</b><small class="' + (warn ? 'bad' : '') + '">' + line + '</small></span></button>';
     h += '<p class="tlabel">Бригада · сила ' + R(E.power(p)) + '</p><div class="tier units">' +
