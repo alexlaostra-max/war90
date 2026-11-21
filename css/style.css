@@ -790,3 +790,13 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 .fxcalc b { font: 400 17px var(--display); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .fxcalc b.good { color: var(--good); }
 .fxcalc small { font-size: 11px; } .fxcalc i { font-style: normal; color: var(--gold); font-size: 20px; }
 .fxlink { display: flex; align-items: center; gap: 10px; justify-content: space-between; margin: 12px 0; } .fxlink p { margin: 0; font-size: 13px; }
+
+/* «Дела»: мелкие / крупные и раскрывающиеся группы */
+.bigtabs { margin: 4px 0 10px; } .bigtabs .btn { flex: 1; font-size: 15px; padding: 10px; }
+.dacc { border: 1px solid var(--line); border-radius: 6px; margin: 10px 0; background: #1b1822; }
+.dacc.open { border-color: #5a4a2a; }
+.dacch { width: 100%; display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: "t n i" "s n i"; align-items: center; gap: 0 10px; padding: 12px 14px; background: none; border: 0; text-align: left; cursor: pointer; color: var(--fg); }
+.dacch b { grid-area: t; font: 400 18px var(--display); } .dacch span { grid-area: s; font-size: 12px; color: var(--dim); }
+.dacch em { grid-area: n; font: 700 13px var(--mono); font-style: normal; color: var(--gold); border: 1px solid #5a4a2a; border-radius: 10px; padding: 1px 8px; }
+.dacch i { grid-area: i; font-style: normal; color: var(--gold); font-size: 16px; }
+.daccb { padding: 0 12px 12px; } .daccb .projs { margin-top: 0; }

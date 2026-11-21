@@ -541,10 +541,19 @@
   }
 
   let showDone = false;
-  const paneBig = () => '<h2>Дела</h2>' + bizBig() + statusHTML();
+  // «Дела»: переключатель мелкие / крупные, внутри — раскрывающиеся группы по географии
+  let bigTab = 'small', bigOpen = { 'small:msk': 1, 'big:rus': 1 };
+  function dgroup(key, title, sub, body, n) {
+    const open = !!bigOpen[key];
+    return '<div class="dacc' + (open ? ' open' : '') + '"><button class="dacch" data-a="dacc" data-k="' + key + '" aria-expanded="' + open + '"><b>' + title + '</b><span>' + sub + '</span>' + (n != null ? '<em>' + n + '</em>' : '') + '<i>' + (open ? '▾' : '▸') + '</i></button>' + (open ? '<div class="daccb">' + body + '</div>' : '') + '</div>';
+  }
+  function paneBig() {
+    let h = '<h2>Дела</h2><div class="seg bigtabs">' + [['small', 'Мелкие дела'], ['big', 'Крупные дела']].map(t => '<button class="btn' + (bigTab === t[0] ? ' on' : '') + '" data-a="bigtab" data-k="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+    return h + (bigTab === 'small' ? bizSmall() : bizBig() + dgroup('big:status', 'Статус и большие покупки', 'разовые покупки с постоянным эффектом', statusHTML()));
+  }
   // статус: большие разовые покупки для поздней игры
   function statusHTML() {
-    let h = '<h2 class="sth">Статус и большие покупки</h2><p class="sub">Разовые покупки с постоянным эффектом. Ходов не тратят.</p><div class="stgrid">';
+    let h = '<p class="sub">Разовые покупки с постоянным эффектом. Ходов не тратят.</p><div class="stgrid">';
     D.STATUS.forEach(X => {
       const own = E.has(S, me, X.id), l = own ? null : E.statusLock(S, me, X);
       h += '<div class="box stat' + (own ? ' own' : '') + '"><h3>' + X.name + '</h3><p class="muted">' + X.desc + '.</p><p class="good">' + X.perk + '.</p>' +
@@ -601,21 +610,26 @@
     };
     return '<div class="rulers">' + card('Президент России', D.RULERS.pres) + card('Мэр Москвы', D.RULERS.mayor) + '</div>';
   }
-  function bizBig() {
-    const p = P();
-    // Москва: быстрые дела на своих районах; дальше — дела с поездкой по стране и за границу
-    const own = E.owned(S, me), kc = own.length ? null : 'нет районов';
-    let h = '<h3 class="dgrp">Москва <span class="muted">быстрые дела на своих районах</span></h3><div class="projs">';
-    h += '<div class="box proj"><div class="dpic">' + (A.deal('kidnap') || A.eventScene('street', 'kidnap')) + '<em>свои районы</em></div><h3>Похищение коммерсанта ' + kindTag('b') + '</h3><p>Выкуп 20–50 тыс. (растёт с годами) · шанс ' + E.kidnapOdds(S, me) + '% · розыск +7, при провале +11 и потери. Раз в месяц, 1 ход.</p>' +
+  function bizSmall() {
+    const p = P(), own = E.owned(S, me), kc = own.length ? null : 'нет районов';
+    let b = '<div class="projs">';
+    b += '<div class="box proj"><div class="dpic">' + (A.deal('kidnap') || A.eventScene('street', 'kidnap')) + '<em>свои районы</em></div><h3>Похищение коммерсанта ' + kindTag('b') + '</h3><p>Выкуп 20–50 тыс. (растёт с годами) · шанс ' + E.kidnapOdds(S, me) + '% · розыск +7, при провале +11 и потери. Раз в месяц, 1 ход.</p>' +
       btn('Похитить коммерсанта', 'kidnap', '', kc || (p.kidnapTurn === S.turn ? 'раз в месяц' : p.men < 4 ? 'нужно 4 бойца' : p.ap < 1), 'wide primary') + '</div>';
     const ents = own.filter(i => D.DISTRICTS[i].ent && !S.d[i].ent);
-    h += '<div class="box proj"><div class="dpic">' + (A.deal('raid') || A.eventScene('law', 'raid')) + '<em>предприятия</em></div><h3>Захват предприятий ' + kindTag('w') + '</h3>' + (ents.length ? '<p>На твоих районах можно забрать через суды и реестр:</p><ul class="plain">' + ents.map(i => '<li><button class="link" data-a="goto" data-i="' + i + '">' + esc(D.DISTRICTS[i].ent.name) + '</button> · ' + D.DISTRICTS[i].name + ' · +' + D.DISTRICTS[i].ent.inc + ' в мес.</li>').join('') + '</ul>' : '<p class="muted">На твоих районах нет незахваченных предприятий. Бери районы с ромбиком на карте.</p>') + '</div></div>';
-    const AWAY = ['pyramid', 'bank', 'media', 'mall', 'gsm', 'slots', 'club', 'tower'];
-    const grp = (title, sub, list) => '<h3 class="dgrp">' + title + ' <span class="muted">' + sub + '</span></h3><div class="projs">' + list.map(projHTML).join('') + '</div>';
-    h += '<p class="sub">Крупные дела — в три шага: поездка, переговоры, вход в капитал. Один шаг в месяц.</p>';
-    h += grp('По стране', 'Россия и СНГ', D.PROJECTS.filter(pr => !AWAY.includes(pr.id)));
-    h += grp('За границей', 'офшоры, Европа, Вегас, Дубай', D.PROJECTS.filter(pr => AWAY.includes(pr.id)));
-    return h;
+    b += '<div class="box proj"><div class="dpic">' + (A.deal('raid') || A.eventScene('law', 'raid')) + '<em>предприятия</em></div><h3>Захват предприятий ' + kindTag('w') + '</h3>' + (ents.length ? '<p>На твоих районах можно забрать через суды и реестр:</p><ul class="plain">' + ents.map(i => '<li><button class="link" data-a="goto" data-i="' + i + '">' + esc(D.DISTRICTS[i].ent.name) + '</button> · ' + D.DISTRICTS[i].name + ' · +' + D.DISTRICTS[i].ent.inc + ' в мес.</li>').join('') + '</ul>' : '<p class="muted">На твоих районах нет незахваченных предприятий. Бери районы с ромбиком на карте.</p>') + '</div></div>';
+    return '<p class="sub">Быстрые дела без поездок: один ход, результат сразу.</p>' + dgroup('small:msk', 'Москва', 'на своих районах', b, 2) +
+      dgroup('small:rus', 'Россия и СНГ', 'скоро', '<p class="muted">Мелких дел за пределами Москвы пока нет — они появятся в следующих обновлениях.</p>', 0);
+  }
+  // крупные дела: бизнес в Москве и по России и СНГ (поездка к нужным людям может быть и за границу)
+  const MSK_DEALS = ['pyramid', 'bank', 'media', 'mall', 'gsm', 'slots', 'club', 'tower'];
+  function bizBig() {
+    const grp = (key, title, sub, list) => {
+      const live = list.filter(pr => (E.projStatus(S, me, pr).st.stage || 0) === 3).length, open = list.filter(pr => !E.projStatus(S, me, pr).lock).length;
+      return dgroup(key, title, sub + ' · доступно ' + open + (live ? ' · в деле ' + live : ''), '<div class="projs">' + list.map(projHTML).join('') + '</div>', list.length);
+    };
+    return '<p class="sub">Три шага: поездка, переговоры, вход в капитал. Один шаг в месяц.</p>' +
+      grp('big:msk', 'Москва', 'банки, ТВ, торговля, связь', D.PROJECTS.filter(pr => MSK_DEALS.includes(pr.id))) +
+      grp('big:rus', 'Россия и СНГ', 'водка, нефть, металл, порты, золото', D.PROJECTS.filter(pr => !MSK_DEALS.includes(pr.id)));
   }
   function projHTML(pr) {
     const p = P(); let h = '';
@@ -893,6 +907,8 @@
     else if (a === 'fxset') { const r = $('#fxr'); if (r) { r.value = Math.round(+r.max * +k); fxCalc(); } }
     else if (a === 'fxgo') { const r = $('#fxr'); if (r && +r.value > 0) act('exchange', [fxDir, +r.value]); }
     else if (a === 'golog') { section = 'log'; sheet = false; render(); $('#page').scrollTop = 0; }
+    else if (a === 'bigtab') { bigTab = k; render(); $('#page').scrollTop = 0; }
+    else if (a === 'dacc') { if (bigOpen[k]) delete bigOpen[k]; else bigOpen[k] = 1; render(); }
     else if (a === 'gofx') { section = 'fx'; sheet = false; render(); }
     else if (a === 'retire1') { confirmRetire = true; render(); }
     else if (a === 'retire0') { confirmRetire = false; render(); }
