@@ -747,3 +747,32 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 .spec select { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px; font: inherit; max-width: 60vw; }
 .cell.watched { stroke: #fff; stroke-width: 2.4; filter: drop-shadow(0 0 3px rgba(255, 255, 255, .7)); }
 @media (max-width: 860px) { #tabbar button { font-size: 9.5px; } #tabbar .ico { width: 21px; height: 21px; } #maptip { left: 6px; top: 6px; width: calc(100% - 64px); max-height: calc(100% - 70px); } }
+
+/* обменник в общаке */
+.fx { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 8px; }
+.fxw { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; background: var(--raise); }
+.fxw span { font: 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--dim); }
+.fxw b { font: 400 20px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .fxw small { font-size: 12px; color: var(--dim); }
+.fxw.rub b { color: #e8a35a; } .fxw.usd b { color: var(--good); }
+.fxrate { margin: 0 0 8px; font-size: 14px; } .fxrate b { color: var(--gold); font-weight: 700; }
+.fxform { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; } .fxform .field { flex: 1 1 140px; margin: 0; } .fxform .btn { flex: 0 0 auto; }
+.fxq { margin: 8px 0 10px; }
+/* точки района: построенные отдельно от того, что можно построить */
+.pbuilt { border: 1px solid #3f5a46; background: #1c2420; border-radius: 6px; padding: 10px 12px 12px; margin: 12px 0; }
+.pbuilt > h3 { margin-top: 0; color: var(--good); }
+.pbuilt .ptile { border-color: #3f5a46; }
+.pnew { border: 1px dashed var(--line); border-radius: 6px; padding: 10px 12px 12px; margin: 12px 0; }
+.pnew > h3 { margin-top: 0; }
+.pnew .bcard { background: #18151d; }
+.pfull { margin: 0 0 12px; }
+
+/* окна, которые закрываются свайпом вниз: ручка и крестик */
+.sheet.closable { padding-top: 30px; }
+.sheet .mgrab { position: absolute; left: 50%; top: 9px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: #4a4458; }
+.sheet .mclose { position: absolute; right: 10px; top: 10px; margin: 0; z-index: 2; }
+@media (min-width: 861px) { .sheet .mgrab { display: none; } .sheet.closable { padding-top: 22px; } }
+.sheet .mclose { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; background: var(--raise); color: var(--fg); font: 400 22px/1 var(--body); display: grid; place-items: center; padding: 0 0 2px; cursor: pointer; }
+.sheet .mclose:hover { border-color: var(--gold); }
+/* дела: группы Москва / по стране / за границей */
+.dgrp { margin: 18px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); } .dgrp:first-of-type { margin-top: 8px; }
+.photo.dph { aspect-ratio: 5 / 2; width: 100%; }

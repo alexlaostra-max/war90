@@ -28,6 +28,14 @@
   // валюта: часть кассы в долларах (usd), остальное в рублях; рубли съедает инфляция, а в августе 1998-го — дефолт
   const cur = p => { const u = Math.min(Math.max(0, p.usd || 0), Math.max(0, p.money)); return { usd: Math.round(u), rub: Math.round(p.money - u) }; };
   const inflation = S => { const y = 1991 + Math.floor((11 + S.turn) / 12), m = (11 + S.turn) % 12 + 1; return y <= 1993 ? 0.06 : y <= 1995 ? 0.04 : y <= 1997 ? 0.015 : y === 1998 && m < 9 ? 0.01 : y <= 1999 ? 0.03 : 0.01; };
+  // курс рубля к доллару по годам (с 1998 — новые, деноминированные рубли), для обменника в общаке
+  const RATE = { 1992: [180, 415], 1993: [450, 1250], 1994: [1300, 3550], 1995: [3800, 4640], 1996: [4700, 5560], 1997: [5560, 5960], 1999: [21, 27], 2000: [27, 28.2], 2001: [28.2, 30.1], 2002: [30.1, 31.8], 2003: [31.8, 29.5], 2004: [29.5, 27.7], 2005: [27.7, 28.8], 2006: [28.8, 26.3], 2007: [26.3, 24.5] };
+  function rubRate(S) {
+    const y = 1991 + Math.floor((11 + S.turn) / 12), m = (11 + S.turn) % 12 + 1;
+    if (y <= 1991) return 170;
+    if (y === 1998) return m < 8 ? 6.1 : m === 8 ? 9.3 : [16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 20.6][m - 1];
+    const r = RATE[Math.min(2007, y)]; return Math.round((r[0] + (r[1] - r[0]) * (m - 1) / 11) * 10) / 10;
+  }
   const exchangeFee = (S, fid) => Math.max(0, 0.03 - owned(S, fid).reduce((a, i) => a + S.d[i].b.filter(b => b === 'exchange').length, 0) * 0.01);
   const cash = p => { const w = Math.min(Math.max(0, p.clean || 0), Math.max(0, p.money)); return { white: Math.round(w), black: Math.round(p.money - w) }; };
   const fdef = id => D.FACTIONS.find(f => f.id === id);
@@ -643,6 +651,16 @@
     return { ok: true, msg: 'Ты отошёл от дел.' };
   }
   const statusLock = (S, fid, X) => { const p = S.f[fid]; return has(S, fid, X.id) ? 'уже есть' : date(S.turn).year < X.from ? 'с ' + X.from + ' года' : X.needConn && conn(S, fid) < X.needConn ? 'нужны связи: ' + X.needConn : p.money < X.cost ? 'не хватает денег' : null; };
+  // обменник: купить доллары за рубли или продать, сумма в тыс. $; комиссия как у автообмена
+  function exchange(S, fid, dir, amt) {
+    const e = spend(S, fid, 0); if (e) return fail(e);
+    const p = S.f[fid], c = cur(p); amt = Math.floor(+amt);
+    if (!(amt > 0)) return fail('Сколько менять?');
+    const fee = Math.max(0, Math.round(amt * exchangeFee(S, fid)));
+    if (dir === 'buy') { if (amt > c.rub) return fail('Рублей только на ' + c.rub + ' тыс. $'); p.money -= fee; p.usd = c.usd + amt - fee; return { ok: true, msg: 'Купили ' + (amt - fee) + ' тыс. $, комиссия ' + fee + ' тыс.' }; }
+    if (dir === 'sell') { if (amt > c.usd) return fail('Долларов только ' + c.usd + ' тыс.'); p.money -= fee; p.usd = c.usd - amt; return { ok: true, msg: 'Продали ' + amt + ' тыс. $ за рубли, комиссия ' + fee + ' тыс.' }; }
+    return fail('Купить или продать?');
+  }
   function setUsd(S, fid, k) {
     const e = spend(S, fid, 0); if (e) return fail(e);
     const p = S.f[fid]; k = [0, 0.5, 0.8].includes(+k) ? +k : 0; p.usdK = k;
@@ -747,9 +765,11 @@
     if (c.loy <= 3 && rnd(S) < 0.3) { addHeat(S, fid, 6); log(S, cname(c) + ' обиделся и пошёл к операм. Розыск +6.', 'bad', fid); return { ok: true, msg: cname(c) + ' ушёл со злобой и заговорил с операми', win: false }; }
     return { ok: true, msg: cname(c) + ' вернулся в рядовые' };
   }
+  const kidnapOdds = (S, fid) => Math.round(clamp(0.55 + S.f[fid].rep / 400 + fxp(S, fid, 'kid'), 0, 0.9) * 100);
   function kidnap(S, fid, i) {
     const e = spend(S, fid, 1); if (e) return fail(e);
     const p = S.f[fid];
+    if (i == null || i === '') i = owned(S, fid)[0];
     if (!S.d[i] || S.d[i].o !== fid) return fail('Район не твой');
     if (p.kidnapTurn === S.turn) return fail('В этом месяце уже было похищение. Город на ушах');
     if (p.men < 4) return fail('Нужно 4 бойца');
@@ -1359,7 +1379,7 @@
     p.ready = true;
   }
 
-  const ACTIONS = { execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
+  const ACTIONS = { exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
-  G.Engine = { setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);

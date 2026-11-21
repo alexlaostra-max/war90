@@ -188,13 +188,17 @@
   // точки района: что стоит, что можно улучшить и что построить
   function pointsHTML(i) {
     const d = S.d[i], dd = D.DISTRICTS[i], p = P();
-    let h = '<h3>Точки <span class="muted">' + d.b.length + ' из ' + dd.slots + '</span> ' + tipAsk('mine') + '</h3>';
+    const tot = d.b.reduce((a, b, x) => a + E.pointInc(me, b, i) * E.pointLvl(d, x), 0);
+    let h = '<div class="pbuilt"><h3>Твои точки <span class="muted">' + d.b.length + ' из ' + dd.slots + ' мест' + (d.b.length ? ' · +' + tot + ' в мес.' : '') + '</span> ' + tipAsk('mine') + '</h3>';
+    if (!d.b.length) h += '<p class="muted">Пока ни одной. Выбери, что построить, ниже.</p>';
     if (d.b.length) h += '<div class="ptiles">' + d.b.map((b, x) => {
       const B = D.BUILDS[b], lv = E.pointLvl(d, x), c = E.upgradeCost(S, i, x), inc = E.pointInc(me, b, i);
       return '<div class="ptile"><div class="pimg">' + A.build(b, lv) + '<b class="lvb">' + ROMAN[lv] + '</b></div><div class="pinfo"><b>' + B.name + '</b><span class="good">+' + inc * lv + ' в мес.' + (E.pointGood(b, i) ? ' · место +50%' : '') + '</span>' + (B.perk ? '<small class="perk">' + esc(perkAt(B, lv)) + '</small>' : '') + '</div>' +
         (lv >= E.MAX_LVL ? '<p class="muted pmax">Высший уровень</p>' : '<button class="btn sm pup" data-a="upgrade" data-i="' + i + '" data-x="' + x + '"' + (p.money < c ? ' disabled' : '') + '><span class="pnext">' + A.build(b, lv + 1, true) + '</span><span>До ' + ROMAN[lv + 1] + ' · ' + c + ' тыс. → +' + inc * (lv + 1) + (B.fx || B.rec || B.def ? '<small>' + esc(perkAt(B, lv + 1)) + '</small>' : '') + '</span></button>') + '</div>';
     }).join('') + '</div>';
-    if (d.b.length >= dd.slots) return h + '<p class="muted">Свободных мест нет. Улучшай то, что стоит.</p>';
+    h += '</div>';
+    if (d.b.length >= dd.slots) return h + '<p class="muted pfull">Свободных мест нет. Улучшай то, что стоит.</p>';
+    h += '<div class="pnew"><h3>Построить новую <span class="muted">свободно мест: ' + (dd.slots - d.b.length) + '</span></h3>';
     const rank = k => D.BUILDS[k].need && k !== 'casino' ? 0 : E.pointGood(k, i) ? 1 : 2;
     const keys = Object.keys(D.BUILDS).filter(k => !(D.BUILDS[k].onlyMarket && !dd.m) && !(D.BUILDS[k].need && !D.BUILDS[k].need.some(t => dd.t.includes(t)))).sort((a, b) => rank(a) - rank(b));
     h += '<div class="grid">';
@@ -202,7 +206,7 @@
       const B = D.BUILDS[k], lock = E.canBuild(S, me, i, k), r = rank(k);
       h += '<button class="card bcard' + (r === 0 ? ' special' : r === 1 ? ' fit' : '') + '" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? ' disabled' : '') + ' title="' + esc(B.desc) + '">' + A.build(k, 1, true) + (r === 0 ? '<em class="btag">особая</em>' : r === 1 ? '<em class="btag fit">+50% здесь</em>' : '') + '<b>' + B.name + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? B.cost + ' тыс.' : 'бесплатно') + ' → +' + E.pointInc(me, k, i) + '/мес.</span>' + (B.perk ? '<i class="perk">' + esc(B.perk) + '</i>' : '') + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
     });
-    return h + '</div>';
+    return h + '</div></div>';
   }
   // особенности района: чипы с подсказкой, что это за место
   const traitChips = dd => '<div class="traits">' + dd.t.map(t => '<span class="trait" title="' + esc(D.TRAITS[t].desc) + '">' + D.TRAITS[t].name + '</span>').join('') + '</div>';
@@ -267,7 +271,6 @@
     }
     if (mine) {
       h += '<dl class="kv">' + watchLine(sel) + '</dl>' + pointsHTML(sel);
-      h += btn('Похитить коммерсанта', 'kidnap', '', p.kidnapTurn === S.turn ? 'раз в месяц' : p.men < 4 ? 'нужно 4 бойца' : p.ap < 1, 'wide');
     } else if (E.attackable(S, me, sel)) {
       if (d.o && !S.f[d.o].human && E.inTruce(S, me, d.o)) h += '<p class="muted">С бригадой перемирие до ' + E.date(p.truce[d.o]).label + '.</p>';
       else {
@@ -287,8 +290,15 @@
     h += '<h3>Касса за месяц</h3><table class="tbl">' + inc.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="' + (r[1] < 0 ? 'bad' : 'good') + '">' + sign(r[1]) + '</td></tr>').join('') + '<tr class="sum"><td>Итого</td><td>' + sign(inc.total) + '</td></tr></table>';
     const tot = inc.white + inc.black;
     const k = p.usdK || 0, fee = R(E.exchangeFee(S, me) * 100), inf = E.inflation(S) * 100;
-    h += '<h3>Рубли и доллары</h3><p class="muted">Доход приходит в рублях, траты идут сначала из рублей. Рубли дешевеют: сейчас инфляция ' + (Math.round(inf * 10) / 10) + '% в месяц, а в августе 1998-го дефолт сожжёт 70% рублёвой кассы. Доллары не дешевеют и дефолта не боятся, но обмен стоит ' + fee + '%' + (fee < 3 ? ' (обменники на районах снижают комиссию)' : '; обменники на районах снижают комиссию') + '.</p>';
-    h += '<div class="seg" role="group" aria-label="Доля кассы в долларах">' + [[0, 'Всё в рублях'], [0.5, 'Половина в $'], [0.8, '80% в $']].map(o => '<button class="btn sm' + (k === o[0] ? ' on' : '') + '" data-a="usd" data-k="' + o[0] + '" aria-pressed="' + (k === o[0]) + '">' + o[1] + '</button>').join('') + '</div><p class="muted">Каждый месяц касса сама меняется до выбранной доли.</p>';
+    // обменник: сколько в рублях и в долларах, курс, купить или продать
+    const cc = E.cur(p), rate = E.rubRate(S), rubs = Math.max(0, cc.rub) * 1000 * rate;
+    const big = v => v >= 1e9 ? (Math.round(v / 1e8) / 10).toLocaleString('ru-RU') + ' млрд' : v >= 1e6 ? (Math.round(v / 1e5) / 10).toLocaleString('ru-RU') + ' млн' : Math.round(v).toLocaleString('ru-RU');
+    h += '<h3>Обменник</h3><div class="fx"><div class="fxw rub"><span>₽ Рубли</span><b>' + big(rubs) + ' ₽</b><small>≈ ' + cc.rub + ' тыс. $</small></div><div class="fxw usd"><span>$ Доллары</span><b>' + cc.usd + ' тыс. $</b><small>' + (cc.usd ? 'не дешевеют' : 'пусто') + '</small></div></div>';
+    h += '<p class="fxrate">Курс: <b>1 $ = ' + rate.toLocaleString('ru-RU') + ' ₽</b>' + (S.turn >= 73 && S.turn <= 84 ? ' <span class="muted">(новые рубли после деноминации)</span>' : '') + ' · комиссия ' + fee + '%' + (fee < 3 ? '' : ' <span class="muted">(свои обменники на районах снижают)</span>') + '</p>';
+    h += '<div class="fxform"><label class="field"><span>Сумма, тыс. $</span><input id="fxamt" type="number" inputmode="numeric" min="1" value="' + Math.max(1, Math.round(Math.max(cc.rub, cc.usd) / 2)) + '"></label>' + btn('Купить $', 'fxbuy', '', cc.rub < 1, 'primary') + btn('Продать $', 'fxsell', '', cc.usd < 1) + '</div>';
+    h += '<div class="seg fxq">' + btn('Всё в $', 'fxall', 'data-k="buy"', cc.rub < 1, 'sm') + btn('Половину в $', 'fxhalf', '', cc.rub < 2, 'sm') + btn('Всё в рубли', 'fxall', 'data-k="sell"', cc.usd < 1, 'sm') + '</div>';
+    h += '<p class="muted">Доход приходит в рублях, траты идут сначала из рублей. Рубли дешевеют: сейчас инфляция ' + (Math.round(inf * 10) / 10) + '% в месяц, а в августе 1998-го дефолт сожжёт 70% рублёвой кассы. Доллары не дешевеют и дефолта не боятся.</p>';
+    h += '<h3>Автообмен дохода</h3><div class="seg" role="group" aria-label="Доля кассы в долларах">' + [[0, 'Выключен'], [0.5, 'Держать 50% в $'], [0.8, 'Держать 80% в $']].map(o => '<button class="btn sm' + (k === o[0] ? ' on' : '') + '" data-a="usd" data-k="' + o[0] + '" aria-pressed="' + (k === o[0]) + '">' + o[1] + '</button>').join('') + '</div><p class="muted">Каждый месяц обменник сам докупает доллары до выбранной доли. Выключенный автообмен ничего не продаёт.</p>';
     h += '<p class="muted">Белый нал лежит на счетах: облавы его не трогают. Чёрный хранится наличкой, и при розыске от 60 его изымают. Траты идут сначала из чёрного. Белый приходит с белых точек, предприятий, легальных дел и через отмывку: казино и обменники.</p>';
     if (tot) h += '<p class="muted">Белый доход: ' + R(inc.white / tot * 100) + '%. К 2007 году выживут те, кто успел легализоваться.</p>';
     if (p.later.length) h += '<h3>Вложения и долги</h3><table class="tbl">' + p.later.map(l => '<tr><td>' + esc(l.why) + '<br><span class="muted">' + E.date(l.t).label + '</span></td><td class="' + (l.amt < 0 ? 'bad' : 'good') + '">' + sign(l.amt) + '</td></tr>').join('') + '</table>';
@@ -514,7 +524,7 @@
   }
 
   let showDone = false;
-  const paneBig = () => '<h2>Крупные дела</h2>' + bizBig() + statusHTML();
+  const paneBig = () => '<h2>Дела</h2>' + bizBig() + statusHTML();
   // статус: большие разовые покупки для поздней игры
   function statusHTML() {
     let h = '<h2 class="sth">Статус и большие покупки</h2><p class="sub">Разовые покупки с постоянным эффектом. Ходов не тратят.</p><div class="stgrid">';
@@ -576,8 +586,23 @@
   }
   function bizBig() {
     const p = P();
-    let h = '<p class="sub">Три шага: поездка, переговоры, вход в капитал. Один шаг в месяц.</p><div class="projs">';
-    D.PROJECTS.forEach(pr => {
+    // Москва: быстрые дела на своих районах; дальше — дела с поездкой по стране и за границу
+    const own = E.owned(S, me), kc = own.length ? null : 'нет районов';
+    let h = '<h3 class="dgrp">Москва <span class="muted">быстрые дела на своих районах</span></h3><div class="projs">';
+    h += '<div class="box proj"><div class="dpic">' + (A.deal('kidnap') || A.eventScene('street', 'kidnap')) + '<em>свои районы</em></div><h3>Похищение коммерсанта ' + kindTag('b') + '</h3><p>Выкуп 20–50 тыс. (растёт с годами) · шанс ' + E.kidnapOdds(S, me) + '% · розыск +7, при провале +11 и потери. Раз в месяц, 1 ход.</p>' +
+      btn('Похитить коммерсанта', 'kidnap', '', kc || (p.kidnapTurn === S.turn ? 'раз в месяц' : p.men < 4 ? 'нужно 4 бойца' : p.ap < 1), 'wide primary') + '</div>';
+    const ents = own.filter(i => D.DISTRICTS[i].ent && !S.d[i].ent);
+    h += '<div class="box proj"><div class="dpic">' + (A.deal('raid') || A.eventScene('law', 'raid')) + '<em>предприятия</em></div><h3>Захват предприятий ' + kindTag('w') + '</h3>' + (ents.length ? '<p>На твоих районах можно забрать через суды и реестр:</p><ul class="plain">' + ents.map(i => '<li><button class="link" data-a="goto" data-i="' + i + '">' + esc(D.DISTRICTS[i].ent.name) + '</button> · ' + D.DISTRICTS[i].name + ' · +' + D.DISTRICTS[i].ent.inc + ' в мес.</li>').join('') + '</ul>' : '<p class="muted">На твоих районах нет незахваченных предприятий. Бери районы с ромбиком на карте.</p>') + '</div></div>';
+    const AWAY = ['pyramid', 'bank', 'media', 'mall', 'gsm', 'slots', 'club', 'tower'];
+    const grp = (title, sub, list) => '<h3 class="dgrp">' + title + ' <span class="muted">' + sub + '</span></h3><div class="projs">' + list.map(projHTML).join('') + '</div>';
+    h += '<p class="sub">Крупные дела — в три шага: поездка, переговоры, вход в капитал. Один шаг в месяц.</p>';
+    h += grp('По стране', 'Россия и СНГ', D.PROJECTS.filter(pr => !AWAY.includes(pr.id)));
+    h += grp('За границей', 'офшоры, Европа, Вегас, Дубай', D.PROJECTS.filter(pr => AWAY.includes(pr.id)));
+    return h;
+  }
+  function projHTML(pr) {
+    const p = P(); let h = '';
+    {
       const ps = E.projStatus(S, me, pr), stage = ps.st.stage || 0, pi = E.projIncome(S, me, pr);
       h += '<div class="box proj ' + (stage === 3 ? 'live' : '') + (ps.lock ? ' locked' : '') + '"><div class="dpic">' + A.deal(pr.id) + (stage === 3 ? '<em>в деле</em>' : '<em>' + esc(pr.where) + '</em>') + '</div><h3>' + pr.name + ' ' + kindTag(pr.kind) + '</h3>';
       h += '<p>' + (stage === 3 ? '<b class="good">+' + pi + ' в мес.</b>' : 'Доход ' + pr.inc + ' в мес.') + (pr.heat ? ' · розыск ' + sign(pr.heat) + ' в мес.' : '') + (pr.note ? ' · ' + pr.note : '') + '</p>';
@@ -595,8 +620,8 @@
         } else h += btn(pr.buyLabel + ' · ' + pr.buy + ' тыс.', 'proj', 'data-k="' + pr.id + '"', p.money < pr.buy ? 'не хватает денег' : p.ap < 1, 'wide');
       }
       h += '</div>';
-    });
-    return h + '</div>';
+    }
+    return h;
   }
 
   // ---------- чат комнаты ----------
@@ -791,6 +816,7 @@
     if (a === 'refresh') { showStart(); return; }
     if (a === 'scen') { scen = k; try { localStorage.setItem('war90.scen', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=scen]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#scennote').textContent = D.SCENARIOS[k].desc; return; }
     if (a === 'records') { showRecords(); return; }
+    if (a === 'mclose') { dismissModal(); return; }
     if (a === 'cloudsave') { cloudPush(true); return; }
     if (a === 'cloudload') { Net.post('cload', { code: ($('#cloudcode') || {}).value || '' }).then(r => { if (!r.ok) { toast(r.err || 'Сервер недоступен', true); return; } S = E.migrate(r.state); me = S.humans[0]; net = null; achShown = null; try { localStorage.setItem(CLOUD, r.code); } catch (er) { /* ignore */ } cloudTurn = S.turn; save(); closeModal(); render(); toast('Партия загружена: ' + fd(me).name + ', ' + E.date(S.turn).label); }); return; }
     if (a === 'install') { if (installEv) { installEv.prompt(); installEv.userChoice.finally(() => { installEv = null; const bx = $('#installbox'); if (bx) bx.hidden = true; }); } return; }
@@ -819,7 +845,7 @@
     else if (a === 'sheetclose') { sheet = false; render(); }
     else if (a === 'perkstoggle') { perksOpen = !perksOpen; render(); }
     else if (a === 'unit') { focus = { view: b.dataset.u }; section = 'gang'; sheet = true; render(); }
-    else if (a === 'kidnap') act('kidnap', [sel]);
+    else if (a === 'kidnap') act('kidnap', [null]);
     else if (a === 'raid') act('raid', [di]);
     else if (a === 'unassign') act('unassign', [+b.dataset.id]);
     else if (a === 'dismiss') act('dismiss', [+b.dataset.id]);
@@ -845,6 +871,9 @@
     else if (a === 'quest') act('quest', [0]);
     else if (a === 'status') act('buyStatus', [k]);
     else if (a === 'usd') act('setUsd', [+k]);
+    else if (a === 'fxbuy' || a === 'fxsell') act('exchange', [a === 'fxbuy' ? 'buy' : 'sell', +(($('#fxamt') || {}).value || 0)]);
+    else if (a === 'fxall') { const c = E.cur(P()); act('exchange', [k, k === 'buy' ? c.rub : c.usd]); }
+    else if (a === 'fxhalf') act('exchange', ['buy', Math.floor(E.cur(P()).rub / 2)]);
     else if (a === 'retire1') { confirmRetire = true; render(); }
     else if (a === 'retire0') { confirmRetire = false; render(); }
     else if (a === 'retire2') { confirmRetire = false; act('retire', []); }
@@ -885,7 +914,39 @@
 
   // ---------- модальные окна ----------
   const modal = $('#modal');
-  function openModal(html, cls, key) { modal.innerHTML = '<div class="sheet ' + (cls || '') + '">' + html + '</div>'; modal.hidden = false; modalKey = key || ''; }
+  // окна, которые можно просто закрыть: крестик справа сверху и свайп вниз
+  const closable = key => /^(records|lawinfo|parley:|deal:)/.test(key || '');
+  function openModal(html, cls, key) {
+    const x = closable(key) ? '<i class="grab mgrab" aria-hidden="true"></i><button class="xclose mclose" data-a="mclose" aria-label="Закрыть">×</button>' : '';
+    modal.innerHTML = '<div class="sheet ' + (cls || '') + (x ? ' closable' : '') + '">' + x + html + '</div>'; modal.hidden = false; modalKey = key || '';
+  }
+  function dismissModal() {
+    const k = modalKey;
+    if (/^parley:/.test(k)) parleyWith = null;
+    if (/^deal:/.test(k)) dealWith = null;
+    closeModal(); if (S) render(); else showStart();
+  }
+  (function modalSwipe() {
+    let y0 = null, dy = 0, t0 = 0, sh = null;
+    modal.addEventListener('touchstart', e => {
+      sh = e.target.closest('.sheet.closable'); if (!sh || e.touches.length !== 1 || e.target.closest('.xclose, input, select, textarea')) { y0 = null; return; }
+      if (sh.scrollTop > 1) { y0 = null; return; }
+      y0 = e.touches[0].clientY; dy = 0; t0 = Date.now();
+    }, { passive: true });
+    modal.addEventListener('touchmove', e => {
+      if (y0 == null) return; dy = e.touches[0].clientY - y0;
+      if (dy <= 0 || sh.scrollTop > 1) { if (dy < 0) { y0 = null; sh.style.transform = ''; } return; }
+      e.preventDefault(); sh.style.transition = 'none'; sh.style.transform = 'translateY(' + dy + 'px)'; sh.style.opacity = String(Math.max(0.4, 1 - dy / 600));
+    }, { passive: false });
+    const end = () => {
+      if (y0 == null || !sh) return; y0 = null;
+      const fast = dy > 40 && dy / Math.max(1, Date.now() - t0) > 0.5;
+      sh.style.transition = 'transform .18s ease, opacity .18s ease';
+      if (dy > Math.min(140, sh.offsetHeight * 0.25) || fast) { sh.style.transform = 'translateY(100%)'; sh.style.opacity = '0'; setTimeout(dismissModal, 160); }
+      else { sh.style.transform = ''; sh.style.opacity = ''; }
+    };
+    modal.addEventListener('touchend', end); modal.addEventListener('touchcancel', end);
+  })();
   function closeModal() { modal.hidden = true; modal.innerHTML = ''; modalKey = ''; }
 
   function showEvent() {

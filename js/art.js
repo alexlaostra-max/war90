@@ -677,6 +677,8 @@
   const moneyRain = () => '<svg class="art cash" viewBox="0 0 240 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' + [...Array(14)].map((_, i) => '<g class="an-fall" style="animation-delay:' + (i * 0.13).toFixed(2) + 's;--x:' + (8 + i * 16.5).toFixed(0) + 'px">' + R(-6, -10, 12, 6, '#5aa867', 'rx=".6"') + C(0, -7, 1.6, '#3d6b45') + '</g>').join('') + '</svg>';
 
   function deal(id) {
+    const F = (G.DATA.PHOTOS || {})['d-' + id];
+    if (F) { const pr0 = (G.DATA.PROJECTS || []).find(p => p.id === id); return '<figure class="photo dph"><img src="' + F.src + '" alt="' + xesc(pr0 ? pr0.name : id) + '" loading="lazy" decoding="async">' + (F.url ? '<figcaption><a href="' + xesc(F.url) + '" target="_blank" rel="noopener noreferrer">Фото: ' + xesc(F.author) + ', ' + xesc(F.license) + '</a></figcaption>' : '') + '</figure>'; }
     const fn = DEAL[id]; if (!fn) return '';
     const key = 'deal' + id; if (cache[key]) return cache[key];
     const pr = (G.DATA.PROJECTS || []).find(p => p.id === id);
