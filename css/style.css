@@ -803,3 +803,7 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 
 /* касса в шапке: рубли и доллары рядом */
 .s-rub .ico { color: #e8a35a; } .s-usd .ico { color: var(--good); }
+
+.usdnote { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-color: #3f5a46; background: #1c2420; }
+.usdnote b { font: 400 18px var(--display); color: var(--good); } .usdnote span { flex: 1 1 200px; font-size: 13px; }
+.usdwhy { border-color: #3f5a46; } .usdwhy h3 { margin-top: 0; } .usdwhy b { color: var(--good); }

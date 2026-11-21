@@ -158,12 +158,13 @@
     // нажатие ведёт туда, где этим показателем управляют
     // рубли — настоящими рублями по курсу (68М, 2,4млрд), доллары — в тыс. $
     const cc = E.cur(p), rubShort = v => { const r = Math.max(0, v) * 1000 * E.rubRate(S), f = (x, u) => (x >= 100 ? Math.round(x) : Math.round(x * 10) / 10).toLocaleString('ru-RU') + u; return v < 0 ? R(v) : r >= 1e9 ? f(r / 1e9, 'млрд') : r >= 1e6 ? f(r / 1e6, 'М') : r >= 1e3 ? f(r / 1e3, 'К') : String(Math.round(r)); };
+    const usdShort = v => v >= 1000 ? (Math.round(v / 100) / 10).toLocaleString('ru-RU') + 'М' : v + 'К';
     const GO = { rub: 'fx', usd: 'fx', money: 'cash', men: 'gang:men', gun: 'gang:arms', car: 'gang:cars', rep: 'gang:boss', conn: 'law' };
     const st = (k, l, v, x, cls) => '<button class="st s-' + k + ' ' + (cls || '') + '" data-go="' + GO[k] + '" title="' + l + '">' + A.icon(k) + '<div><span>' + l + '</span><b>' + v + '</b>' + (x ? '<i>' + x + '</i>' : '') + '</div></button>';
     let pips = ''; for (let i = 0; i < E.apMax(S, me); i++) pips += '<u class="' + (i < p.ap ? 'on' : '') + '"></u>';
     $('#stats').innerHTML =
       st('rub', 'Рубли', rubShort(cc.rub), '≈ ' + cc.rub + ' тыс. $ · ' + sign(inc.total) + '/мес', p.money < 0 ? 'bad' : '') +
-      st('usd', 'Доллары, тыс.', cc.usd, 'вся касса ' + R(p.money) + ' тыс. $') +
+      st('usd', 'Доллары', usdShort(cc.usd), 'на крупные дела и статус · вся касса ' + R(p.money) + ' тыс. $') +
       st('men', 'Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('gun', 'Стволы', p.guns) + st('car', 'Тачки', p.cars) +
       st('conn', 'Связи', E.conn(S, me)) +
       '<button class="st heat l' + L + '" data-go="law" title="Розыск">' + A.icon('heat') + '<b class="hnum">' + R(p.heat) + '</b><div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></button>' +
@@ -324,6 +325,7 @@
     h += '<div class="seg fxdir">' + [['buy', 'Купить $'], ['sell', 'Продать $']].map(d => '<button class="btn' + (fxDir === d[0] ? ' on' : '') + '" data-a="fxdir" data-k="' + d[0] + '">' + d[1] + '</button>').join('') + '</div>';
     if (!max) h += '<p class="muted">' + (fxDir === 'buy' ? 'Рублей в кассе нет — менять нечего.' : 'Долларов нет — продавать нечего.') + '</p>';
     else h += '<div class="fxslide"><input id="fxr" type="range" min="0" max="' + max + '" step="1" value="' + Math.round(max / 2) + '" aria-label="Сколько менять"><div class="fxticks"><button class="link" data-a="fxset" data-k="0">0</button><button class="link" data-a="fxset" data-k="0.25">¼</button><button class="link" data-a="fxset" data-k="0.5">½</button><button class="link" data-a="fxset" data-k="1">всё</button></div></div><div id="fxcalc" class="fxcalc"></div>' + btn(fxDir === 'buy' ? 'Обменять рубли на доллары' : 'Обменять доллары на рубли', 'fxgo', 'id="fxgo"', false, 'wide primary');
+    h += '<div class="box usdwhy"><h3>Зачем доллары</h3><ul class="plain"><li><b>Крупные дела</b> — поездки, переговоры и вход в капитал оплачиваются только долларами.</li><li><b>Статус и большие покупки</b> — тоже только за доллары.</li><li>Всё остальное (бойцы, стволы, точки, взятки) — сначала рублями, а когда рубли кончатся, долларами.</li><li>Доллары не дешевеют, а рубли тают вслед за курсом — копи в долларах.</li></ul></div>';
     h += '<p class="muted">Комиссия обменника ' + fee + '%' + (fee < 3 ? '' : ' — свои обменники на районах снижают её на 1% каждый') + '. Траты идут сначала из рублей. В августе 1998-го рубль рухнет почти втрое.</p>';
     return h;
   }
@@ -560,7 +562,7 @@
     D.STATUS.forEach(X => {
       const own = E.has(S, me, X.id), l = own ? null : E.statusLock(S, me, X);
       h += '<div class="box stat' + (own ? ' own' : '') + '"><h3>' + X.name + '</h3><p class="muted">' + X.desc + '.</p><p class="good">' + X.perk + '.</p>' +
-        (own ? '<p class="owned">✓ Твоё</p>' : btn('Купить · ' + X.cost + ' тыс.', 'status', 'data-k="' + X.id + '"', l || false, 'wide')) + '</div>';
+        (own ? '<p class="owned">✓ Твоё</p>' : btn('Купить · $' + X.cost + ' тыс.', 'status', 'data-k="' + X.id + '"', l || false, 'wide')) + '</div>';
     });
     return h + '</div>';
   }
@@ -630,7 +632,8 @@
       const live = list.filter(pr => (E.projStatus(S, me, pr).st.stage || 0) === 3).length, open = list.filter(pr => !E.projStatus(S, me, pr).lock).length;
       return dgroup(key, title, sub + ' · доступно ' + open + (live ? ' · в деле ' + live : ''), '<div class="projs">' + list.map(projHTML).join('') + '</div>', list.length);
     };
-    return '<p class="sub">Три шага: поездка, переговоры, вход в капитал. Один шаг в месяц.</p>' +
+    const u = E.usdOf(P());
+    return '<p class="sub">Три шага: поездка, переговоры, вход в капитал. Один шаг в месяц.</p><div class="box usdnote"><b>$ ' + u + ' тыс.</b><span>Крупные дела платятся только долларами: рубли за границей и у серьёзных людей не берут.</span>' + btn('В обменник', 'gofx', '', false, 'sm') + '</div>' +
       grp('big:msk', 'Москва', 'банки, ТВ, торговля, связь', D.PROJECTS.filter(pr => MSK_DEALS.includes(pr.id))) +
       grp('big:rus', 'Россия и СНГ', 'водка, нефть, металл, порты, золото', D.PROJECTS.filter(pr => !MSK_DEALS.includes(pr.id)));
   }
@@ -644,14 +647,14 @@
       else {
         h += '<ol class="steps"><li class="' + (stage > 0 ? 'done' : 'cur') + '">Поездка: ' + pr.where + '</li><li class="' + (stage > 1 ? 'done' : stage === 1 ? 'cur' : '') + '">Переговоры: ' + pr.who + '</li><li class="' + (stage === 2 ? 'cur' : '') + '">' + pr.buyLabel + '</li></ol>';
         if (ps.lock) h += '<p class="muted">' + ps.lock + '</p>';
-        else if (stage === 0) h += btn('Лететь в ' + pr.where + ' · ' + pr.trip + ' тыс.', 'proj', 'data-k="' + pr.id + '"', p.money < pr.trip ? 'не хватает денег' : p.ap < 1, 'wide');
+        else if (stage === 0) h += btn('Лететь в ' + pr.where + ' · $' + pr.trip + ' тыс.', 'proj', 'data-k="' + pr.id + '"', E.usdOf(p) < pr.trip ? 'нужны доллары: $' + pr.trip + ' тыс. — в обменник' : p.ap < 1, 'wide');
         else if (stage === 1) {
           const ch = E.negChances(S, me), gift = R(pr.buy * 0.2);
           h += '<div class="grid g3">' +
             '<button class="card" data-a="proj" data-k="' + pr.id + '" data-h="share"' + (p.ap < 1 ? ' disabled' : '') + '><b>Взять в долю</b><span>шанс ' + R(ch.share) + '%</span><small>доход −25%</small></button>' +
-            '<button class="card" data-a="proj" data-k="' + pr.id + '" data-h="bribe"' + (p.ap < 1 || p.money < gift ? ' disabled' : '') + '><b>Занести</b><span>шанс ' + R(ch.bribe) + '%</span><small>' + gift + ' тыс.</small></button>' +
+            '<button class="card" data-a="proj" data-k="' + pr.id + '" data-h="bribe"' + (p.ap < 1 || E.usdOf(p) < gift ? ' disabled' : '') + '><b>Занести</b><span>шанс ' + R(ch.bribe) + '%</span><small>$' + gift + ' тыс.</small></button>' +
             '<button class="card atk" data-a="proj" data-k="' + pr.id + '" data-h="force"' + (p.ap < 1 ? ' disabled' : '') + '><b>Надавить</b><span>шанс ' + R(ch.force) + '%</span><small>розыск +6</small></button></div>';
-        } else h += btn(pr.buyLabel + ' · ' + pr.buy + ' тыс.', 'proj', 'data-k="' + pr.id + '"', p.money < pr.buy ? 'не хватает денег' : p.ap < 1, 'wide');
+        } else h += btn(pr.buyLabel + ' · $' + pr.buy + ' тыс.', 'proj', 'data-k="' + pr.id + '"', E.usdOf(p) < pr.buy ? 'нужны доллары: $' + pr.buy + ' тыс. — в обменник' : p.ap < 1, 'wide');
       }
       h += '</div>';
     }

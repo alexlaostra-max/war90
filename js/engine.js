@@ -656,7 +656,7 @@
     checkDone(S);
     return { ok: true, msg: 'Ты отошёл от дел.' };
   }
-  const statusLock = (S, fid, X) => { const p = S.f[fid]; return has(S, fid, X.id) ? 'уже есть' : date(S.turn).year < X.from ? 'с ' + X.from + ' года' : X.needConn && conn(S, fid) < X.needConn ? 'нужны связи: ' + X.needConn : p.money < X.cost ? 'не хватает денег' : null; };
+  const statusLock = (S, fid, X) => { const p = S.f[fid]; return has(S, fid, X.id) ? 'уже есть' : date(S.turn).year < X.from ? 'с ' + X.from + ' года' : X.needConn && conn(S, fid) < X.needConn ? 'нужны связи: ' + X.needConn : usdOf(p) < X.cost ? 'нужно ' + X.cost + ' тыс. $ долларами' : p.money < X.cost ? 'не хватает денег' : null; };
   // обменник: купить доллары за рубли или продать, сумма в тыс. $; комиссия как у автообмена
   function exchange(S, fid, dir, amt) {
     const e = spend(S, fid, 0); if (e) return fail(e);
@@ -680,7 +680,8 @@
     const e = spend(S, fid, 0); if (e) return fail(e);
     const X = D.STATUS.find(x => x.id === id); if (!X) return fail('Нет такого');
     const l = statusLock(S, fid, X); if (l) return fail(l);
-    const p = S.f[fid]; p.money -= X.cost; if (!p.status) p.status = {}; p.status[id] = true;
+    const p = S.f[fid], nu = needUsd(p, X.cost); if (nu) return fail(nu);
+    payUsd(p, X.cost); if (!p.status) p.status = {}; p.status[id] = true;
     if (X.rep) addRep(S, fid, X.rep);
     if (id === 'church') (p.crew || []).forEach(c => { c.loy = Math.min(10, c.loy + 1); });
     log(S, 'Куплено: ' + X.name + '. ' + X.perk + '.', 'good', fid);
@@ -921,6 +922,11 @@
     const t = fx(S, fid, 'talk') + consBonus(S, fid) + carTalk(S, fid) + (has(S, fid, 'yacht') ? 5 : 0);
     return { share: clamp(55 + p.rep * 0.4 + t, 0, 95), bribe: clamp(65 + conn(S, fid) * 4 + t, 0, 97), force: clamp(25 + power(p) / 4, 0, 75) };
   }
+  // Доллары нужны для крупного: крупные дела и статусные покупки берут только $ (рубли там не принимают).
+  // Остальное (бойцы, стволы, точки, взятки) — сначала рублями, потом долларами.
+  const usdOf = p => cur(p).usd;
+  const needUsd = (p, c) => usdOf(p) < c ? 'Нужно ' + c + ' тыс. $ долларами (есть ' + usdOf(p) + '). Поменяй рубли в обменнике' : null;
+  function payUsd(p, c) { const u = usdOf(p); p.money -= c; p.usd = Math.max(0, u - c); }
   function projStep(S, fid, id, how) {
     const e = spend(S, fid, 1); if (e) return fail(e);
     const pr = D.PROJECTS.find(x => x.id === id); if (!pr) return fail('Нет такого бизнеса');
@@ -929,15 +935,15 @@
     const st = p.proj[id] = p.proj[id] || { stage: 0 };
     if (st.stage === 0) {
       const trip = has(S, fid, 'jet') ? 0 : pr.trip;
-      if (p.money < trip) return fail('На поездку нужно ' + trip);
-      p.money -= trip; st.stage = 1; st.last = S.turn; p.ap--;
+      const nu = needUsd(p, trip); if (nu) return fail(nu);
+      payUsd(p, trip); st.stage = 1; st.last = S.turn; p.ap--;
       return { ok: true, msg: 'Ты слетал в ' + pr.where + '. Встреча назначена: ' + pr.who };
     }
     if (st.stage === 1) {
       const ch = negChances(S, fid); let c = 0;
       if (!ch[how]) return fail('Выбери, как вести разговор');
-      if (how === 'bribe') { c = Math.round(pr.buy * 0.2); if (p.money < c) return fail('Нужно ' + c + ' на подарок'); }
-      p.ap--; st.last = S.turn; p.money -= c;
+      if (how === 'bribe') { c = Math.round(pr.buy * 0.2); const nu = needUsd(p, c); if (nu) return fail(nu); }
+      p.ap--; st.last = S.turn; if (c) payUsd(p, c);
       if (how === 'force') addHeat(S, fid, 6);
       if (rnd(S) * 100 < ch[how]) { st.stage = 2; st.mult = how === 'share' ? 0.75 : 1; addRep(S, fid, 1); return { ok: true, msg: 'Договорились. Осталось внести деньги: ' + pr.buyLabel.toLowerCase() }; }
       st.stage = 0; addRep(S, fid, -2);
@@ -946,8 +952,8 @@
       return { ok: true, msg, win: false };
     }
     if (st.stage === 2) {
-      if (p.money < pr.buy) return fail(pr.buyLabel + ': нужно ' + pr.buy);
-      p.money -= pr.buy; st.stage = 3; st.age = 0; st.last = S.turn; p.ap--; addRep(S, fid, pr.kind === 'w' ? 4 : 3);
+      const nu = needUsd(p, pr.buy); if (nu) return fail(nu);
+      payUsd(p, pr.buy); st.stage = 3; st.age = 0; st.last = S.turn; p.ap--; addRep(S, fid, pr.kind === 'w' ? 4 : 3);
       log(S, 'Запущен бизнес: ' + pr.name + '. +' + projIncome(S, fid, pr) + ' в месяц.', 'big', fid);
       return { ok: true, msg: pr.name + ': дело пошло. +' + projIncome(S, fid, pr) + ' в месяц' };
     }
@@ -1388,5 +1394,5 @@
 
   const ACTIONS = { exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
-  G.Engine = { kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);
