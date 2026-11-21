@@ -347,7 +347,7 @@
     ]
   };
 
-  // Фото снаряжения и машин с Викисклада (свободные лицензии). Обрезаны и тонированы под игру; список авторов — img/CREDITS.md
+  // Фото снаряжения, машин и зданий с Викисклада (свободные лицензии). Обрезаны и тонированы под игру; список авторов — img/CREDITS.md
   const W = 'https://commons.wikimedia.org/wiki/File:';
   const PHOTOS = {
     'arm-obrez': { src: 'img/arm-obrez.jpg', author: 'ATF (США)', license: 'общественное достояние', url: W + 'Shinkosha_short_barrel_shotgun.jpg' },
@@ -366,6 +366,34 @@
     'car-cayenne': { src: 'img/car-cayenne.jpg', author: 'OWS Photography', license: 'CC BY 4.0', url: W + 'Porsche_Cayenne_S_(955)_Washington_DC_Metro_Area,_USA.jpg' },
     'car-e65': { src: 'img/car-e65.jpg', author: 'Dinkun Chen', license: 'CC BY-SA 4.0', url: W + 'BMW_7_SERIES_(E65)_China.jpg' },
     'car-uaz': { src: 'img/car-uaz.jpg', author: 'Nikolai Bulykin', license: 'CC BY-SA 4.0', url: W + 'Бишкек,_УАЗ-452_на_Турусбекова.jpg' },
+    // здания точек: по одному фото на тип, кадр 5:3, слегка приглушены и тонированы
+    'b-kiosk': { src: 'img/b-kiosk.jpg', author: 'Главархив Москвы', license: 'CC BY 4.0', url: W + 'Kiosks_with_square_of_Kievsky_rail_terminal.jpg' },
+    'b-market': { src: 'img/b-market.jpg', author: 'PoetVeches', license: 'CC BY-SA 4.0', url: W + 'Former_soviet_univermag_20200916_008.jpg' },
+    'b-gym': { src: 'img/b-gym.jpg', author: 'U.S. Navy (Kristopher S. Wilson)', license: 'общественное достояние', url: W + 'US_Navy_081011-N-5345W-134_Navy_boxers_spar_during_the_All-Navy_Boxing_Team_mini-camp_at_Rockwell_Hall_Gym_at_Naval_Amphibious_Base_Little_Creek.jpg' },
+    'b-service': { src: 'img/b-service.jpg', author: 'inkknife_2000', license: 'CC BY-SA 2.0', url: W + '\'Old_Auto_Repair_Shop\'_Ghosts_of_the_Midwest,_NB_7-25-13a_(10784105894).jpg' },
+    'b-gunshop': { src: 'img/b-gunshop.jpg', author: 'Thayne Tuason', license: 'CC BY-SA 4.0', url: W + 'Gun_section_in_Stans_Merry_Mart_Wenatchee.jpg' },
+    'b-clinic': { src: 'img/b-clinic.jpg', author: 'И. А. Озерский', license: 'общественное достояние', url: W + 'В_операционной_47-го_медсанбата_25-й_стрелковой_дивизии_Приморской_армии.jpg' },
+    'b-rest': { src: 'img/b-rest.jpg', author: 'Викидим', license: 'CC BY-SA 4.0', url: W + 'Central_House_of_Writers_in_Moscow._Restaurant_interior_06.jpg' },
+    'b-bordel': { src: 'img/b-bordel.jpg', author: 'PK-WIKI', license: 'CC BY 4.0', url: W + 'Russian_&_Turkish_Baths_sign_2023.jpg' },
+    'b-flat': { src: 'img/b-flat.jpg', author: 'Seanzwiki', license: 'CC BY-SA 4.0', url: W + '1-я_Мелитопольская_ул.,_8б(Москва).jpg' },
+    'b-prem': { src: 'img/b-prem.jpg', author: 'Gennady Grachev', license: 'CC BY 2.0', url: W + 'Moscow,_Kosmonavta_Volkova_27_storefront_(21237518022).jpg' },
+    'b-chop': { src: 'img/b-chop.jpg', author: 'DemieK07', license: 'CC BY-SA 4.0', url: W + 'The_defenders_of_Stara_Zagora_Memorial_Complex_-_Security_booth_01.jpg' },
+    'b-casino': { src: 'img/b-casino.jpg', author: 'Sozi', license: 'общественное достояние', url: W + 'Roulette-Tisch.jpg' },
+    'b-vokzal': { src: 'img/b-vokzal.jpg', author: 'Mike1979 Russia', license: 'CC BY-SA 3.0', url: W + 'Kazansky_Rail_Terminal_Moscow_2023-06-10_4436.jpg' },
+    'b-exchange': { src: 'img/b-exchange.jpg', author: 'Mikhail Shcherbakov', license: 'CC BY-SA 2.0', url: W + 'Komsomolskaya-radialnaya,_currency_exchange_(Комсомольская-радиальная,_обмен_валюты)_(5229631128).jpg' },
+    'b-hotel': { src: 'img/b-hotel.jpg', author: 'Thomas T. Hammond', license: 'CC BY-SA 4.0', url: W + 'Hammond_Slides_Moscow_43._Rossiya_Hotel.jpg' },
+    'b-club': { src: 'img/b-club.jpg', author: 'Scott Silver', license: 'CC BY 3.0', url: W + 'The_Den_Nightclub_Somerset_New_Jersey_Dance_Floor.jpg' },
+    'b-boutique': { src: 'img/b-boutique.jpg', author: 'Andre Carrotflower', license: 'CC BY-SA 3.0', url: W + 'MarketArcadeInterior.JPG' },
+    'b-dorm': { src: 'img/b-dorm.jpg', author: 'Sergey Ashmarin', license: 'CC BY-SA 3.0', url: W + 'The_Dormitory_of_Bauman_University_-_Moscow,_Russia_-_panoramio.jpg' },
+    'b-video': { src: 'img/b-video.jpg', author: 'Monoklon', license: 'CC BY-SA 4.0', url: W + 'Видеокассеты.jpg' },
+    'b-factory': { src: 'img/b-factory.jpg', author: 'Maxim Bykov', license: 'CC BY 3.0', url: W + 'Abandoned_ZIL_factory,_Moscow_-_panoramio.jpg' },
+    'b-warehouse': { src: 'img/b-warehouse.jpg', author: 'Kabugenyo', license: 'CC BY-SA 3.0', url: W + 'Western_Wholesale_Drug_Co._Warehouse_(3).JPG' },
+    'b-scrap': { src: 'img/b-scrap.jpg', author: 'Digitura', license: 'CC0', url: W + 'Scrap_metal_yard.jpg' },
+    'b-fuel': { src: 'img/b-fuel.jpg', author: 'Dmitry Makeev', license: 'CC BY-SA 4.0', url: W + 'Abandoned_gas_station._img_002.jpg' },
+    'b-port': { src: 'img/b-port.jpg', author: 'Sergey Pesterev', license: 'CC BY-SA 4.0', url: W + 'Москва._Северный_речной_порт_2.jpg' },
+    'b-ritual': { src: 'img/b-ritual.jpg', author: 'SergeyA-Russia', license: 'CC BY 4.0', url: W + '20220223_Vagankovo_Cemetery_04.jpg' },
+    'b-tir': { src: 'img/b-tir.jpg', author: 'Rickie97', license: 'CC BY-SA 4.0', url: W + 'Shooting_Gallery_Attractiepark_Slagharen.jpg' },
+    'b-land': { src: 'img/b-land.jpg', author: 'ЮляШка Ш', license: 'CC BY-SA 3.0', url: W + 'Стройка_динамо.JPG' },
     'car-audi': { src: 'img/car-audi.jpg', author: 'Preiselbeere', license: 'CC BY-SA 3.0', url: W + 'Audi_100_C3,_BJ_1987.JPG' },
     'car-bmw': { src: 'img/car-bmw.jpg', author: 'Elveres', license: 'CC BY-SA 4.0', url: W + '1991_BMW_E34.jpg' },
     'car-jeep': { src: 'img/car-jeep.jpg', author: 'IFCAR', license: 'общественное достояние', url: W + '1993-1995_Jeep_Grand_Cherokee_--_03-30-2012.JPG' },
