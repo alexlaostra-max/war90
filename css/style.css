@@ -818,7 +818,7 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 #org .moving { opacity: .35; outline: 2px dashed var(--gold); }
 #org.dragging .cnode, #org.dragging .wchip, #org.dragging .tier.bench { outline: 1px dashed rgba(240, 201, 104, .5); outline-offset: 2px; }
 #org .dropon { outline: 2px solid var(--gold) !important; box-shadow: 0 0 0 4px rgba(240, 201, 104, .3); }
-.ghost { position: fixed; z-index: 100; pointer-events: none; opacity: .92; transform: scale(1.06) rotate(-2deg); box-shadow: 0 14px 40px rgba(0, 0, 0, .7); }
+.dragghost { position: fixed; z-index: 100; pointer-events: none; opacity: .92; transform: scale(1.06) rotate(-2deg); box-shadow: 0 14px 40px rgba(0, 0, 0, .7); }
 .tier.bench { min-height: 48px; border-radius: 6px; }
 /* недвижимость */
 .estd { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; margin: 8px 0; } .estd ul { margin: 6px 0 0; }

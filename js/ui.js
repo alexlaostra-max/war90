@@ -348,8 +348,7 @@
       h += '<div class="estd"><button class="link" data-a="goto" data-i="' + i + '"><b>' + esc(D.DISTRICTS[i].name) + '</b></button><span class="muted"> · ' + D.OKRUGS[D.DISTRICTS[i].ok].short + ' · ' + d.b.length + ' из ' + D.DISTRICTS[i].slots + '</span><ul class="plain">' +
         d.b.map((b, x) => { const B = D.BUILDS[b], lv = E.pointLvl(d, x); return '<li>' + B.name + ' <span class="lvb sm">' + ROMAN[lv] + '</span> · <span class="good">' + plus(E.pointInc(me, b, i) * lv, B.usd) + '</span></li>'; }).join('') + '</ul></div>';
     });
-    const st = D.STATUS.filter(X => E.has(S, me, X.id));
-    h += '<h3>Большие покупки</h3>' + (st.length ? '<ul class="plain">' + st.map(X => '<li><b>' + X.name + '</b> — ' + esc(X.perk) + '</li>').join('') + '</ul>' : '<p class="muted">Пока ничего. Особняк, яхта и прочее — во вкладке «Дела» → «Крупные дела» → «Статус и большие покупки».</p>');
+    h += '<h3>Статус и большие покупки <span class="muted">только за $</span></h3><div class="box usdnote"><b>$ ' + E.usdOf(P()) + ' тыс.</b><span>Покупаются только за доллары.</span>' + btn('В обменник', 'gofx', '', false, 'sm') + '</div>' + statusHTML();
     return h;
   }
   // рядовые: вербовка
@@ -579,7 +578,7 @@
   }
   function paneBig() {
     let h = '<h2>Дела</h2><div class="seg bigtabs">' + [['small', 'Мелкие дела'], ['big', 'Крупные дела']].map(t => '<button class="btn' + (bigTab === t[0] ? ' on' : '') + '" data-a="bigtab" data-k="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
-    return h + (bigTab === 'small' ? bizSmall() : bizBig() + dgroup('big:status', 'Статус и большие покупки', 'разовые покупки с постоянным эффектом', statusHTML()));
+    return h + (bigTab === 'small' ? bizSmall() : bizBig() + '<p class="muted">Особняк, яхта и другие большие покупки — в «Банде» → «Недвижимость».</p>');
   }
   // статус: большие разовые покупки для поздней игры
   function statusHTML() {
@@ -1006,7 +1005,7 @@
       n.classList.add('pressing');
       timer = setTimeout(() => {
         timer = null; moveId = +n.dataset.id; haptic('medium');
-        const r = n.getBoundingClientRect(); ghost = n.cloneNode(true); ghost.classList.add('ghost'); ghost.classList.remove('pressing'); ghost.style.width = r.width + 'px'; ghost.style.left = (start.x - r.width / 2) + 'px'; ghost.style.top = (start.y - r.height / 2) + 'px';
+        const r = n.getBoundingClientRect(); ghost = n.cloneNode(true); ghost.classList.add('dragghost'); ghost.classList.remove('pressing'); ghost.style.width = r.width + 'px'; ghost.style.left = (start.x - r.width / 2) + 'px'; ghost.style.top = (start.y - r.height / 2) + 'px';
         document.body.appendChild(ghost); n.classList.remove('pressing'); n.classList.add('moving'); org.classList.add('dragging');
       }, HOLD);
     }, { passive: true });
