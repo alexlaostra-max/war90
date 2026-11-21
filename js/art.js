@@ -707,6 +707,7 @@
     deal: '<path fill-rule="evenodd" d="M9 3h6c1 0 1.8.8 1.8 1.8V6H21c.6 0 1 .4 1 1v12c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h4.2V4.8C7.2 3.8 8 3 9 3zm.2 3h5.6V5H9.2zM2 11.5h20v1.6H2zM10.5 11h3v3.5h-3z"/>',
     law: '<path d="M12 2l10 5v2H2V7zM4 10h3v8H4zM10.5 10h3v8h-3zM17 10h3v8h-3zM2 19h20v3H2z"/>',
     clans: '<path d="M4 2h1.8v20H4zM5.8 3h7l-1.6 3 1.6 3h-7zM18.2 2H20v20h-1.8zM18.2 3h-7l1.6 3-1.6 3h7z" opacity=".9"/>',
+    fx: '<path d="M4 8h12.5l-3-3L15 3.6 20.4 9 15 14.4 13.5 13l3-3H4zM20 16H7.5l3 3L9 20.4 3.6 15 9 9.6l1.5 1.4-3 3H20z"/>',
     chat: '<path d="M4 3h16c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2h-9l-5 4.5V17H4c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2z"/><circle cx="8" cy="10" r="1.4" fill="#15121a"/><circle cx="12" cy="10" r="1.4" fill="#15121a"/><circle cx="16" cy="10" r="1.4" fill="#15121a"/>',
     log: '<path fill-rule="evenodd" d="M5 2h11l4 4v15c0 .6-.4 1-1 1H5c-.6 0-1-.4-1-1V3c0-.6.4-1 1-1zm2 7v1.6h10V9zm0 4v1.6h10V13zm0 4v1.6h7V17zM15 2.5V7h4.5z"/>',
     // нота и «следующий трек» для плеера

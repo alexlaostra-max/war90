@@ -516,7 +516,7 @@ svg.art.face { aspect-ratio: 1; }
   #stats .st .hnum { display: block; }
   /* меню разделов — внизу экрана */
   #bar { display: none; }
-  #tabbar { display: grid; grid-template-columns: repeat(7, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #120f17; border-top: 1px solid var(--line); padding: 4px max(4px, env(safe-area-inset-right, 0px)) calc(4px + var(--safe-bot, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
+  #tabbar { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #120f17; border-top: 1px solid var(--line); padding: 4px max(4px, env(safe-area-inset-right, 0px)) calc(4px + var(--safe-bot, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
   #tabbar button { background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 0 3px; color: var(--dim); font-size: 10px; min-width: 0; border-radius: 6px; }
   #tabbar .ico { width: 22px; height: 22px; }
   #tabbar button.on { color: var(--fg); background: var(--raise); }
@@ -776,3 +776,17 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 /* дела: группы Москва / по стране / за границей */
 .dgrp { margin: 18px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); } .dgrp:first-of-type { margin-top: 8px; }
 .photo.dph { aspect-ratio: 5 / 2; width: 100%; }
+
+/* обменник: табло курса, ползунок, расчёт */
+.fxboard { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px; margin: 4px 0 12px; border-radius: 6px; background: #0d0b10; border: 1px solid #3a3446; font-family: var(--mono); }
+.fxboard span { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
+.fxboard b { font: 400 30px var(--mono); color: #ff9a3c; text-shadow: 0 0 10px rgba(255, 140, 40, .45); letter-spacing: .02em; }
+.fxboard small { font-size: 11px; color: var(--dim); } .fxboard em { font-style: normal; font-size: 12px; margin-top: 2px; }
+.fxdir { margin: 4px 0 10px; } .fxdir .btn { flex: 1; }
+.fxslide input[type=range] { width: 100%; height: 34px; accent-color: var(--gold); }
+.fxticks { display: flex; justify-content: space-between; font-size: 13px; margin-top: -4px; }
+.fxcalc { display: flex; align-items: center; gap: 10px; margin: 10px 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--raise); }
+.fxcalc span { flex: 1; display: flex; flex-direction: column; font-size: 12px; color: var(--dim); min-width: 0; }
+.fxcalc b { font: 400 17px var(--display); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .fxcalc b.good { color: var(--good); }
+.fxcalc small { font-size: 11px; } .fxcalc i { font-style: normal; color: var(--gold); font-size: 20px; }
+.fxlink { display: flex; align-items: center; gap: 10px; justify-content: space-between; margin: 12px 0; } .fxlink p { margin: 0; font-size: 13px; }

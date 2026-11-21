@@ -27,15 +27,21 @@
   // касса делится на белый и чёрный нал: белый (clean) не трогают при облавах, тратится всё сначала из чёрного
   // валюта: часть кассы в долларах (usd), остальное в рублях; рубли съедает инфляция, а в августе 1998-го — дефолт
   const cur = p => { const u = Math.min(Math.max(0, p.usd || 0), Math.max(0, p.money)); return { usd: Math.round(u), rub: Math.round(p.money - u) }; };
-  const inflation = S => { const y = 1991 + Math.floor((11 + S.turn) / 12), m = (11 + S.turn) % 12 + 1; return y <= 1993 ? 0.06 : y <= 1995 ? 0.04 : y <= 1997 ? 0.015 : y === 1998 && m < 9 ? 0.01 : y <= 1999 ? 0.03 : 0.01; };
-  // курс рубля к доллару по годам (с 1998 — новые, деноминированные рубли), для обменника в общаке
-  const RATE = { 1992: [180, 415], 1993: [450, 1250], 1994: [1300, 3550], 1995: [3800, 4640], 1996: [4700, 5560], 1997: [5560, 5960], 1999: [21, 27], 2000: [27, 28.2], 2001: [28.2, 30.1], 2002: [30.1, 31.8], 2003: [31.8, 29.5], 2004: [29.5, 27.7], 2005: [27.7, 28.8], 2006: [28.8, 26.3], 2007: [26.3, 24.5] };
-  function rubRate(S) {
-    const y = 1991 + Math.floor((11 + S.turn) / 12), m = (11 + S.turn) % 12 + 1;
-    if (y <= 1991) return 170;
-    if (y === 1998) return m < 8 ? 6.1 : m === 8 ? 9.3 : [16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 20.6][m - 1];
-    const r = RATE[Math.min(2007, y)]; return Math.round((r[0] + (r[1] - r[0]) * (m - 1) / 11) * 10) / 10;
+  // Курс доллара по месяцам, как было на самом деле (ЦБ и биржа), между опорными точками — плавно.
+  // Рубли в кассе дешевеют ровно на столько, на сколько вырос курс: так работает и дефолт 1998-го.
+  // С января 1998-го рубли новые (деноминация 1000:1), внутри считаем в старых.
+  const RATES = [[1991, 12, 170], [1992, 1, 200], [1992, 5, 115], [1992, 7, 125], [1992, 12, 415], [1993, 6, 1060], [1993, 12, 1247], [1994, 6, 1960], [1994, 9, 2600], [1994, 10, 3080], [1994, 12, 3550],
+    [1995, 5, 5050], [1995, 7, 4500], [1995, 12, 4640], [1996, 6, 5100], [1996, 12, 5560], [1997, 12, 5960], [1998, 1, 6000], [1998, 7, 6240], [1998, 8, 6400], [1998, 9, 16000], [1998, 10, 15900], [1998, 11, 16400], [1998, 12, 20650],
+    [1999, 6, 24200], [1999, 12, 27000], [2000, 12, 28160], [2001, 12, 30140], [2002, 12, 31780], [2003, 12, 29450], [2004, 12, 27750], [2005, 12, 28780], [2006, 12, 26330], [2007, 12, 24550]];
+  function rateAt(turn) { // в старых рублях за доллар
+    const mi = 11 + turn + 1991 * 12, at = r => r[0] * 12 + r[1] - 1;
+    if (mi <= at(RATES[0])) return RATES[0][2];
+    for (let k = 1; k < RATES.length; k++) { const a = RATES[k - 1], b = RATES[k]; if (mi <= at(b)) return a[2] + (b[2] - a[2]) * (mi - at(a)) / (at(b) - at(a)); }
+    return RATES[RATES.length - 1][2];
   }
+  const rubRate = S => { const y = date(S.turn).year, r = rateAt(S.turn); return y >= 1998 ? Math.round(r / 100) / 10 : Math.round(r); };
+  // сколько рублёвая касса теряет за месяц в долларах (отрицательное — рубль окреп)
+  const inflation = S => Math.max(-0.08, 1 - rateAt(S.turn) / rateAt(S.turn + 1));
   const exchangeFee = (S, fid) => Math.max(0, 0.03 - owned(S, fid).reduce((a, i) => a + S.d[i].b.filter(b => b === 'exchange').length, 0) * 0.01);
   const cash = p => { const w = Math.min(Math.max(0, p.clean || 0), Math.max(0, p.money)); return { white: Math.round(w), black: Math.round(p.money - w) }; };
   const fdef = id => D.FACTIONS.find(f => f.id === id);
@@ -1097,9 +1103,9 @@
     const inc = income(S, fid), w0 = cash(p).white;
     const u0 = cur(p).usd;
     p.money += inc.total; p.clean = w0 + Math.max(0, inc.white); p.clean = cash(p).white; p.usd = u0; p.usd = cur(p).usd;
-    // рубли дешевеют каждый месяц; потом касса меняется до выбранной доли долларов
+    // рубли дешевеют вслед за курсом доллара (автообмена нет: менять — в обменнике)
     { const r = cur(p).rub, loss = r > 0 ? Math.round(r * inflation(S)) : 0; if (loss) { p.money -= loss; p.report.infl = loss; } }
-    if (p.usdK) { const c = cur(p), want = Math.max(0, p.money) * p.usdK; if (want > c.usd + 1) { const conv = want - c.usd, fee = Math.round(conv * exchangeFee(S, fid)); p.money -= fee; p.usd = c.usd + conv - fee; p.report.fx = fee; } }
+    p.usdK = 0;
     p.later = p.later.filter(l => { if (l.t <= S.turn) { p.money += l.amt; if (l.amt >= 0) log(S, 'Вернулись вложения («' + l.why + '»): +' + l.amt, 'good', fid); else log(S, 'Пришли за долгом («' + l.why + '»): ' + l.amt, 'bad', fid); return false; } return true; });
     if (p.money < 0) { const l = Math.max(1, Math.round(p.men * 0.1)); p.men = Math.max(0, p.men - l); addRep(S, fid, -2); log(S, 'Общак пуст, платить нечем. Ушли бойцы: ' + l, 'bad', fid); }
     D.PROJECTS.forEach(pr => {
@@ -1212,7 +1218,7 @@
     checkDone(S);
     if (S.done) return { ok: true, msg: 'Игра окончена', over: true };
     S.turn++;
-    { const dt = date(S.turn); if (dt.month === 8 && dt.year === 1998) active(S).forEach(h => { const r = cur(S.f[h]).rub; if (r > 0) { const burn = Math.round(r * 0.7); S.f[h].money -= burn; log(S, 'Дефолт: рубль упал вчетверо. Рублёвая касса потеряла ' + burn + ' тыс. $. Доллары целы.', 'bad', h); } });
+    { const dt = date(S.turn); if (dt.month === 8 && dt.year === 1998) active(S).forEach(h => { const r = cur(S.f[h]).rub; log(S, 'Август 1998-го: в стране пахнет дефолтом. Если рубль рухнет, рублёвая касса (' + r + ' тыс. $) потеряет больше половины. Доллары — в обменнике.', 'bad', h); });
       if (dt.month === 1 && dt.year === 2000) log(S, 'Новый год, новый хозяин в Кремле. Власть закручивает гайки: розыск растёт на 35% быстрее, облавы чаще.', 'big'); if (dt.month === 1 && dt.year === 2003) log(S, 'Вертикаль достроена: розыск растёт на 60% быстрее, чем в девяностые. Пора легализоваться.', 'big'); }
     active(S).forEach(h => { const p = S.f[h], inf = inflow(S, h).total; p.pool = Math.min(pool(S, h) + inf, inf * 3); p.report.lost = p.lostNow || []; p.lostNow = null; p.ap = apMax(S, h); p.ready = false; pickEvent(S, h); });
     return { ok: true, msg: date(S.turn).label };
@@ -1240,7 +1246,7 @@
     center: (S, f) => okrugHeld(S, f, 'CAO'), kapotnya: (S, f) => ownsName(S, f, 'Капотня'), luzhniki: (S, f) => ownsName(S, f, 'Хамовники'),
     army100: (S, f, p) => p.men >= 100, armory: (S, f, p) => p.guns >= 100, rpg: (S, f, p) => (p.arms || {}).rpg > 0, merc: (S, f, p) => (p.garage || {}).merc > 0 || (p.garage || {}).w220 > 0, fleet: (S, f, p) => p.cars >= 10,
     grand: (S, f, p) => p.money >= 1000, ten_m: (S, f, p) => p.money >= 10000, white50: (S, f) => { const i = income(S, f); return i.white > 20 && i.white >= i.black; },
-    dollars: (S, f, p) => { const d = date(S.turn); return d.year === 1998 && d.month === 8 && p.usdK >= 0.8; }, default_survivor: (S, f, p) => { const d = date(S.turn); return d.year === 1998 && d.month >= 9 && p.money >= 1000; },
+    dollars: (S, f, p) => { const d = date(S.turn); return d.year === 1998 && d.month === 9 && p.money > 0 && cur(p).usd >= p.money * 0.8; }, default_survivor: (S, f, p) => { const d = date(S.turn); return d.year === 1998 && d.month >= 9 && p.money >= 1000; },
     first_point: (S, f) => owned(S, f).some(i => S.d[i].b.length), points20: (S, f) => owned(S, f).reduce((a, i) => a + S.d[i].b.length, 0) >= 20, lvl3: (S, f) => owned(S, f).some(i => S.d[i].b.some((b, x) => pointLvl(S.d[i], x) >= 3)),
     specials5: (S, f) => { const k = new Set(); owned(S, f).forEach(i => S.d[i].b.forEach(b => { if (D.BUILDS[b].need && b !== 'casino') k.add(b); })); return k.size >= 5; },
     first_deal: (S, f, p) => Object.keys(p.proj || {}).some(k => p.proj[k].stage === 3), deals5: (S, f, p) => Object.keys(p.proj || {}).filter(k => p.proj[k].stage === 3).length >= 5,
@@ -1374,6 +1380,7 @@
     const bench = () => crew(S, fid).filter(c => !c.pos && c.st === 'ok');
     ['right', 'treas', 'cons', 'lawyer'].forEach(pos => { if (post(S, fid, pos)) return; const b = bench().filter(c => c.loy > 3).sort((x, y) => (pos === 'right' ? y.str - x.str : y.wit - x.wit))[0]; if (b) assign(S, fid, b.id, pos); });
     Object.keys(D.OKRUGS).forEach(ok => { if (capoOf(S, fid, ok) || !owned(S, fid).some(i => D.DISTRICTS[i].ok === ok)) return; const b = bench().sort((x, y) => y.str - x.str)[0]; if (b) assign(S, fid, b.id, 'capo', ok); });
+    { const r = cur(p).rub; if (r > 5 && inflation(S) > 0.02) exchange(S, fid, 'buy', r); }
     const own = owned(S, fid), bi = own.length ? bestInvest(S, fid, own, Math.floor(p.money * 0.35), 0) : null;
     if (bi) { if (bi.k) doBuild(S, fid, bi.i, bi.k); else doUpgrade(S, fid, bi.i, bi.x); }
     p.ready = true;

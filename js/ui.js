@@ -176,8 +176,8 @@
   }
 
   // ---------- вкладки ----------
-  const VIEWS = [['gang', 'Банда'], ['cash', 'Общак'], ['map', 'Районы'], ['big', 'Крупные дела'], ['law', 'Власть'], ['clans', 'Группировки'], ['log', 'Хроника']];
-  const TABS = { gang: ['men', 'Банда'], cash: ['money', 'Общак'], map: ['map', 'Районы'], big: ['deal', 'Дела'], law: ['law', 'Власть'], clans: ['clans', 'Группы'], log: ['log', 'Хроника'] };
+  const VIEWS = [['gang', 'Банда'], ['cash', 'Общак'], ['map', 'Районы'], ['big', 'Крупные дела'], ['law', 'Власть'], ['clans', 'ОПГ'], ['fx', 'Обменник'], ['log', 'Хроника']];
+  const TABS = { gang: ['men', 'Банда'], cash: ['money', 'Общак'], map: ['map', 'Районы'], big: ['deal', 'Дела'], law: ['law', 'Власть'], clans: ['gun', 'ОПГ'], fx: ['fx', 'Обмен'], log: ['log', 'Хроника'] };
   const btn = (label, a, attrs, lock, cls) => '<button class="btn ' + (cls || '') + '" data-a="' + a + '" ' + (attrs || '') + (lock ? ' disabled' : '') + '>' + label + (lock && typeof lock === 'string' ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
   const kindTag = k => '<span class="tag ' + k + '">' + ({ w: 'белый', g: 'серый', b: 'чёрный' }[k]) + '</span>';
   const who = f => fd(f).name + (S.f[f].human && S.f[f].nick ? ' · ' + esc(S.f[f].nick) : '');
@@ -290,15 +290,7 @@
     h += '<h3>Касса за месяц</h3><table class="tbl">' + inc.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="' + (r[1] < 0 ? 'bad' : 'good') + '">' + sign(r[1]) + '</td></tr>').join('') + '<tr class="sum"><td>Итого</td><td>' + sign(inc.total) + '</td></tr></table>';
     const tot = inc.white + inc.black;
     const k = p.usdK || 0, fee = R(E.exchangeFee(S, me) * 100), inf = E.inflation(S) * 100;
-    // обменник: сколько в рублях и в долларах, курс, купить или продать
-    const cc = E.cur(p), rate = E.rubRate(S), rubs = Math.max(0, cc.rub) * 1000 * rate;
-    const big = v => v >= 1e9 ? (Math.round(v / 1e8) / 10).toLocaleString('ru-RU') + ' млрд' : v >= 1e6 ? (Math.round(v / 1e5) / 10).toLocaleString('ru-RU') + ' млн' : Math.round(v).toLocaleString('ru-RU');
-    h += '<h3>Обменник</h3><div class="fx"><div class="fxw rub"><span>₽ Рубли</span><b>' + big(rubs) + ' ₽</b><small>≈ ' + cc.rub + ' тыс. $</small></div><div class="fxw usd"><span>$ Доллары</span><b>' + cc.usd + ' тыс. $</b><small>' + (cc.usd ? 'не дешевеют' : 'пусто') + '</small></div></div>';
-    h += '<p class="fxrate">Курс: <b>1 $ = ' + rate.toLocaleString('ru-RU') + ' ₽</b>' + (S.turn >= 73 && S.turn <= 84 ? ' <span class="muted">(новые рубли после деноминации)</span>' : '') + ' · комиссия ' + fee + '%' + (fee < 3 ? '' : ' <span class="muted">(свои обменники на районах снижают)</span>') + '</p>';
-    h += '<div class="fxform"><label class="field"><span>Сумма, тыс. $</span><input id="fxamt" type="number" inputmode="numeric" min="1" value="' + Math.max(1, Math.round(Math.max(cc.rub, cc.usd) / 2)) + '"></label>' + btn('Купить $', 'fxbuy', '', cc.rub < 1, 'primary') + btn('Продать $', 'fxsell', '', cc.usd < 1) + '</div>';
-    h += '<div class="seg fxq">' + btn('Всё в $', 'fxall', 'data-k="buy"', cc.rub < 1, 'sm') + btn('Половину в $', 'fxhalf', '', cc.rub < 2, 'sm') + btn('Всё в рубли', 'fxall', 'data-k="sell"', cc.usd < 1, 'sm') + '</div>';
-    h += '<p class="muted">Доход приходит в рублях, траты идут сначала из рублей. Рубли дешевеют: сейчас инфляция ' + (Math.round(inf * 10) / 10) + '% в месяц, а в августе 1998-го дефолт сожжёт 70% рублёвой кассы. Доллары не дешевеют и дефолта не боятся.</p>';
-    h += '<h3>Автообмен дохода</h3><div class="seg" role="group" aria-label="Доля кассы в долларах">' + [[0, 'Выключен'], [0.5, 'Держать 50% в $'], [0.8, 'Держать 80% в $']].map(o => '<button class="btn sm' + (k === o[0] ? ' on' : '') + '" data-a="usd" data-k="' + o[0] + '" aria-pressed="' + (k === o[0]) + '">' + o[1] + '</button>').join('') + '</div><p class="muted">Каждый месяц обменник сам докупает доллары до выбранной доли. Выключенный автообмен ничего не продаёт.</p>';
+    h += '<div class="box fxlink"><p>Рубли и доллары — во вкладке <b>«Обменник»</b>: курс, обмен в обе стороны.</p>' + btn('В обменник', 'gofx', '', false, 'sm') + '</div>';
     h += '<p class="muted">Белый нал лежит на счетах: облавы его не трогают. Чёрный хранится наличкой, и при розыске от 60 его изымают. Траты идут сначала из чёрного. Белый приходит с белых точек, предприятий, легальных дел и через отмывку: казино и обменники.</p>';
     if (tot) h += '<p class="muted">Белый доход: ' + R(inc.white / tot * 100) + '%. К 2007 году выживут те, кто успел легализоваться.</p>';
     if (p.later.length) h += '<h3>Вложения и долги</h3><table class="tbl">' + p.later.map(l => '<tr><td>' + esc(l.why) + '<br><span class="muted">' + E.date(l.t).label + '</span></td><td class="' + (l.amt < 0 ? 'bad' : 'good') + '">' + sign(l.amt) + '</td></tr>').join('') + '</table>';
@@ -306,8 +298,33 @@
     // концовка по своему решению
     const rl = E.retireLock(S, me);
     h += '<h3>Отойти от дел</h3><p class="muted">С белыми деньгами и чистым досье можно уйти на покой: районы отойдут местным, игра закончится концовкой «Тихий пенсионер».</p>' + (confirmRetire && !rl ? '<div class="box"><p>Точно уйти? Партия закончится.</p><div class="grid"><button class="btn primary" data-a="retire2">Да, на дачу</button><button class="btn" data-a="retire0">Нет, ещё повоюем</button></div></div>' : btn('Отойти от дел', 'retire1', '', rl || false, 'wide ghost'));
+    if (!net) h += '<div class="box fxlink"><p>Хроника событий, достижения, запись партии, сохранение в облако и новая игра.</p>' + btn('Открыть хронику', 'golog', '', false, 'sm') + '</div>';
     return h + deadList();
   }
+  // ---------- обменник: рубли и доллары по курсу тех лет, сумма ползунком ----------
+  let fxDir = 'buy';
+  const bigRub = v => v >= 1e9 ? (Math.round(v / 1e8) / 10).toLocaleString('ru-RU') + ' млрд' : v >= 1e6 ? (Math.round(v / 1e5) / 10).toLocaleString('ru-RU') + ' млн' : Math.round(v).toLocaleString('ru-RU');
+  function fxCalc() {
+    const r = $('#fxr'), box = $('#fxcalc'); if (!r || !box) return;
+    const v = +r.value, fee = Math.round(v * E.exchangeFee(S, me)), rate = E.rubRate(S), rub = x => bigRub(x * 1000 * rate) + ' ₽';
+    box.innerHTML = fxDir === 'buy'
+      ? '<span>Отдаёшь <b>' + rub(v) + '</b><small>≈ ' + v + ' тыс. $</small></span><i>→</i><span>Получишь <b class="good">' + Math.max(0, v - fee) + ' тыс. $</b><small>комиссия ' + fee + ' тыс.</small></span>'
+      : '<span>Отдаёшь <b class="good">' + v + ' тыс. $</b><small>&nbsp;</small></span><i>→</i><span>Получишь <b>' + rub(Math.max(0, v - fee)) + '</b><small>комиссия ' + fee + ' тыс. $</small></span>';
+    const go = $('#fxgo'); if (go) go.disabled = v < 1;
+  }
+  function paneFx() {
+    const p = P(), cc = E.cur(p), rate = E.rubRate(S), fee = R(E.exchangeFee(S, me) * 100), inf = E.inflation(S) * 100, y = E.date(S.turn).year;
+    const max = fxDir === 'buy' ? Math.max(0, cc.rub) : Math.max(0, cc.usd);
+    let h = '<h2>Обменник</h2><p class="sub">Курс как был в ' + y + '-м. Доход приходит в рублях, а рубли дешевеют вслед за курсом.</p>';
+    h += '<div class="fx"><div class="fxw rub"><span>₽ Рубли</span><b>' + bigRub(Math.max(0, cc.rub) * 1000 * rate) + ' ₽</b><small>≈ ' + cc.rub + ' тыс. $</small></div><div class="fxw usd"><span>$ Доллары</span><b>' + cc.usd + ' тыс. $</b><small>' + (cc.usd ? 'не дешевеют' : 'пусто') + '</small></div></div>';
+    h += '<div class="fxboard"><span>' + E.date(S.turn).label + '</span><b>1 $ = ' + rate.toLocaleString('ru-RU') + ' ₽</b>' + (y >= 1998 && y <= 1999 ? '<small>новые рубли (деноминация 1998-го)</small>' : '') + '<em class="' + (inf > 0.05 ? 'bad' : 'good') + '">' + (inf > 0.05 ? 'за месяц рубль подешевеет на ' + (Math.round(inf * 10) / 10) + '%' : inf < -0.05 ? 'за месяц рубль окрепнет на ' + (Math.round(-inf * 10) / 10) + '%' : 'рубль стоит на месте') + '</em></div>';
+    h += '<div class="seg fxdir">' + [['buy', 'Купить $'], ['sell', 'Продать $']].map(d => '<button class="btn' + (fxDir === d[0] ? ' on' : '') + '" data-a="fxdir" data-k="' + d[0] + '">' + d[1] + '</button>').join('') + '</div>';
+    if (!max) h += '<p class="muted">' + (fxDir === 'buy' ? 'Рублей в кассе нет — менять нечего.' : 'Долларов нет — продавать нечего.') + '</p>';
+    else h += '<div class="fxslide"><input id="fxr" type="range" min="0" max="' + max + '" step="1" value="' + Math.round(max / 2) + '" aria-label="Сколько менять"><div class="fxticks"><button class="link" data-a="fxset" data-k="0">0</button><button class="link" data-a="fxset" data-k="0.25">¼</button><button class="link" data-a="fxset" data-k="0.5">½</button><button class="link" data-a="fxset" data-k="1">всё</button></div></div><div id="fxcalc" class="fxcalc"></div>' + btn(fxDir === 'buy' ? 'Обменять рубли на доллары' : 'Обменять доллары на рубли', 'fxgo', 'id="fxgo"', false, 'wide primary');
+    h += '<p class="muted">Комиссия обменника ' + fee + '%' + (fee < 3 ? '' : ' — свои обменники на районах снижают её на 1% каждый') + '. Траты идут сначала из рублей. В августе 1998-го рубль рухнет почти втрое.</p>';
+    return h;
+  }
+
   // рядовые: вербовка
   function paneMen() {
     const p = P(), cap = E.menCap(S, me);
@@ -753,13 +770,14 @@
 
   function render() {
     if (!S) return;
+    setTimeout(fxCalc, 0);
     renderTop(); const sb = $('#specbar'); if (sb) { sb.innerHTML = specHTML(); sb.hidden = !sb.innerHTML; } paintMap(); achSync(); tgSync(); mapTip();
     // меню разделов под шапкой; у «Банды» и «Районов» справа панель, остальные разделы во всю ширину
     if (net && section === 'log') chatSeen();
     const un = v => v === 'log' && net && net.unread ? '<i class="unread" title="Непрочитанных: ' + net.unread + '" aria-label="Непрочитанных сообщений: ' + net.unread + '">!</i>' : '';
     const vname = v => net && v[0] === 'log' ? 'Чат' : v[1], tab = v => net && v === 'log' ? ['chat', 'Чат'] : TABS[v];
     $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + vname(v) + un(v[0]) + '</button>').join('');
-    $('#tabbar').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(tab(v[0])[0]) + '<span>' + tab(v[0])[1] + '</span>' + un(v[0]) + '</button>').join('');
+    $('#tabbar').innerHTML = VIEWS.filter(v => v[0] !== 'log' || net).map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(tab(v[0])[0]) + '<span>' + tab(v[0])[1] + '</span>' + un(v[0]) + '</button>').join('');
     if (section !== 'gang' && section !== 'map') sheet = false;
     $('#main').classList.toggle('msheet', sheet);
     $('#sheettitle').textContent = section === 'map' ? (sel == null ? 'Мои районы' : D.DISTRICTS[sel].name) : focus && focus.view ? { boss: 'Общак', men: 'Бойцы', arms: 'Арсенал', cars: 'Гараж' }[focus.view] : 'Досье';
@@ -769,7 +787,7 @@
     $('#org').hidden = section !== 'gang'; $('#mapview').hidden = section !== 'map'; $('#page').hidden = split;
     if (section === 'gang') renderOrg();
     const host = split ? $('#pane') : $('#page'), pk = section + ':' + (section === 'map' ? sel : section === 'gang' ? JSON.stringify(focus) : ''), keep = host.dataset.key === pk ? host.scrollTop : 0;
-    const fn = { gang: paneDossier, cash: () => tipHTML('cash') + paneBoss(), map: paneDistrict, big: paneBig, law: paneLaw, clans: paneClans, log: paneLog }[section];
+    const fn = { gang: paneDossier, cash: () => tipHTML('cash') + paneBoss(), map: paneDistrict, big: paneBig, law: paneLaw, clans: paneClans, fx: paneFx, log: paneLog }[section];
     if (!(section === 'log' && chatOnly())) {
       host.innerHTML = split ? fn() : '<div class="inner' + (section === 'big' ? ' wide' : '') + '">' + fn() + '</div>';
       host.dataset.key = pk; host.scrollTop = keep; chatBottom();
@@ -871,9 +889,11 @@
     else if (a === 'quest') act('quest', [0]);
     else if (a === 'status') act('buyStatus', [k]);
     else if (a === 'usd') act('setUsd', [+k]);
-    else if (a === 'fxbuy' || a === 'fxsell') act('exchange', [a === 'fxbuy' ? 'buy' : 'sell', +(($('#fxamt') || {}).value || 0)]);
-    else if (a === 'fxall') { const c = E.cur(P()); act('exchange', [k, k === 'buy' ? c.rub : c.usd]); }
-    else if (a === 'fxhalf') act('exchange', ['buy', Math.floor(E.cur(P()).rub / 2)]);
+    else if (a === 'fxdir') { fxDir = k; render(); fxCalc(); }
+    else if (a === 'fxset') { const r = $('#fxr'); if (r) { r.value = Math.round(+r.max * +k); fxCalc(); } }
+    else if (a === 'fxgo') { const r = $('#fxr'); if (r && +r.value > 0) act('exchange', [fxDir, +r.value]); }
+    else if (a === 'golog') { section = 'log'; sheet = false; render(); $('#page').scrollTop = 0; }
+    else if (a === 'gofx') { section = 'fx'; sheet = false; render(); }
     else if (a === 'retire1') { confirmRetire = true; render(); }
     else if (a === 'retire0') { confirmRetire = false; render(); }
     else if (a === 'retire2') { confirmRetire = false; act('retire', []); }
@@ -903,6 +923,7 @@
     else if (a === 'new2') { confirmNew = false; wipe(); leaveToMenu(); }
     else if (a === 'close') { closeModal(); render(); }
   });
+  document.addEventListener('input', e => { if (e.target && e.target.id === 'fxr') fxCalc(); });
   document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.a === 'watch') { watchFid = t.value; sel = null; section = 'map'; sheet = true; render(); return; } if (t.dataset && t.dataset.a === 'reassign' && t.value) { const v = t.value.split('|'); act('assign', [+t.dataset.id, v[0], v[1] || null]); } });
   $('#end').addEventListener('click', () => {
     if (!S || P().over) return;
