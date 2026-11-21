@@ -156,13 +156,16 @@
     $('#date').textContent = E.date(S.turn).label + (net ? ' · ' + net.lobby.name : '');
     // показатель шапки: значок, подпись, число, пояснение
     // нажатие ведёт туда, где этим показателем управляют
-    const GO = { money: 'cash', men: 'gang:men', gun: 'gang:arms', car: 'gang:cars', rep: 'gang:boss', conn: 'law' };
+    // рубли — настоящими рублями по курсу (68М, 2,4млрд), доллары — в тыс. $
+    const cc = E.cur(p), rubShort = v => { const r = Math.max(0, v) * 1000 * E.rubRate(S), f = (x, u) => (x >= 100 ? Math.round(x) : Math.round(x * 10) / 10).toLocaleString('ru-RU') + u; return v < 0 ? R(v) : r >= 1e9 ? f(r / 1e9, 'млрд') : r >= 1e6 ? f(r / 1e6, 'М') : r >= 1e3 ? f(r / 1e3, 'К') : String(Math.round(r)); };
+    const GO = { rub: 'fx', usd: 'fx', money: 'cash', men: 'gang:men', gun: 'gang:arms', car: 'gang:cars', rep: 'gang:boss', conn: 'law' };
     const st = (k, l, v, x, cls) => '<button class="st s-' + k + ' ' + (cls || '') + '" data-go="' + GO[k] + '" title="' + l + '">' + A.icon(k) + '<div><span>' + l + '</span><b>' + v + '</b>' + (x ? '<i>' + x + '</i>' : '') + '</div></button>';
     let pips = ''; for (let i = 0; i < E.apMax(S, me); i++) pips += '<u class="' + (i < p.ap ? 'on' : '') + '"></u>';
     $('#stats').innerHTML =
-      st('money', 'Касса, тыс. $', R(p.money), 'бел. ' + E.cash(p).white + ' · $ ' + E.cur(p).usd + ' · ' + sign(inc.total) + '/мес', p.money < 0 ? 'bad' : '') +
+      st('rub', 'Рубли', rubShort(cc.rub), '≈ ' + cc.rub + ' тыс. $ · ' + sign(inc.total) + '/мес', p.money < 0 ? 'bad' : '') +
+      st('usd', 'Доллары, тыс.', cc.usd, 'вся касса ' + R(p.money) + ' тыс. $') +
       st('men', 'Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('gun', 'Стволы', p.guns) + st('car', 'Тачки', p.cars) +
-      st('rep', 'Авторитет', R(p.rep)) + st('conn', 'Связи', E.conn(S, me)) +
+      st('conn', 'Связи', E.conn(S, me)) +
       '<button class="st heat l' + L + '" data-go="law" title="Розыск">' + A.icon('heat') + '<b class="hnum">' + R(p.heat) + '</b><div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></button>' +
       '';
     $('#perks').innerHTML = fxStrip();

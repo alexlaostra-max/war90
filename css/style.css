@@ -800,3 +800,6 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 .dacch em { grid-area: n; font: 700 13px var(--mono); font-style: normal; color: var(--gold); border: 1px solid #5a4a2a; border-radius: 10px; padding: 1px 8px; }
 .dacch i { grid-area: i; font-style: normal; color: var(--gold); font-size: 16px; }
 .daccb { padding: 0 12px 12px; } .daccb .projs { margin-top: 0; }
+
+/* касса в шапке: рубли и доллары рядом */
+.s-rub .ico { color: #e8a35a; } .s-usd .ico { color: var(--good); }
