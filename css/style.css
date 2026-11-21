@@ -811,13 +811,15 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 .node.boss .bossdate { font: 400 15px var(--mono); color: var(--gold); }
 @media (max-width: 860px) { .brand { display: none; } #apm { margin-right: auto; } }
 
-/* перестановка людей по схеме */
-.movebar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--gold); border-radius: 6px; background: #2b2418; font-size: 14px; }
-.movebar span { flex: 1 1 200px; }
-.cnode.drop { border-color: var(--gold); border-style: dashed; box-shadow: 0 0 0 2px rgba(240, 201, 104, .25); animation: teach 1.2s ease-in-out infinite; }
-.cnode.moving, .node.moving { opacity: .45; outline: 2px dashed var(--gold); }
-.tier.bench { min-height: 40px; border-radius: 6px; }
+/* перестановка людей по схеме: зажать и перетащить */
+#org [draggable] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 [draggable="true"] { cursor: grab; }
+#org .pressing { transform: scale(.95); transition: transform 1s linear; box-shadow: 0 0 0 2px rgba(240, 201, 104, .6); }
+#org .moving { opacity: .35; outline: 2px dashed var(--gold); }
+#org.dragging .cnode, #org.dragging .wchip, #org.dragging .tier.bench { outline: 1px dashed rgba(240, 201, 104, .5); outline-offset: 2px; }
+#org .dropon { outline: 2px solid var(--gold) !important; box-shadow: 0 0 0 4px rgba(240, 201, 104, .3); }
+.ghost { position: fixed; z-index: 100; pointer-events: none; opacity: .92; transform: scale(1.06) rotate(-2deg); box-shadow: 0 14px 40px rgba(0, 0, 0, .7); }
+.tier.bench { min-height: 48px; border-radius: 6px; }
 /* недвижимость */
 .estd { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; margin: 8px 0; } .estd ul { margin: 6px 0 0; }
 .lvb.sm { position: static; display: inline-block; font-size: 10px; padding: 0 4px; }

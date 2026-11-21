@@ -766,6 +766,20 @@
     c.pos = pos; c.ok = pos === 'capo' || pos === 'watch' ? ok : null;
     return { ok: true, msg: cname(c) + ' теперь ' + D.POSTS[pos].name.toLowerCase() + (pos === 'capo' ? ': ' + D.OKRUGS[ok].short : pos === 'watch' ? ': ' + D.DISTRICTS[watchDist(c)].name : '') };
   }
+  // перестановка по схеме: человек встаёт на должность; если там кто-то был, а у переставляемого была своя
+  // должность — меняются местами. Без должности (pos пустой) — снять в резерв
+  function place(S, fid, id, pos, ok) {
+    const e = spend(S, fid, 0); if (e) return fail(e);
+    const cr = crew(S, fid), c = cr.find(x => x.id === +id); if (!c) return fail('Нет такого человека');
+    if (c.st !== 'ok') return fail('Человек вне строя');
+    if (!pos) { if (!c.pos) return fail('Он и так в резерве'); c.pos = null; c.ok = null; return { ok: true, msg: cname(c) + ' снят в резерв' }; }
+    if (c.pos === pos && (c.ok || null) === (ok || null)) return fail('Он уже здесь');
+    const from = { pos: c.pos, ok: c.ok }, keyed = pos === 'capo' || pos === 'watch';
+    const holder = cr.find(x => x !== c && x.pos === pos && (!keyed || x.ok === ok));
+    const r = assign(S, fid, c.id, pos, ok); if (!r.ok) return r;
+    if (holder && from.pos && holder.st === 'ok') { const r2 = assign(S, fid, holder.id, from.pos, from.ok); if (r2.ok) return { ok: true, msg: cname(c) + ' и ' + cname(holder) + ' поменялись местами' }; }
+    return r;
+  }
   // выдвинуть бойца в семью: раз в месяц, стоит денег и одного рядового
   const promoteCost = S => Math.round(12 * era(S));
   function promote(S, fid) {
@@ -1415,7 +1429,7 @@
     p.ready = true;
   }
 
-  const ACTIONS = { repairAll, scrapAll, exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
+  const ACTIONS = { place, repairAll, scrapAll, exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
   G.Engine = { repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);
