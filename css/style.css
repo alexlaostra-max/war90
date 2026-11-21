@@ -810,3 +810,14 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 
 .node.boss .bossdate { font: 400 15px var(--mono); color: var(--gold); }
 @media (max-width: 860px) { .brand { display: none; } #apm { margin-right: auto; } }
+
+/* перестановка людей по схеме */
+.movebar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--gold); border-radius: 6px; background: #2b2418; font-size: 14px; }
+.movebar span { flex: 1 1 200px; }
+.cnode.drop { border-color: var(--gold); border-style: dashed; box-shadow: 0 0 0 2px rgba(240, 201, 104, .25); animation: teach 1.2s ease-in-out infinite; }
+.cnode.moving, .node.moving { opacity: .45; outline: 2px dashed var(--gold); }
+.tier.bench { min-height: 40px; border-radius: 6px; }
+[draggable="true"] { cursor: grab; }
+/* недвижимость */
+.estd { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; margin: 8px 0; } .estd ul { margin: 6px 0 0; }
+.lvb.sm { position: static; display: inline-block; font-size: 10px; padding: 0 4px; }

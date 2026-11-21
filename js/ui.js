@@ -337,6 +337,21 @@
     return h;
   }
 
+  // собственная недвижимость: все точки по районам и статусные покупки
+  function estateInc() { let r = 0, u = 0; E.owned(S, me).forEach(i => S.d[i].b.forEach((b, x) => { const v = E.pointInc(me, b, i) * E.pointLvl(S.d[i], x); if (D.BUILDS[b].usd) u += v; else r += v; })); return [r, u]; }
+  function paneEstate() {
+    const own = E.owned(S, me).filter(i => S.d[i].b.length), [r, u] = estateInc();
+    let h = '<p class="eyebrow">Бригада · сила</p><h2>Недвижимость</h2><p class="sub">Точки на твоих районах и большие покупки. Доход: ' + pairS(r, u) + ' в мес.</p>';
+    if (!own.length) h += '<p class="muted">Своих точек пока нет. Открой свой район на карте и построй первую.</p>';
+    own.forEach(i => {
+      const d = S.d[i];
+      h += '<div class="estd"><button class="link" data-a="goto" data-i="' + i + '"><b>' + esc(D.DISTRICTS[i].name) + '</b></button><span class="muted"> · ' + D.OKRUGS[D.DISTRICTS[i].ok].short + ' · ' + d.b.length + ' из ' + D.DISTRICTS[i].slots + '</span><ul class="plain">' +
+        d.b.map((b, x) => { const B = D.BUILDS[b], lv = E.pointLvl(d, x); return '<li>' + B.name + ' <span class="lvb sm">' + ROMAN[lv] + '</span> · <span class="good">' + plus(E.pointInc(me, b, i) * lv, B.usd) + '</span></li>'; }).join('') + '</ul></div>';
+    });
+    const st = D.STATUS.filter(X => E.has(S, me, X.id));
+    h += '<h3>Большие покупки</h3>' + (st.length ? '<ul class="plain">' + st.map(X => '<li><b>' + X.name + '</b> — ' + esc(X.perk) + '</li>').join('') + '</ul>' : '<p class="muted">Пока ничего. Особняк, яхта и прочее — во вкладке «Дела» → «Крупные дела» → «Статус и большие покупки».</p>');
+    return h;
+  }
   // рядовые: вербовка
   function paneMen() {
     const p = P(), cap = E.menCap(S, me);
@@ -424,15 +439,17 @@
     const isSel = focus && (c ? focus.id === c.id : focus.id == null && focus.pos === slot.pos && (focus.ok || null) === (slot.ok || null));
     if (!c) return '<button class="node vacant' + (isSel ? ' sel' : '') + '" data-a="vacant" data-pos="' + slot.pos + '" data-ok="' + (slot.ok || '') + '"><span class="ava">' + A.vacantFace() + '</span><span class="nb"><span class="role">' + role + '</span><b>Вакантно</b>' + (extra || '') + '<small>' + (slot.dis ? 'нужно больше районов' : 'подобрать человека') + '</small></span></button>';
     const st = c.st === 'hurt' ? '<em class="badge">ранен</em>' : c.st === 'jail' ? '<em class="badge">сидит</em>' : '';
-    return '<button class="node' + (c.st !== 'ok' ? ' out' : '') + (c.leg ? ' legend' : '') + (isSel ? ' sel' : '') + '" data-a="person" data-id="' + c.id + '"><span class="ava">' + A.face(c) + '</span><span class="nb"><span class="role">' + role + (c.leg ? ' · легенда' : '') + '</span>' + st + '<b>«' + esc(c.nick) + '»</b><small>' + esc(c.name) + ', ' + c.age + '</small>' + (extra || '') + '<span class="mini">' + mini('Сила', c.str) + mini('Ум', c.wit) + mini('Верн.', c.loy) + '</span></span></button>';
+    return '<button class="node' + (c.st !== 'ok' ? ' out' : '') + (c.leg ? ' legend' : '') + (isSel ? ' sel' : '') + (moveId === c.id ? ' moving' : '') + '" draggable="true" data-a="person" data-id="' + c.id + '"><span class="ava">' + A.face(c) + '</span><span class="nb"><span class="role">' + role + (c.leg ? ' · легенда' : '') + '</span>' + st + '<b>«' + esc(c.nick) + '»</b><small>' + esc(c.name) + ', ' + c.age + '</small>' + (extra || '') + '<span class="mini">' + mini('Сила', c.str) + mini('Ум', c.wit) + mini('Верн.', c.loy) + '</span></span></button>';
   }
   // компактная карточка: ближний круг и бригадиры стоят в ряд
+  let moveId = null; // кого переставляем по схеме
   function cnode(c, role, slot, extra) {
     const isSel = focus && (c ? focus.id === c.id : focus.id == null && focus.pos === slot.pos && (focus.ok || null) === (slot.ok || null));
-    if (!c) return '<button class="cnode vacant' + (isSel ? ' sel' : '') + '" data-a="vacant" data-pos="' + slot.pos + '" data-ok="' + (slot.ok || '') + '"><span class="ava">' + A.vacantFace() + '</span><span class="role">' + role + '</span><b>Вакантно</b>' + (extra || '') + '<small>' + (slot.dis ? 'нужно больше районов' : 'назначить') + '</small></button>';
+    const ds = ' data-slot="' + slot.pos + '|' + (slot.ok || '') + '"' + (moveId != null && !(c && c.id === moveId) ? ' data-drop="1"' : '');
+    if (!c) return '<button class="cnode vacant' + (isSel ? ' sel' : '') + (moveId != null ? ' drop' : '') + '"' + ds + ' data-a="vacant" data-pos="' + slot.pos + '" data-ok="' + (slot.ok || '') + '"><span class="ava">' + A.vacantFace() + '</span><span class="role">' + role + '</span><b>Вакантно</b>' + (extra || '') + '<small>' + (slot.dis ? 'нужно больше районов' : 'назначить') + '</small></button>';
     const st = c.st === 'hurt' ? '<em class="badge">ранен</em>' : c.st === 'jail' ? '<em class="badge">сидит</em>' : '';
     const n = (l, v, warn) => '<i>' + l + '</i><span class="' + (warn ? 'bad' : '') + '">' + v + '</span>';
-    return '<button class="cnode' + (c.st !== 'ok' ? ' out' : '') + (c.leg ? ' legend' : '') + (isSel ? ' sel' : '') + '" data-a="person" data-id="' + c.id + '" title="' + esc(E.cname(c)) + '"><span class="ava">' + A.face(c) + '</span>' + st + '<span class="role">' + role + '</span><b>' + esc(c.nick) + '</b>' + (extra || '') + '<span class="cst">' + n('С', c.str) + n('У', c.wit) + n('В', c.loy, c.loy <= 3) + '</span></button>';
+    return '<button class="cnode' + (c.st !== 'ok' ? ' out' : '') + (c.leg ? ' legend' : '') + (isSel ? ' sel' : '') + (moveId != null ? (c.id === moveId ? ' moving' : ' drop') : '') + '"' + ds + ' draggable="true" data-a="person" data-id="' + c.id + '" title="' + esc(E.cname(c)) + '"><span class="ava">' + A.face(c) + '</span>' + st + '<span class="role">' + role + '</span><b>' + esc(c.nick) + '</b>' + (extra || '') + '<span class="cst">' + n('С', c.str) + n('У', c.wit) + n('В', c.loy, c.loy <= 3) + '</span></button>';
   }
   function renderOrg() {
     const p = P(), cr = E.crew(S, me), total = E.count(S, me), capos = cr.filter(x => x.pos === 'capo'), max = E.capoMax(S, me), bench = cr.filter(x => !x.pos);
@@ -443,7 +460,8 @@
     h += '<p class="tlabel">Бригада · сила ' + R(E.power(p)) + '</p><div class="tier units">' +
       unit('men', 'men', 'Бойцы · вербовка', p.men + ' из ' + cap, 'ждут ' + E.pool(S, me) + ' · по ' + E.recruitPrice(S) + ' тыс.') +
       unit('arms', 'gun', 'Арсенал', Math.min(p.men, p.guns) + ' со стволом', p.guns < p.men ? 'без ствола ' + (p.men - p.guns) : 'все вооружены', p.guns < p.men) +
-      unit('cars', 'car', 'Гараж', 'мест ' + seats, 'на разборку до ' + (10 + seats) + ' бойцов') + '</div>';
+      unit('cars', 'car', 'Гараж', 'мест ' + seats, 'на разборку до ' + (10 + seats) + ' бойцов') +
+      (() => { const ow = E.owned(S, me), np = ow.reduce((a, i) => a + S.d[i].b.length, 0), q = estateInc(); return unit('estate', 'home', 'Недвижимость', np + ' ' + (np % 10 === 1 && np % 100 !== 11 ? 'точка' : [2, 3, 4].includes(np % 10) && ![12, 13, 14].includes(np % 100) ? 'точки' : 'точек'), np ? pairS(q[0], q[1]) + ' в мес.' : 'строй точки на районах'); })() + '</div>';
     h += '<p class="tlabel">Ближний круг</p><div class="tier ctier">' + INNER.map(pos => cnode(cr.find(x => x.pos === pos), POSTS[pos].name, { pos })).join('') + '</div>';
     h += '<p class="tlabel">Бригадиры · ' + capos.length + ' из ' + max + '</p><div class="tier ctier">' + myOkrugs().map(ok => {
       const n = okDistricts(ok).length, zv = '<span class="zv">' + n + ' ' + (n === 1 ? 'район' : n < 5 ? 'района' : 'районов') + ' · ~' + Math.round(p.men * n / Math.max(1, total)) + '</span>';
@@ -452,9 +470,11 @@
     const ws = watchers();
     h += '<p class="tlabel">Смотрящие · ' + ws.length + ' из ' + total + ' районов</p><div class="tier">' + (ws.length ? ws.map(c => '<button class="wchip' + (c.st !== 'ok' ? ' out' : '') + (focus && focus.id === c.id ? ' sel' : '') + '" data-a="person" data-id="' + c.id + '"><span class="ava">' + A.face(c) + '</span><span><b>«' + esc(c.nick) + '»</b><small>' + esc(DD.DISTRICTS[E.watchDist(c)].name) + '</small></span></button>').join('') : '<p class="muted">Смотрящих нет. Их ставят бригадиры округов из резерва — назначь бригадира, и он сам расставит людей и начнёт строить точки.</p>') + '</div>';
     const pc = E.promoteCost(S), plock = p.promoTurn === S.turn ? 'раз в месяц' : p.men < 6 ? 'нужно 6 бойцов' : p.money < pc ? 'не хватает денег' : '';
-    h += '<p class="tlabel">Резерв · ' + bench.length + '</p><div class="tier">' + (bench.length ? bench.map(c => node(c, 'Резерв')).join('') : '<p class="muted">Пусто. Каждый месяц из бригады может выделиться новый человек.</p>') + '</div>';
+    h += '<p class="tlabel">Резерв · ' + bench.length + '</p><div class="tier bench">' + (bench.length ? bench.map(c => node(c, 'Резерв')).join('') : '<p class="muted">Пусто. Каждый месяц из бригады может выделиться новый человек.</p>') + '</div>';
     h += '<div class="tier promo">' + btn('Выдвинуть бойца из рядовых · ' + pc + ' тыс.', 'promote', '', plock || false, 'ghost') + '</div>';
-    $('#org').innerHTML = '<div class="mquest">' + questCard() + '</div>' + h;
+    const mv = moveId != null && cr.find(x => x.id === moveId);
+    if (moveId != null && !mv) moveId = null;
+    $('#org').innerHTML = (mv ? '<div class="movebar"><span>Куда поставить «' + esc(mv.nick) + '»? Нажми на должность на схеме.</span>' + btn('В резерв', 'movebench', '', !mv.pos, 'sm') + btn('Отмена', 'move0', '', false, 'sm ghost') + '</div>' : '') + '<div class="mquest">' + questCard() + '</div>' + h;
   }
   // «Путь наверх»: карточка задания от наставника над досье
   function questCard() {
@@ -481,7 +501,7 @@
   function dossierInner() {
     const cr = E.crew(S, me);
     if (focus && focus.id != null && !cr.some(x => x.id === focus.id)) focus = null;
-    if (focus && focus.view) return { boss: paneBoss, men: paneMen, arms: paneArms, cars: paneCars }[focus.view]();
+    if (focus && focus.view) return { boss: paneBoss, men: paneMen, arms: paneArms, cars: paneCars, estate: paneEstate }[focus.view]();
     if (!focus) return '<h2>Досье</h2><p class="muted">Выбери человека или пустую должность на схеме бригады.</p>' + deadList();
     if (focus.id != null) {
       const c = cr.find(x => x.id === focus.id), order = chartOrder(), k = order.indexOf(c);
@@ -498,6 +518,7 @@
         const opt = s => { const hold = cr.find(x => x.pos === s[0] && (x.ok || null) === (s[1] || null)); return '<option value="' + s[0] + '|' + (s[1] || '') + '">' + (s[0] === 'watch' ? DD.DISTRICTS[E.watchDist({ ok: s[1] })].name : slotName(s[0], s[1])) + (hold ? ' — сейчас «' + esc(hold.nick) + '»' : ' — свободно') + '</option>'; };
         const top = INNER.map(x => [x]).concat(myOkrugs().map(ok => ['capo', ok])).filter(s => !same(s));
         h += '<h3>Назначить</h3><select class="pick" data-a="reassign" data-id="' + c.id + '" aria-label="Назначить на должность"><option value="">Выбрать должность…</option><optgroup label="Ближний круг и бригадиры">' + top.map(opt).join('') + '</optgroup></select><p class="muted">Смотрящих на районы ставят бригадиры сами.</p>';
+        h += '<button class="btn sm primary" data-a="move" data-id="' + c.id + '">Переставить на схеме</button> ';
         if (!c.pos) h += '<button class="btn sm ghost" data-a="dismiss" data-id="' + c.id + '">Вернуть в рядовые</button>';
         h += doomHTML(c);
       }
@@ -813,7 +834,7 @@
     $('#tabbar').innerHTML = VIEWS.filter(v => v[0] !== 'log' || net).map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(tab(v[0])[0]) + '<span>' + tab(v[0])[1] + '</span>' + un(v[0]) + '</button>').join('');
     if (section !== 'gang' && section !== 'map') sheet = false;
     $('#main').classList.toggle('msheet', sheet);
-    $('#sheettitle').textContent = section === 'map' ? (sel == null ? 'Мои районы' : D.DISTRICTS[sel].name) : focus && focus.view ? { boss: 'Общак', men: 'Бойцы', arms: 'Арсенал', cars: 'Гараж' }[focus.view] : 'Досье';
+    $('#sheettitle').textContent = section === 'map' ? (sel == null ? 'Мои районы' : D.DISTRICTS[sel].name) : focus && focus.view ? { boss: 'Общак', men: 'Бойцы', arms: 'Арсенал', cars: 'Гараж', estate: 'Недвижимость' }[focus.view] : 'Досье';
     $('#strip').classList.toggle('open', perksOpen);
     const split = section === 'gang' || section === 'map';
     $('#main').classList.toggle('wide', !split); $('#side').hidden = !split;
@@ -900,6 +921,9 @@
     else if (a === 'raid') act('raid', [di]);
     else if (a === 'unassign') act('unassign', [+b.dataset.id]);
     else if (a === 'dismiss') act('dismiss', [+b.dataset.id]);
+    else if (a === 'move') { moveId = +b.dataset.id; section = 'gang'; sheet = false; render(); setTimeout(() => { const t = document.querySelector('#org .ctier'); if (t) t.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); }
+    else if (a === 'move0') { moveId = null; render(); }
+    else if (a === 'movebench') { const id = moveId; moveId = null; act('unassign', [id]); }
     else if (a === 'heatok') { heatSeen = S.turn; closeModal(); render(); }
     else if (a === 'heatgo') { heatSeen = S.turn; closeModal(); section = 'law'; sheet = false; render(); }
     else if (a === 'spectate') { spectating = true; overPeek = false; closeModal(); section = 'map'; sel = null; sheet = false; render(); }
@@ -950,6 +974,7 @@
     else if (a === 'opt') act('choose', [+k]);
     else if (a === 'force') netCall('force');
     else if (a === 'goto') { sel = +b.dataset.i; section = 'map'; sheet = true; showOnMap(sel); render(); }
+    else if (moveId != null && b.dataset.drop) { const sl = b.dataset.slot.split('|'), id = moveId; moveId = null; act('assign', [id, sl[0], sl[1] || null]); }
     else if (a === 'person') { focus = { id: +b.dataset.id }; section = 'gang'; sheet = true; render(); }
     else if (a === 'vacant') { focus = { pos: b.dataset.pos, ok: b.dataset.ok || null }; section = 'gang'; sheet = true; render(); }
     else if (a === 'appoint') { focus = { id: +b.dataset.id }; act('assign', [+b.dataset.id, b.dataset.pos, b.dataset.ok || null]); }
@@ -958,6 +983,11 @@
     else if (a === 'new2') { confirmNew = false; wipe(); leaveToMenu(); }
     else if (a === 'close') { closeModal(); render(); }
   });
+  // перетаскивание мышью: человека — на должность, на резерв — снять с должности
+  document.addEventListener('dragstart', e => { const n = e.target.closest && e.target.closest('#org [draggable][data-id]'); if (!n) return; moveId = +n.dataset.id; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(moveId)); } catch (er) { /* ignore */ } setTimeout(() => { document.querySelectorAll('#org .cnode[data-slot]').forEach(x => { if (+x.dataset.id !== moveId) x.classList.add('drop'); }); }, 0); });
+  document.addEventListener('dragover', e => { if (moveId == null) return; const t = e.target.closest && e.target.closest('#org .cnode[data-slot], #org .tier.bench'); if (t) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } });
+  document.addEventListener('drop', e => { if (moveId == null) return; const t = e.target.closest && e.target.closest('#org .cnode[data-slot], #org .tier.bench'); if (!t) return; e.preventDefault(); const id = moveId; moveId = null; if (t.classList.contains('bench')) act('unassign', [id]); else { const sl = t.dataset.slot.split('|'); if (+t.dataset.id !== id) act('assign', [id, sl[0], sl[1] || null]); else render(); } });
+  document.addEventListener('dragend', () => { if (moveId != null) { moveId = null; render(); } });
   document.addEventListener('input', e => { if (e.target && e.target.id === 'fxr') fxCalc(); });
   document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.a === 'watch') { watchFid = t.value; sel = null; section = 'map'; sheet = true; render(); return; } if (t.dataset && t.dataset.a === 'reassign' && t.value) { const v = t.value.split('|'); act('assign', [+t.dataset.id, v[0], v[1] || null]); } });
   $('#end').addEventListener('click', () => {
