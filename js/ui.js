@@ -60,6 +60,8 @@
   [0, 300, 1000, 2500].forEach(ms => setTimeout(fitDock, ms));
   const tgSync = () => { if (!TG) return; if (sheet || modalKey === 'records' || modalKey === 'lawinfo') TG.BackButton.show(); else TG.BackButton.hide(); };
   const haptic = kind => { try { if (TG && TG.HapticFeedback) TG.HapticFeedback.impactOccurred(kind || 'medium'); } catch (e) { /* ignore */ } };
+  // короткий щелчок при переключении вкладок: в Телеграме — его вибрация, в браузере на Android — navigator.vibrate (iPhone в Safari не умеет)
+  const tick = () => { try { if (TG && TG.HapticFeedback) TG.HapticFeedback.selectionChanged(); else if (navigator.vibrate) navigator.vibrate(12); } catch (e) { /* ignore */ } };
   const DONATE = '+79936338436', DONATE_SHOW = '+7 993 633-84-36'; // донат автору: Т-Банк по номеру
   let sheet = false, perksOpen = false, confirmRetire = false;
   let net = null;          // онлайн: { room, token, lobby }
@@ -970,7 +972,7 @@
   document.addEventListener('keydown', e => { if (e.target && e.target.id === 'chatin' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); say(e.target.value); e.target.blur(); } });
   document.addEventListener('keydown', e => { if (e.target && e.target.id === 'gchatin' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); gsay(e.target.value); } });
   document.addEventListener('click', e => {
-    const vb = e.target.closest('#menu [data-view], #tabbar [data-view]'); if (vb) { if (!S) return; section = vb.dataset.view; confirmNew = false; sheet = false; render(); if (section === 'map') applyView(); $('#page').scrollTop = 0; return; }
+    const vb = e.target.closest('#menu [data-view], #tabbar [data-view]'); if (vb) { if (!S) return; if (vb.closest('#tabbar') && vb.dataset.view !== section) tick(); section = vb.dataset.view; confirmNew = false; sheet = false; render(); if (section === 'map') applyView(); $('#page').scrollTop = 0; return; }
     const go = e.target.closest('#stats [data-go]'); if (go) { if (!S) return; const g = go.dataset.go.split(':'); section = g[0]; if (g[1]) { focus = { view: g[1] }; sheet = true; } else sheet = false; confirmNew = false; render(); return; }
     const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
     if (b.dataset.lock) { toast(b.dataset.lock, true, 2800, true); haptic('light'); return; }
@@ -1530,7 +1532,7 @@
         }
         GC.first = false; gcPaint();
       }
-      GC.t = setTimeout(gcPoll, S ? 20000 : 6000);
+      GC.t = setTimeout(gcPoll, S ? 25000 : 6000);
     });
   }
   function gsay(text) {

@@ -95,7 +95,7 @@ function maybeEndTurn(r) { if (E.allReady(r.S)) E.endTurn(r.S, false); }
 
 // ---------- общий чат и счётчик онлайна (меню и лобби) ----------
 // клиент раз в несколько секунд спрашивает /api/global со своей меткой: так считаем, сколько людей сейчас в игре
-const GCHAT_FILE = path.join(path.dirname(STORE), 'gchat.json'), GCHAT_KEEP = 100, GCHAT_GAP = 2000, SEEN_MS = 45e3;
+const GCHAT_FILE = path.join(path.dirname(STORE), 'gchat.json'), GCHAT_KEEP = 100, GCHAT_GAP = 2000, SEEN_MS = 75e3; // клиент отмечается раз в 6 с в меню и раз в 25 с в игре; фоновые вкладки браузер тормозит до раза в минуту
 let gchat = []; try { gchat = JSON.parse(fs.readFileSync(GCHAT_FILE, 'utf8')); } catch (e) { /* пусто */ }
 const seen = new Map(), gLast = new Map();
 let gSaveT = null;
