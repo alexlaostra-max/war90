@@ -940,3 +940,6 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 .doomrow .btn { width: 100%; }
 .item.elite.own { border-color: var(--gold); } .item.elite .owned { color: var(--gold); margin: 6px 0 0; }
 @media (min-width: 861px) { .tier.wgrid { max-width: 620px; margin-inline: auto; } }
+.gchat .gon, .gon2 { font: 12px var(--mono); color: var(--good); }
+.gon2 { margin: 0 0 6px; }
+.gchat .chatlog { max-height: 220px; }

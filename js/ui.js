@@ -967,6 +967,7 @@
   // окно не закрываем, если в нём событие, бой или ответ на сделку
   function closeModalIfFree() { if (/^(parley|deal:)/.test(modalKey)) { parleyWith = null; dealWith = null; closeModal(); } }
   document.addEventListener('keydown', e => { if (e.target && e.target.id === 'chatin' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); say(e.target.value); e.target.blur(); } });
+  document.addEventListener('keydown', e => { if (e.target && e.target.id === 'gchatin' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); gsay(e.target.value); } });
   document.addEventListener('click', e => {
     const vb = e.target.closest('#menu [data-view], #tabbar [data-view]'); if (vb) { if (!S) return; section = vb.dataset.view; confirmNew = false; sheet = false; render(); if (section === 'map') applyView(); $('#page').scrollTop = 0; return; }
     const go = e.target.closest('#stats [data-go]'); if (go) { if (!S) return; const g = go.dataset.go.split(':'); section = g[0]; if (g[1]) { focus = { view: g[1] }; sheet = true; } else sheet = false; confirmNew = false; render(); return; }
@@ -1000,6 +1001,7 @@
     if (a === 'tipok') { const m = tipsSeen(); m[k] = 1; try { localStorage.setItem(TIP_KEY, JSON.stringify(m)); } catch (er) { /* ignore */ } delete tipOpen[k]; render(); return; }
     if (a === 'tip') { tipOpen[k] = 1; if (k === 'map') { section = 'map'; sheet = false; } render(); if (k !== 'map') { const h = $(sheet ? '#pane' : '#page'); if (h) h.scrollTop = 0; const pn = $('#pane'); if (pn) pn.scrollTop = 0; } return; }
     if (a === 'pick') { netCall('pick', { fid: k || null }); return; }
+    if (a === 'gsay') { const i = $('#gchatin'); gsay(i && i.value); return; }
     if (a === 'say') { const i = $('#chatin'); say(i && i.value); if (i) i.blur(); return; }
     if (a === 'sayq') { say(k); return; }
     if (a === 'slot') { netCall('slot', { fid: k, mode: b.dataset.m }); return; }
@@ -1475,7 +1477,49 @@
       o += '<div class="row"><label class="field"><span>Новая комната</span><input id="roomname" maxlength="40" placeholder="Название"></label><button class="btn primary" data-a="create">Создать</button></div>';
       o += '<h3>Комнаты <button class="btn sm" data-a="refresh">Обновить</button></h3>';
       o += list.length ? '<table class="tbl">' + list.map(r => '<tr><td><b>' + esc(r.name) + '</b><br><span class="muted">' + (esc(r.players.join(', ')) || 'пусто') + '</span></td><td>' + (r.started ? r.date : 'набор') + '</td><td>' + (!r.started || mine[r.id] ? '<button class="btn sm" data-a="join" data-k="' + r.id + '">' + (mine[r.id] ? 'Вернуться' : 'Войти') + '</button>' : '<span class="muted">идёт</span>') + '</td></tr>').join('') + '</table>' : '<p class="muted">Пока ни одной. Создай первую.</p>';
-      box.innerHTML = o;
+      box.innerHTML = '<p class="gon2" id="gonline2">' + (GC.online ? 'Сейчас в игре: ' + GC.online : '') + '</p>' + o + gcHTML(); GC.unread = 0; gcPaint();
+      if (!GC.t) gcPoll();
+    });
+  }
+  // ---------- общий чат в меню и счётчик онлайна ----------
+  const GC = { cid: '', since: 0, list: [], online: 0, unread: 0, t: null, first: true };
+  try { GC.cid = localStorage.getItem('war90.cid') || ''; if (!GC.cid) { GC.cid = 'c' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem('war90.cid', GC.cid); } } catch (e) { GC.cid = 'c' + Math.random().toString(36).slice(2, 12); }
+  function gcLogHTML() {
+    if (!GC.list.length) return '<p class="muted">Пока тихо. Напиши первым — здесь видят все, кто в меню и в лобби.</p>';
+    return GC.list.map(m => '<p class="' + (m.mine ? 'me' : '') + '"><b>' + esc(m.n) + '</b> <time>' + hhmm(m.t) + '</time><br>' + esc(m.x) + '</p>').join('');
+  }
+  const gcHTML = () => '<div class="box chat gchat"><h3>Общий чат <span class="gon" id="gonline">' + (GC.online ? '● онлайн ' + GC.online : '') + '</span></h3><div id="gchatlog" class="chatlog">' + gcLogHTML() + '</div><div class="chatin"><input id="gchatin" maxlength="300" placeholder="Сообщение всем" autocomplete="off" enterkeyhint="send"><button class="btn primary" data-a="gsay">Отправить</button></div></div>';
+  const gcVisible = () => !S && (modalKey === 'start' || modalKey === 'lobby') && !!$('#gchatlog');
+  function gcPaint() {
+    const on = $('#gonline'); if (on) on.textContent = GC.online ? '● онлайн ' + GC.online : '';
+    const top = $('#gonline2'); if (top) top.textContent = GC.online ? 'Сейчас в игре: ' + GC.online : '';
+    const lg = $('#gchatlog'); if (lg) { lg.innerHTML = gcLogHTML(); lg.scrollTop = lg.scrollHeight; }
+  }
+  function gcPoll() {
+    clearTimeout(GC.t);
+    Net.global(GC.cid, GC.since).then(r => {
+      if (r) {
+        GC.online = r.online || 0; if (r.me) GC.myHash = r.me;
+        const myHash = GC.myHash, fresh = (r.chat || []).filter(m => !GC.list.some(x => x.id === m.id));
+        fresh.forEach(m => { m.mine = myHash && m.c === myHash; GC.list.push(m); }); if (GC.list.length > 60) GC.list.splice(0, GC.list.length - 60);
+        if (r.chat && r.chat.length) GC.since = Math.max(GC.since, ...r.chat.map(m => m.t));
+        const others = fresh.filter(m => !m.mine);
+        if (!GC.first && others.length && !(document.activeElement && document.activeElement.id === 'gchatin')) {
+          const m = others[others.length - 1];
+          if (!S || !net) { toast('💬 Общий чат · ' + m.n + ': ' + m.x.slice(0, 80), false, 5000, true); if (G.Sfx) G.Sfx.play('msg'); haptic('light'); }
+          if (!gcVisible()) GC.unread += others.length;
+        }
+        GC.first = false; gcPaint();
+      }
+      GC.t = setTimeout(gcPoll, S ? 20000 : 6000);
+    });
+  }
+  function gsay(text) {
+    text = String(text || '').trim(); if (!text) return;
+    Net.post('gsay', { cid: GC.cid, nick: nickValue() || savedNick() || 'Безымянный', text }).then(r => {
+      if (!r.ok) { toast(r.err || 'Не отправилось', true); return; }
+      GC.myHash = r.m.c; r.m.mine = true; if (!GC.list.some(x => x.id === r.m.id)) GC.list.push(r.m); GC.since = Math.max(GC.since, r.m.t);
+      const i = $('#gchatin'); if (i) i.value = ''; gcPaint();
     });
   }
   function leaveToMenu() { Net.close(); net = null; S = null; me = null; if (location.hash) history.replaceState(null, '', location.pathname); showStart(); }
@@ -1591,10 +1635,10 @@
     if (L.host) h += btn('Начать игру', 'go', '', humans ? false : 'сначала займи бригаду', 'primary wide');
     else h += '<p class="muted">Игру начнёт создатель комнаты.</p>';
     if (modalKey === 'lobby' && chatOnly()) return;
-    h += chatHTML();
+    h += chatHTML() + gcHTML();
     const sc = modal.firstChild && modalKey === 'lobby' ? modal.firstChild.scrollTop : 0;
     openModal(h + btn('Выйти из комнаты', 'leave', '', false, 'wide ghost'), 'start', 'lobby');
-    modal.firstChild.scrollTop = sc; chatBottom(); chatSeen();
+    modal.firstChild.scrollTop = sc; chatBottom(); chatSeen(); gcPaint(); if (!GC.t) gcPoll();
   }
 
   buildMap();
