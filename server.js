@@ -2,6 +2,8 @@
    Запуск: node server.js  (порт из PORT, по умолчанию 3000)
    Клиент получает состояние по Server-Sent Events, действия шлёт POST-запросами. */
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
+// настройки из .env рядом с сервером (почта, бот): KEY=значение
+try { fs.readFileSync(path.join(__dirname, '.env'), 'utf8').split(/\r?\n/).forEach(l => { const m = /^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*?)\s*$/.exec(l); if (m && process.env[m[1]] == null) process.env[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); }); } catch (e) { /* нет .env */ }
 for (const f of ['data', 'events', 'geo', 'engine']) (0, eval)(fs.readFileSync(path.join(__dirname, 'js', f + '.js'), 'utf8'));
 const E = globalThis.W90.Engine, D = globalThis.W90.DATA;
 
@@ -122,6 +124,120 @@ function cloudLoad(b, done) {
 // старые облачные сохранения (полгода без обновления) удаляются
 setInterval(() => fs.readdir(SAVES, (err, fl) => { if (err) return; fl.forEach(f => fs.stat(path.join(SAVES, f), (e, st) => { if (!e && Date.now() - st.mtimeMs > 180 * 864e5) fs.unlink(path.join(SAVES, f), () => {}); })); }), 864e5).unref();
 
+// ---------- личный кабинет: вход по почте (код на e-mail) или через Телеграм (код от бота, в мини-приложении — сразу) ----------
+// Настройки в .env рядом с server.js: SMTP_HOST, SMTP_PORT (465), SMTP_USER, SMTP_PASS, SMTP_FROM, BOT_TOKEN, BOT_NAME
+const tls = require('tls'), https = require('https');
+const ACCF = path.join(path.dirname(STORE), 'accounts.json');
+let ACC = { users: {}, sessions: {} };
+try { ACC = JSON.parse(fs.readFileSync(ACCF, 'utf8')); } catch (e) { /* первый запуск */ }
+let accT = null;
+const accSave = () => { if (accT) return; accT = setTimeout(() => { accT = null; fs.mkdir(path.dirname(ACCF), { recursive: true }, () => fs.writeFile(ACCF + '.tmp', JSON.stringify(ACC), err => { if (!err) fs.rename(ACCF + '.tmp', ACCF, () => {}); })); }, 1000); };
+const pending = new Map(); // ключ (почта или tg:метка) → { code, exp, tries, tg }
+const code6 = () => String(crypto.randomInt(0, 1e6)).padStart(6, '0');
+const meOf = u => ({ id: u.id, email: u.email || null, tg: u.tg ? { name: u.tg.name } : null, nick: u.nick || '', ach: u.ach || {}, save: u.save ? { turn: u.save.turn, fid: u.save.fid, at: u.save.at } : null });
+function login(find, make) {
+  let u = Object.values(ACC.users).find(find);
+  if (!u) { u = Object.assign({ id: id(6), created: Date.now(), ach: {} }, make); ACC.users[u.id] = u; }
+  const token = id(24); ACC.sessions[token] = { uid: u.id, at: Date.now() }; accSave();
+  return { ok: true, token, me: meOf(u) };
+}
+const userBy = token => { const s = token && ACC.sessions[token]; return s ? ACC.users[s.uid] : null; };
+
+// SMTP без зависимостей: TLS на 465 порту, AUTH LOGIN
+function sendMail(to, subject, text) {
+  return new Promise((resolve, reject) => {
+    const host = process.env.SMTP_HOST, user = process.env.SMTP_USER, pass = process.env.SMTP_PASS, from = process.env.SMTP_FROM || user;
+    if (!host || !user || !pass) return reject(new Error('почта не настроена'));
+    const b64 = s => Buffer.from(s, 'utf8').toString('base64');
+    const msg = ['From: =?UTF-8?B?' + b64('Передел') + '?= <' + from + '>', 'To: <' + to + '>', 'Subject: =?UTF-8?B?' + b64(subject) + '?=', 'MIME-Version: 1.0', 'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64', '', b64(text).replace(/.{76}/g, '$&\r\n'), '.'].join('\r\n');
+    const steps = ['EHLO peredel', 'AUTH LOGIN', b64(user), b64(pass), 'MAIL FROM:<' + from + '>', 'RCPT TO:<' + to + '>', 'DATA', msg, 'QUIT'];
+    const sock = tls.connect({ host, port: +(process.env.SMTP_PORT || 465), servername: host }, () => {});
+    let buf = '', k = -1; const tmo = setTimeout(() => { sock.destroy(); reject(new Error('почта не отвечает')); }, 20000);
+    sock.on('data', d => {
+      buf += d.toString(); const lines = buf.split('\r\n'); if (!/^\d{3} /.test(lines[lines.length - 2] || '')) return; // ждём последнюю строку ответа
+      const last = lines[lines.length - 2]; buf = '';
+      if (/^[45]/.test(last)) { clearTimeout(tmo); sock.end(); return reject(new Error('почта: ' + last)); }
+      k++; if (k < steps.length) sock.write(steps[k] + '\r\n'); else { clearTimeout(tmo); sock.end(); resolve(); }
+    });
+    sock.on('error', e => { clearTimeout(tmo); reject(e); });
+  });
+}
+// Телеграм: запросы к Bot API
+function tgApi(method, body) {
+  return new Promise(resolve => {
+    const tok = process.env.BOT_TOKEN; if (!tok) return resolve(null);
+    const data = JSON.stringify(body || {});
+    const req = https.request({ host: 'api.telegram.org', path: '/bot' + tok + '/' + method, method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }, timeout: 60000 }, res => { let s = ''; res.on('data', c => s += c); res.on('end', () => { try { resolve(JSON.parse(s)); } catch (e) { resolve(null); } }); });
+    req.on('error', () => resolve(null)); req.on('timeout', () => { req.destroy(); resolve(null); }); req.end(data);
+  });
+}
+// бот слушает «/start login_метка» и присылает код входа
+let tgOff = 0;
+async function tgPoll() {
+  if (!process.env.BOT_TOKEN) return;
+  const r = await tgApi('getUpdates', { offset: tgOff, timeout: 50, allowed_updates: ['message'] });
+  if (r && r.ok) r.result.forEach(u => {
+    tgOff = u.update_id + 1; const m = u.message; if (!m || !m.text || !m.from) return;
+    const mt = /^\/start\s+login_([\w-]{8,40})$/.exec(m.text.trim());
+    if (mt && pending.has('tg:' + mt[1])) {
+      const p = pending.get('tg:' + mt[1]), code = code6();
+      Object.assign(p, { code, tg: { id: String(m.from.id), name: [m.from.first_name, m.from.last_name].filter(Boolean).join(' ') || m.from.username || 'игрок' }, exp: Date.now() + 10 * 60e3 });
+      tgApi('sendMessage', { chat_id: m.chat.id, text: 'Код для входа в «Передел»: ' + code + '\nВведи его в игре. Код действует 10 минут.' });
+    } else if (/^\/start/.test(m.text)) tgApi('sendMessage', { chat_id: m.chat.id, text: 'Это бот игры «Передел». Играть: https://peredel-msk.ru' });
+  });
+  setTimeout(tgPoll, r ? 200 : 5000);
+}
+tgPoll();
+// проверка подписи данных мини-приложения Телеграма
+function tgInitUser(initData) {
+  const tok = process.env.BOT_TOKEN; if (!tok || !initData) return null;
+  const q = new URLSearchParams(initData), hash = q.get('hash'); q.delete('hash');
+  const dcs = [...q.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).map(([k, v]) => k + '=' + v).join('\n');
+  const secret = crypto.createHmac('sha256', 'WebAppData').update(tok).digest();
+  if (crypto.createHmac('sha256', secret).update(dcs).digest('hex') !== hash) return null;
+  if (Date.now() / 1000 - (+q.get('auth_date') || 0) > 86400 * 7) return null;
+  try { const u = JSON.parse(q.get('user')); return { id: String(u.id), name: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || 'игрок' }; } catch (e) { return null; }
+}
+const lastSend = new Map();
+const AUTH = {
+  async email(b) {
+    const email = String(b.email || '').trim().toLowerCase();
+    if (!/^[^@\s]{1,64}@[^@\s]{1,190}\.[a-z]{2,}$/.test(email)) return { err: 'Проверь адрес почты' };
+    if (Date.now() - (lastSend.get(email) || 0) < 60e3) return { err: 'Код уже отправлен. Новый — через минуту' };
+    const code = code6(); pending.set(email, { code, exp: Date.now() + 10 * 60e3, tries: 0 }); lastSend.set(email, Date.now());
+    if (process.env.AUTH_DEV) { console.log('код для ' + email + ': ' + code); return { ok: true }; } // проверка без почты
+    try { await sendMail(email, 'Код входа: ' + code, 'Код для входа в «Передел»: ' + code + '\n\nДействует 10 минут. Если ты не входил в игру — просто удали это письмо.'); }
+    catch (e) { console.error('почта:', e.message); return { err: /не настроена/.test(e.message) ? 'Вход по почте пока не настроен на сервере' : 'Не получилось отправить письмо, попробуй позже' }; }
+    return { ok: true };
+  },
+  tgstart() {
+    if (!process.env.BOT_TOKEN) return { err: 'Вход через Телеграм пока не настроен на сервере' };
+    const nonce = id(12); pending.set('tg:' + nonce, { code: null, exp: Date.now() + 15 * 60e3, tries: 0 });
+    return { ok: true, nonce, link: 'https://t.me/' + (process.env.BOT_NAME || 'peredelmskbot') + '?start=login_' + nonce };
+  },
+  verify(b) {
+    const key = b.nonce ? 'tg:' + String(b.nonce) : String(b.email || '').trim().toLowerCase(), p = pending.get(key);
+    if (!p || Date.now() > p.exp) return { err: 'Код устарел, запроси новый' };
+    if (!p.code) return { err: 'Сначала нажми «Старт» у бота — он пришлёт код' };
+    if (++p.tries > 5) { pending.delete(key); return { err: 'Слишком много попыток, запроси новый код' }; }
+    if (String(b.code || '').trim() !== p.code) return { err: 'Неверный код' };
+    pending.delete(key);
+    return p.tg ? login(u => u.tg && u.tg.id === p.tg.id, { tg: p.tg, nick: p.tg.name.slice(0, 20) }) : login(u => u.email === key, { email: key });
+  },
+  tgapp(b) { const t = tgInitUser(b.initData); if (!t) return { err: 'Телеграм не подтвердил вход' }; return login(u => u.tg && u.tg.id === t.id, { tg: t, nick: t.name.slice(0, 20) }); },
+  me(b) { const u = userBy(b.token); return u ? { ok: true, me: meOf(u) } : { err: 'Нужно войти' }; },
+  logout(b) { delete ACC.sessions[b.token]; accSave(); return { ok: true }; },
+  nick(b) { const u = userBy(b.token); if (!u) return { err: 'Нужно войти' }; u.nick = clean(b.nick, 20); accSave(); return { ok: true, me: meOf(u) }; },
+  ach(b) { const u = userBy(b.token); if (!u) return { err: 'Нужно войти' }; u.ach = u.ach || {}; Object.keys(b.ach || {}).slice(0, 200).forEach(k => { if (/^[\w-]{1,40}$/.test(k) && !u.ach[k]) u.ach[k] = +b.ach[k] || Date.now(); }); accSave(); return { ok: true, me: meOf(u) }; },
+  save(b) {
+    const u = userBy(b.token); if (!u) return { err: 'Нужно войти' };
+    const st = b.state; if (!st || typeof st !== 'object' || st.v !== 4 || !Array.isArray(st.humans)) return { err: 'Это не сохранение игры' };
+    fs.mkdir(SAVES, { recursive: true }, () => fs.writeFile(path.join(SAVES, 'acc_' + u.id + '.json'), JSON.stringify(st), () => {}));
+    u.save = { turn: st.turn, fid: st.humans[0], at: Date.now() }; accSave(); return { ok: true, me: meOf(u) };
+  },
+  load(b, done) { const u = userBy(b.token); if (!u || !u.save) return done({ err: 'Сохранения нет' }); fs.readFile(path.join(SAVES, 'acc_' + u.id + '.json'), 'utf8', (e, t) => { if (e) return done({ err: 'Сохранения нет' }); try { done({ ok: true, state: JSON.parse(t) }); } catch (er) { done({ err: 'Сохранение повреждено' }); } }); }
+};
+
 // ---------- API ----------
 const api = {
   create(b) {
@@ -232,6 +348,15 @@ const server = http.createServer((req, res) => {
     const ping = setInterval(() => res.write(': ping\n\n'), 25000);
     req.on('close', () => { clearInterval(ping); m.get(token).delete(res); if (!rooms.has(r.id)) return; if (!live(r)) emptySince.set(r.id, Date.now()); push(r); });
     push(r); return;
+  }
+  if (url.pathname.startsWith('/api/auth/') && req.method === 'POST') {
+    const m = url.pathname.slice(10); if (!Object.prototype.hasOwnProperty.call(AUTH, m)) return send(res, 404, { err: 'Нет такого метода' });
+    let body = ''; req.on('data', c => { body += c; if (body.length > (m === 'save' ? 3e6 : 20000)) req.destroy(); });
+    req.on('end', async () => {
+      let b; try { b = JSON.parse(body || '{}'); } catch (e) { return send(res, 400, { err: 'Плохой запрос' }); }
+      try { if (m === 'load') return AUTH.load(b, r => send(res, 200, r)); send(res, 200, await AUTH[m](b)); } catch (e) { console.error(e); send(res, 500, { err: 'Ошибка сервера' }); }
+    });
+    return;
   }
   if (url.pathname.startsWith('/api/') && req.method === 'POST') {
     const name = url.pathname.slice(5); let body = '';

@@ -109,3 +109,22 @@ nginx -t && systemctl reload nginx
 ```bash
 certbot --nginx -d peredel-msk.ru -d www.peredel-msk.ru
 ```
+
+## Личный кабинет: почта и Телеграм
+
+Вход по почте (6-значный код на e-mail) и через Телеграм (код от бота @peredelmskbot; в мини-приложении вход автоматический).
+Настройки — в файле `/opt/war90/.env` (в git не попадает):
+
+```
+SMTP_HOST=smtp.yandex.ru
+SMTP_PORT=465
+SMTP_USER=ящик@yandex.ru
+SMTP_PASS=пароль приложения
+SMTP_FROM=ящик@yandex.ru
+BOT_TOKEN=токен от BotFather
+BOT_NAME=peredelmskbot
+```
+
+Для Яндекс-почты пароль приложения создаётся в id.yandex.ru → «Безопасность» → «Пароли приложений» → «Почта».
+После правки `.env`: `pm2 restart war90`. Аккаунты хранятся в `data/accounts.json`, сохранения — в `data/saves/acc_*.json`.
+Бот получает обновления сам (getUpdates), вебхук у бота должен быть выключен.

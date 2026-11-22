@@ -72,7 +72,7 @@
   const R = Math.round;
   const P = () => S.f[me];
 
-  function save() { if (net) return; try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) { /* без сохранения */ } cloudAuto(); }
+  function save() { if (net) return; try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) { /* без сохранения */ } cloudAuto(); if (typeof acctAuto === 'function') acctAuto(); }
   // облачное сохранение по коду: после первого раза партия сама уходит в облако раз в месяц игры
   const CLOUD = 'war90.cloud';
   const cloudCode = () => { try { return localStorage.getItem(CLOUD) || ''; } catch (e) { return ''; } };
@@ -881,6 +881,17 @@
     if (a === 'refresh') { showStart(); return; }
     if (a === 'scen') { scen = k; try { localStorage.setItem('war90.scen', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=scen]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#scennote').textContent = D.SCENARIOS[k].desc; return; }
     if (a === 'records') { showRecords(); return; }
+    if (a === 'login') { loginStep = { tab: TG ? 'tg' : 'email' }; showLogin(); return; }
+    if (a === 'logtab') { loginStep = { tab: k }; showLogin(); return; }
+    if (a === 'logreset') { loginStep = { tab: 'email', email: loginStep.email }; showLogin(); return; }
+    if (a === 'logsend') { const em = (($('#lemail') || {}).value || '').trim(); authPost('email', { email: em }).then(r => { if (r.ok) { loginStep = { tab: 'email', email: em, sent: true }; showLogin(); } else toast(r.err || 'Сервер недоступен', true); }); return; }
+    if (a === 'logtg') { authPost('tgstart').then(r => { if (!r.ok) return toast(r.err || 'Сервер недоступен', true); loginStep = { tab: 'tg', nonce: r.nonce, link: r.link }; showLogin(); if (TG) TG.openTelegramLink(r.link); else window.open(r.link, '_blank'); }); return; }
+    if (a === 'logtgapp') { authPost('tgapp', { initData: TG && TG.initData }).then(r => { if (authSet(r)) { toast('Ты вошёл'); closeModal(); showStart(); } else toast(r.err || 'Не получилось', true); }); return; }
+    if (a === 'logverify') { const c = (($('#lcode') || {}).value || '').trim(); authPost('verify', loginStep.nonce ? { nonce: loginStep.nonce, code: c } : { email: loginStep.email, code: c }).then(r => { if (authSet(r)) { toast('Ты вошёл'); closeModal(); if (S) render(); else showStart(); } else toast(r.err || 'Не получилось', true); }); return; }
+    if (a === 'cabinet') { showCabinet(); return; }
+    if (a === 'cnick') { authPost('nick', { nick: ($('#cnick') || {}).value || '' }).then(r => { if (authSet(r)) { toast('Имя сохранено'); showCabinet(); } else toast(r.err || 'Ошибка', true); }); return; }
+    if (a === 'logout') { authPost('logout'); acct = null; authTok = ''; try { localStorage.removeItem(AUTH_KEY); } catch (e) { /* ignore */ } closeModal(); showStart(); return; }
+    if (a === 'acctload') { authPost('load').then(r => { if (!r.ok) return toast(r.err || 'Не получилось', true); S = E.migrate(r.state); me = S.humans[0]; net = null; achShown = null; acctTurn = S.turn; save(); closeModal(); render(); toast('Партия загружена из кабинета'); }); return; }
     if (a === 'mclose') { dismissModal(); return; }
     if (a === 'cloudsave') { cloudPush(true); return; }
     if (a === 'cloudload') { Net.post('cload', { code: ($('#cloudcode') || {}).value || '' }).then(r => { if (!r.ok) { toast(r.err || 'Сервер недоступен', true); return; } S = E.migrate(r.state); me = S.humans[0]; net = null; achShown = null; try { localStorage.setItem(CLOUD, r.code); } catch (er) { /* ignore */ } cloudTurn = S.turn; save(); closeModal(); render(); toast('Партия загружена: ' + fd(me).name + ', ' + E.date(S.turn).label); }); return; }
@@ -1244,6 +1255,7 @@
     got.forEach(id => { achShown.add(id); all[id] = all[id] || Date.now(); });
     if (p.over && p.over.title) all['end:' + p.over.title] = all['end:' + p.over.title] || Date.now();
     achSave(all);
+    if (fresh.length && acct) authPost('ach', { ach: all });
     fresh.forEach((id, i) => { const a = D.ACH.find(x => x.id === id); if (a) setTimeout(() => { toast('🏆 Достижение: «' + a.name + '»'); if (G.Sfx) G.Sfx.play('ach'); }, 400 + i * 1800); });
   }
   function achHTML() {
@@ -1272,10 +1284,10 @@
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; const b = $('#installbox'); if (b) b.hidden = false; });
   const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   const installHTML = () => standalone() || TG ? '' : '<div class="box install" id="installbox"' + (installEv || /iPhone|iPad/.test(navigator.userAgent) ? '' : ' hidden') + '><b>Игра на телефоне как приложение</b><p class="muted">' + (/iPhone|iPad/.test(navigator.userAgent) ? 'В Safari нажми «Поделиться» и выбери «На экран „Домой“».' : 'Иконка на рабочем столе, запуск на весь экран, одиночная игра без интернета.') + '</p>' + (/iPhone|iPad/.test(navigator.userAgent) ? '' : btn('Установить', 'install', '', false, 'primary')) + '</div>';
-  const savedNick = () => { let v = ''; try { v = localStorage.getItem('war90.nick') || ''; } catch (e) { /* ignore */ } const u = tgUser(); return v || (u ? (u.first_name || u.username || '').slice(0, 20) : ''); };
+  const savedNick = () => { if (acct && acct.nick) return acct.nick; let v = ''; try { v = localStorage.getItem('war90.nick') || ''; } catch (e) { /* ignore */ } const u = tgUser(); return v || (u ? (u.first_name || u.username || '').slice(0, 20) : ''); };
   function showStart() {
     const sv = load();
-    let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + diffHTML() + '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button>';
+    let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + acctHTML() + diffHTML() + '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button>';
     h += '<div class="modes"><section><h3>Онлайн</h3><div id="online"><p class="muted">Ищу сервер…</p></div></section><section><h3>Одиночная игра</h3>';
     if (sv) h += '<button class="btn primary wide" data-a="continue">Продолжить: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
     h += '<p class="muted">Выбери бригаду. Остальных ведут боты.</p><div class="factions f5">';
@@ -1294,6 +1306,61 @@
     });
   }
   function leaveToMenu() { Net.close(); net = null; S = null; me = null; if (location.hash) history.replaceState(null, '', location.pathname); showStart(); }
+
+  // ---------- личный кабинет: вход по почте или через Телеграм ----------
+  const AUTH_KEY = 'war90.auth';
+  let acct = null, authTok = (() => { try { return localStorage.getItem(AUTH_KEY) || ''; } catch (e) { return ''; } })(), loginStep = { tab: TG ? 'tg' : 'email' }, acctTurn = -1;
+  const authPost = (m, body) => Net.post('auth/' + m, Object.assign({ token: authTok }, body || {}));
+  function authSet(r) {
+    if (!r || !r.ok) return false;
+    if (r.token) { authTok = r.token; try { localStorage.setItem(AUTH_KEY, authTok); } catch (e) { /* ignore */ } }
+    if (r.me) { acct = r.me; mergeAch(); }
+    return true;
+  }
+  // достижения: объединяем браузерные и из кабинета
+  function mergeAch() {
+    if (!acct) return;
+    const all = achAll(); let up = false;
+    Object.keys(acct.ach || {}).forEach(k => { if (!all[k]) { all[k] = acct.ach[k]; } });
+    Object.keys(all).forEach(k => { if (!(acct.ach || {})[k]) up = true; });
+    achSave(all);
+    if (up) authPost('ach', { ach: all }).then(r => { if (r.ok) acct = r.me; });
+  }
+  function authBoot() {
+    if (authTok) authPost('me').then(r => { if (!authSet(r)) { authTok = ''; acct = null; try { localStorage.removeItem(AUTH_KEY); } catch (e) { /* ignore */ } } acctBox(); });
+    else if (TG && TG.initData && Net.available() !== false) authPost('tgapp', { initData: TG.initData }).then(r => { if (authSet(r)) acctBox(); });
+  }
+  // партия в кабинет раз в месяц игры
+  function acctAuto() { if (!acct || !S || net || S.turn === acctTurn) return; acctTurn = S.turn; authPost('save', { state: S }).then(r => { if (r.ok) acct = r.me; }); }
+  function acctHTML() {
+    if (!acct) return '<div class="acct" id="acct"><span>Войди, чтобы партия и достижения были на всех устройствах</span>' + btn('Войти', 'login', '', false, 'sm primary') + '</div>';
+    const who = acct.tg ? 'Телеграм · ' + esc(acct.tg.name) : esc(acct.email || '');
+    let h = '<div class="acct" id="acct"><span>👤 <b>' + esc(acct.nick || 'Без имени') + '</b> <small>' + who + '</small></span>' + btn('Кабинет', 'cabinet', '', false, 'sm') + '</div>';
+    if (acct.save) h += btn('Продолжить из кабинета: ' + fd(acct.save.fid).name + ', ' + E.date(acct.save.turn).label, 'acctload', '', false, 'wide primary');
+    return h;
+  }
+  const acctBox = () => { const b = $('#acct'); if (!b || modalKey !== 'start') return; showStart(); };
+  function showLogin() {
+    const t = loginStep.tab;
+    let h = '<p class="eyebrow">Личный кабинет</p><h2>Вход</h2><p class="sub">Партия и достижения сохраняются в кабинете — заходи с любого устройства.</p>';
+    h += '<div class="seg">' + [['email', 'По почте'], ['tg', 'Через Телеграм']].map(x => '<button class="btn' + (t === x[0] ? ' on' : '') + '" data-a="logtab" data-k="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>';
+    if (t === 'email') {
+      if (!loginStep.sent) h += '<label class="field"><span>Почта</span><input id="lemail" type="email" inputmode="email" autocomplete="email" placeholder="you@mail.ru" value="' + esc(loginStep.email || '') + '"></label>' + btn('Получить код', 'logsend', '', false, 'wide primary');
+      else h += '<p>Код отправлен на <b>' + esc(loginStep.email) + '</b>. Проверь «Входящие» и «Спам».</p><label class="field"><span>Код из письма</span><input id="lcode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"></label>' + btn('Войти', 'logverify', '', false, 'wide primary') + btn('Другая почта', 'logreset', '', false, 'wide ghost');
+    } else if (TG && TG.initData) h += '<p>Ты в Телеграме — код не нужен.</p>' + btn('Войти через Телеграм', 'logtgapp', '', false, 'wide primary');
+    else if (!loginStep.nonce) h += '<p>Бот <b>@' + TG_BOT + '</b> пришлёт код входа в Телеграм.</p>' + btn('Получить код в Телеграме', 'logtg', '', false, 'wide primary');
+    else h += '<p>Открой бота и нажми «Старт» — он пришлёт код. <a href="' + esc(loginStep.link) + '" target="_blank" rel="noopener">Открыть бота</a></p><label class="field"><span>Код от бота</span><input id="lcode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"></label>' + btn('Войти', 'logverify', '', false, 'wide primary');
+    openModal(h, '', 'lawinfo:login');
+  }
+  function showCabinet() {
+    const a = acct; if (!a) return showLogin();
+    const n = Object.keys(achAll()).filter(k => !/^end:/.test(k)).length;
+    let h = '<p class="eyebrow">Личный кабинет</p><h2>' + esc(a.nick || 'Без имени') + '</h2><p class="sub">' + (a.tg ? 'Вход через Телеграм · ' + esc(a.tg.name) : 'Почта · ' + esc(a.email)) + '</p>';
+    h += '<label class="field"><span>Имя в игре и рекордах</span><input id="cnick" maxlength="20" value="' + esc(a.nick || '') + '"></label>' + btn('Сохранить имя', 'cnick', '', false, 'sm');
+    h += '<dl class="kv"><dt>Достижения</dt><dd>' + n + ' из ' + D.ACH.length + '</dd><dt>Сохранение</dt><dd>' + (a.save ? fd(a.save.fid).name + ', ' + E.date(a.save.turn).label : 'нет') + '</dd></dl>';
+    h += '<p class="muted">Одиночная партия сама сохраняется в кабинет раз в месяц игры.</p>' + btn('Выйти из кабинета', 'logout', '', false, 'wide ghost');
+    openModal(h, '', 'lawinfo:cabinet');
+  }
 
   // ---------- обновление игры: сервер на новой версии — просим переподключиться ----------
   const VER = (document.querySelector('meta[name="app-ver"]') || {}).content || '';
@@ -1362,6 +1429,7 @@
 
   buildMap();
   function boot(data) {
+    setTimeout(authBoot, 0);
     if (data && data.S) { S = E.migrate(data.S); me = S.humans[0]; sel = data.sel; render(); return; }
     const sp = TG && TG.initDataUnsafe && TG.initDataUnsafe.start_param, m = /^#room-([\w-]+)$/.exec(location.hash) || (sp && /^room-([\w-]+)$/.exec(sp)), rec = Net.recall() || {};
     if (m && rec[m[1]]) { enterRoom(m[1], rec[m[1]]); return; }
