@@ -163,8 +163,8 @@
     const st = (k, l, v, x, cls) => '<button class="st s-' + k + ' ' + (cls || '') + '" data-go="' + GO[k] + '" title="' + l + '">' + A.icon(k) + '<div><span>' + l + '</span><b>' + v + '</b>' + (x ? '<i>' + x + '</i>' : '') + '</div></button>';
     let pips = ''; for (let i = 0; i < E.apMax(S, me); i++) pips += '<u class="' + (i < p.ap ? 'on' : '') + '"></u>';
     $('#stats').innerHTML =
-      st('rub', 'Рубли', rubShort(cc.rub), '≈ ' + usdP(cc.rub) + ' · ' + plus(inc.total - inc.usd) + '/мес', p.money < 0 ? 'bad' : '') +
-      st('usd', 'Доллары', usdShort(cc.usd), (inc.usd ? plus(inc.usd, true) + '/мес · ' : '') + 'на крупные дела и статус') +
+      st('rub', 'Рубли', kfmt(Math.max(0, cc.rub) * 1000), plus(inc.total - inc.usd) + '/мес · дешевеют с курсом', p.money < 0 ? 'bad' : '') +
+      st('usd', 'Доллары', kfmt(cc.usd * 1000), (inc.usd ? plus(inc.usd, true) + '/мес · ' : '') + 'на крупные дела и статус') +
       st('men', 'Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('gun', 'Стволы', p.guns) + st('car', 'Тачки', p.cars) +
       st('conn', 'Связи', E.conn(S, me)) +
       '<button class="st heat l' + L + '" data-go="law" title="Розыск">' + A.icon('heat') + '<b class="hnum">' + R(p.heat) + '</b><div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></button>' +
@@ -185,9 +185,10 @@
   // деньги словами: тыс. $ → «9К $», рубли по курсу месяца → «1,5М ₽»
   const kfmt = v => { const a = Math.abs(v), f = (x, u) => (x >= 100 ? Math.round(x) : Math.round(x * 10) / 10).toLocaleString('ru-RU') + u; return a >= 1e9 ? f(a / 1e9, ' млрд') : a >= 1e6 ? f(a / 1e6, 'М') : a >= 1e3 ? f(a / 1e3, 'К') : String(Math.round(a)); };
   const usdS = v => (v < 0 ? '−' : '') + kfmt(v * 1000) + ' $';
-  const rubS = v => (v < 0 ? '−' : '') + kfmt(v * 1000 * E.rubRate(S)) + ' ₽';
+  // суммы в игровых тысячах: «15К ₽», «9К $» — без пересчёта по курсу
+  const rubS = v => (v < 0 ? '−' : '') + kfmt(v * 1000) + ' ₽';
   const money = (v, usd) => usd ? usdS(v) : rubS(v);
-  const rubP = c => kfmt(Math.max(0, c) * 1000 * E.rubRate(S)) + ' ₽', usdP = c => kfmt(Math.max(0, c) * 1000) + ' $';
+  const rubP = c => kfmt(Math.max(0, c) * 1000) + ' ₽', usdP = c => kfmt(Math.max(0, c) * 1000) + ' $';
   const plus = (v, usd) => (v > 0 ? '+' : '') + money(v, usd);
   const btn = (label, a, attrs, lock, cls) => '<button class="btn ' + (cls || '') + '" data-a="' + a + '" ' + (attrs || '') + (lock ? ' disabled' : '') + '>' + label + (lock && typeof lock === 'string' ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
   const kindTag = k => '<span class="tag ' + k + '">' + ({ w: 'белый', g: 'серый', b: 'чёрный' }[k]) + '</span>';
@@ -318,17 +319,17 @@
   const bigRub = v => v >= 1e9 ? (Math.round(v / 1e8) / 10).toLocaleString('ru-RU') + ' млрд' : v >= 1e6 ? (Math.round(v / 1e5) / 10).toLocaleString('ru-RU') + ' млн' : Math.round(v).toLocaleString('ru-RU');
   function fxCalc() {
     const r = $('#fxr'), box = $('#fxcalc'); if (!r || !box) return;
-    const v = +r.value, fee = Math.round(v * E.exchangeFee(S, me)), rate = E.rubRate(S), rub = x => bigRub(x * 1000 * rate) + ' ₽';
+    const v = +r.value, fee = Math.round(v * E.exchangeFee(S, me)), rub = x => kfmt(x * 1000) + ' ₽';
     box.innerHTML = fxDir === 'buy'
-      ? '<span>Отдаёшь <b>' + rub(v) + '</b><small>≈ ' + usdP(v) + '</small></span><i>→</i><span>Получишь <b class="good">' + usdP(Math.max(0, v - fee)) + '</b><small>комиссия ' + usdP(fee) + '</small></span>'
+      ? '<span>Отдаёшь <b>' + rub(v) + '</b><small>&nbsp;</small></span><i>→</i><span>Получишь <b class="good">' + usdP(Math.max(0, v - fee)) + '</b><small>комиссия ' + usdP(fee) + '</small></span>'
       : '<span>Отдаёшь <b class="good">' + usdP(v) + '</b><small>&nbsp;</small></span><i>→</i><span>Получишь <b>' + rub(Math.max(0, v - fee)) + '</b><small>комиссия ' + usdP(fee) + '</small></span>';
     const go = $('#fxgo'); if (go) go.disabled = v < 1;
   }
   function paneFx() {
     const p = P(), cc = E.cur(p), rate = E.rubRate(S), fee = R(E.exchangeFee(S, me) * 100), inf = E.inflation(S) * 100, y = E.date(S.turn).year;
     const max = fxDir === 'buy' ? Math.max(0, cc.rub) : Math.max(0, cc.usd);
-    let h = '<h2>Обменник</h2><p class="sub">Курс как был в ' + y + '-м. Доход приходит в рублях, а рубли дешевеют вслед за курсом.</p>';
-    h += '<div class="fx"><div class="fxw rub"><span>₽ Рубли</span><b>' + bigRub(Math.max(0, cc.rub) * 1000 * rate) + ' ₽</b><small>≈ ' + usdP(cc.rub) + '</small></div><div class="fxw usd"><span>$ Доллары</span><b>' + usdP(cc.usd) + '</b><small>' + (cc.usd ? 'не дешевеют' : 'пусто') + '</small></div></div>';
+    let h = '<h2>Обменник</h2><p class="sub">Доход приходит в рублях, а рубли тают: на табло — настоящий курс ' + y + '-го, на сколько он вырастет, на столько подешевеет рублёвая касса. Меняешь один к одному, минус комиссия.</p>';
+    h += '<div class="fx"><div class="fxw rub"><span>₽ Рубли</span><b>' + rubP(cc.rub) + '</b><small>дешевеют вслед за курсом</small></div><div class="fxw usd"><span>$ Доллары</span><b>' + usdP(cc.usd) + '</b><small>' + (cc.usd ? 'не дешевеют' : 'пусто') + '</small></div></div>';
     h += '<div class="fxboard"><span>' + E.date(S.turn).label + '</span><b>1 $ = ' + rate.toLocaleString('ru-RU') + ' ₽</b>' + (y >= 1998 && y <= 1999 ? '<small>новые рубли (деноминация 1998-го)</small>' : '') + '<em class="' + (inf > 0.05 ? 'bad' : 'good') + '">' + (inf > 0.05 ? 'за месяц рубль подешевеет на ' + (Math.round(inf * 10) / 10) + '%' : inf < -0.05 ? 'за месяц рубль окрепнет на ' + (Math.round(-inf * 10) / 10) + '%' : 'рубль стоит на месте') + '</em></div>';
     h += '<div class="seg fxdir">' + [['buy', 'Купить $'], ['sell', 'Продать $']].map(d => '<button class="btn' + (fxDir === d[0] ? ' on' : '') + '" data-a="fxdir" data-k="' + d[0] + '">' + d[1] + '</button>').join('') + '</div>';
     if (!max) h += '<p class="muted">' + (fxDir === 'buy' ? 'Рублей в кассе нет — менять нечего.' : 'Долларов нет — продавать нечего.') + '</p>';
