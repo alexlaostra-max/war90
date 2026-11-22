@@ -723,6 +723,7 @@
   // личные вещи главы (DATA.ELITE): машины рисуются корпусом нужной формы, стволы — в золоте
   function elite(k) {
     const X = (G.DATA.ELITE || []).find(x => x.id === k); if (!X) return '';
+    const ph = photo('el-' + k, X.name); if (ph) return ph;
     const key = 'el' + k; if (cache[key]) return cache[key];
     if (X.kind === 'car') {
       const kind = CAR_SHAPES[X.shape] ? X.shape : 'merc', len = CAR_SHAPES[kind].len || 60, s = Math.min(1.6, 100 / len);

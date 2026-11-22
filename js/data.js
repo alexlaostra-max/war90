@@ -363,6 +363,19 @@
   // Фото снаряжения, машин и зданий с Викисклада (свободные лицензии). Обрезаны и тонированы под игру; список авторов — img/CREDITS.md
   const W = 'https://commons.wikimedia.org/wiki/File:';
   const PHOTOS = {
+    // личные вещи главы: сгенерированы нейросетью (Gemini 2.5 Flash Image через OpenRouter)
+    'el-zil': { src: 'img/el-zil.jpg' },
+    'el-ferrari': { src: 'img/el-ferrari.jpg' },
+    'el-lambo': { src: 'img/el-lambo.jpg' },
+    'el-maybach': { src: 'img/el-maybach.jpg' },
+    'el-bentley': { src: 'img/el-bentley.jpg' },
+    'el-phantom': { src: 'img/el-phantom.jpg' },
+    'el-g55': { src: 'img/el-g55.jpg' },
+    'el-stechkin': { src: 'img/el-stechkin.jpg' },
+    'el-beretta': { src: 'img/el-beretta.jpg' },
+    'el-eagle': { src: 'img/el-eagle.jpg' },
+    'el-akgold': { src: 'img/el-akgold.jpg' },
+    'el-holland': { src: 'img/el-holland.jpg' },
     'arm-obrez': { src: 'img/arm-obrez.jpg', author: 'ATF (США)', license: 'общественное достояние', url: W + 'Shinkosha_short_barrel_shotgun.jpg' },
     'arm-pm': { src: 'img/arm-pm.jpg', author: 'Agazoo', license: 'CC BY-SA 3.0', url: W + 'Makarov_Pistol_Parkerized_and_Painted.jpg' },
     'arm-aks': { src: 'img/arm-aks.jpg', author: 'Vitaly V. Kuzmin', license: 'CC BY-SA 4.0', url: W + 'AKS74U_(noBG).jpg' },
