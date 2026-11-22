@@ -363,6 +363,17 @@
   // Фото снаряжения, машин и зданий с Викисклада (свободные лицензии). Обрезаны и тонированы под игру; список авторов — img/CREDITS.md
   const W = 'https://commons.wikimedia.org/wiki/File:';
   const PHOTOS = {
+    // главари ОПГ: вымышленные лица, сгенерированы нейросетью
+    'boss-solnc': { src: 'img/boss-solnc.jpg' },
+    'boss-izm': { src: 'img/boss-izm.jpg' },
+    'boss-oreh': { src: 'img/boss-oreh.jpg' },
+    'boss-kopt': { src: 'img/boss-kopt.jpg' },
+    'boss-tag': { src: 'img/boss-tag.jpg' },
+    'boss-lub': { src: 'img/boss-lub.jpg' },
+    'boss-medv': { src: 'img/boss-medv.jpg' },
+    'boss-tush': { src: 'img/boss-tush.jpg' },
+    'boss-cher': { src: 'img/boss-cher.jpg' },
+    'boss-laz': { src: 'img/boss-laz.jpg' },
     // личные вещи главы: сгенерированы нейросетью (Gemini 2.5 Flash Image через OpenRouter)
     'el-zil': { src: 'img/el-zil.jpg' },
     'el-ferrari': { src: 'img/el-ferrari.jpg' },
@@ -411,7 +422,8 @@
     'd-gold': { src: 'img/d-gold.jpg', author: 'Adams & Larkin', license: 'общественное достояние', url: W + 'Gold_bars_stacked_in_a_pyramid,_Dawson,_probably_between_1902_and_1910_(AL+CA_1405).jpg' },
     'd-tower': { src: 'img/d-tower.jpg', author: 'Gennady Grachev', license: 'CC BY 2.0', url: W + 'Moscow,_construction_of_Moscow-City_concert_hall_(30590377513).jpg' },
     'd-olymp': { src: 'img/d-olymp.jpg', author: 'Sasha Krotov', license: 'CC BY 3.0', url: W + 'Fisht_Olympic_Stadium_Sochi_March_2013.JPG' },
-    'd-kidnap': { src: 'img/d-kidnap.jpg', author: 'неизвестен', license: 'общественное достояние', url: W + 'StrappedCurrency.jpg' },
+    'd-kidnap': { src: 'img/d-kidnap.jpg' }, // сгенерировано нейросетью
+    'd-raid': { src: 'img/d-raid.jpg' }, // сгенерировано нейросетью
     // уровни II и III точек (если фото уровня нет — берётся фото I уровня)
     'b-kiosk2': { src: 'img/b-kiosk2.jpg', author: 'Дмитрий Скляренко', license: 'CC BY 3.0', url: W + 'Магазин_Продукты_и_Настенька_-_panoramio.jpg' },
     'b-kiosk3': { src: 'img/b-kiosk3.jpg', author: 'A.Savin', license: 'CC BY-SA 3.0', url: W + 'Golden_Babylon_Rostokino_01.jpg' },

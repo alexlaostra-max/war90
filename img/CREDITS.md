@@ -71,7 +71,6 @@
 | d-gold.jpg | Золотой прииск | Adams & Larkin | Общественное достояние | [Gold bars stacked in a pyramid, Dawson, probably between 1902 and 1910 (AL+CA 1405)](https://commons.wikimedia.org/wiki/File:Gold_bars_stacked_in_a_pyramid%2C_Dawson%2C_probably_between_1902_and_1910_%28AL%2BCA_1405%29.jpg) |
 | d-tower.jpg | Башня в Сити | Gennady Grachev from Moscow, Russia | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Moscow, construction of Moscow-City concert hall (30590377513)](https://commons.wikimedia.org/wiki/File:Moscow%2C_construction_of_Moscow-City_concert_hall_%2830590377513%29.jpg) |
 | d-olymp.jpg | Олимпийская стройка | Sasha Krotov | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | [Fisht Olympic Stadium Sochi March 2013](https://commons.wikimedia.org/wiki/File:Fisht_Olympic_Stadium_Sochi_March_2013.JPG) |
-| d-kidnap.jpg | Похищение коммерсанта | неизвестен | Общественное достояние | [StrappedCurrency](https://commons.wikimedia.org/wiki/File:StrappedCurrency.jpg) |
 | b-kiosk2.jpg | Магазин (ларёк, уровень II) | Дмитрий Скляренко | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | [Магазин Продукты и Настенька - panoramio](https://commons.wikimedia.org/wiki/File:Магазин_Продукты_и_Настенька_-_panoramio.jpg) |
 | b-kiosk3.jpg | Торговый центр (ларёк, уровень III) | A.Savin | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Golden Babylon Rostokino 01](https://commons.wikimedia.org/wiki/File:Golden_Babylon_Rostokino_01.jpg) |
 | b-market2.jpg | Крыша рынка, уровень II | Andrey Butko | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Крытый рынок в Донецке 008](https://commons.wikimedia.org/wiki/File:%D0%9A%D1%80%D1%8B%D1%82%D1%8B%D0%B9_%D1%80%D1%8B%D0%BD%D0%BE%D0%BA_%D0%B2_%D0%94%D0%BE%D0%BD%D0%B5%D1%86%D0%BA%D0%B5_008.jpg) |
@@ -124,3 +123,7 @@ vest.jpg — бронежилет: фото прислал владелец пр
 ## Портреты людей семьи
 
 Картинки `face-*.jpg` (50 мужских по возрастам и 2 женских) сгенерированы нейросетью Gemini 2.5 Flash Image через OpenRouter. Люди вымышленные.
+
+## Главари ОПГ и сцены дел
+
+Портреты главарей `boss-*.jpg` (вымышленные лица) и сцены `d-kidnap.jpg`, `d-raid.jpg` сгенерированы нейросетью Gemini 2.5 Flash Image через OpenRouter.

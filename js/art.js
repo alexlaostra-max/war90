@@ -366,7 +366,8 @@
     return svg('0 0 64 64', s, lab.replace(/[<>&"]/g, ''), 'face');
   }
   // глава бригады — тот же генератор с фиксированным сидом
-  const bossFace = f => face({ seed: 'boss-' + f.id, name: f.boss, nick: '', age: 44, str: 7, wit: 7, loy: 8, look: { cloth: f.id === 'cher' ? 'suit' : f.id === 'lub' ? 'tracksuit' : 'raspberry', chain: f.id !== 'cher' } }, { bg: f.color + '40', label: f.boss });
+  const bossFace = f => { const F = (G.DATA.PHOTOS || {})['boss-' + f.id]; return F ? '<img class="pface" src="' + F.src + '" alt="' + xesc(f.boss) + '" loading="lazy" decoding="async">' : bossDraw(f); };
+  const bossDraw = f => face({ seed: 'boss-' + f.id, name: f.boss, nick: '', age: 44, str: 7, wit: 7, loy: 8, look: { cloth: f.id === 'cher' ? 'suit' : f.id === 'lub' ? 'tracksuit' : 'raspberry', chain: f.id !== 'cher' } }, { bg: f.color + '40', label: f.boss });
   const legendFace = (k, opts) => { const L = G.DATA.LEGENDS[k]; return L ? face(Object.assign({ leg: k }, L), opts) : ''; };
   // президент и мэр: портреты для страницы власти
   const rulerFace = (R0, age) => R0.legend ? legendFace(R0.legend, { label: R0.name }) : face({ seed: 'ruler-' + R0.name, name: R0.name, age, str: 5, wit: 7, loy: 5, look: R0.look }, { label: R0.name });
