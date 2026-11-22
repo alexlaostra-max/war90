@@ -814,7 +814,7 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 /* перестановка людей по схеме: зажать и перетащить */
 #org [draggable] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 [draggable="true"] { cursor: grab; }
-#org .pressing { transform: scale(.95); transition: transform 1s linear; box-shadow: 0 0 0 2px rgba(240, 201, 104, .6); }
+#org .pressing { transform: scale(.95); transition: transform .5s linear; box-shadow: 0 0 0 2px rgba(240, 201, 104, .6); }
 #org .moving { opacity: .35; outline: 2px dashed var(--gold); }
 #org.dragging .cnode, #org.dragging .wchip, #org.dragging .tier.bench { outline: 1px dashed rgba(240, 201, 104, .5); outline-offset: 2px; }
 #org .dropon { outline: 2px solid var(--gold) !important; box-shadow: 0 0 0 4px rgba(240, 201, 104, .3); }

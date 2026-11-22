@@ -1000,7 +1000,7 @@
   });
   // ---------- перестановка людей по схеме: зажми карточку и перетащи ----------
   // на чужую карточку — поменяться местами, на пустую должность — встать туда, в резерв — снять с должности
-  const HOLD = 1000; // мс удержания пальцем
+  const HOLD = 500; // мс удержания пальцем
   function dropOn(id, t) {
     const c = E.crew(S, me).find(x => x.id === id); if (!c || !t) { render(); return; }
     if (t.classList.contains('bench')) { if (c.pos) act('place', [id, null, null]); else render(); return; }
