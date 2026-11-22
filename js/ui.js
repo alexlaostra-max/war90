@@ -91,14 +91,27 @@
 
   // ---------- карта ----------
   const svg = $('#map');
+  // ночная карта: огни города внутри МКАД, Москва-река, Кремль, светящиеся границы округов
+  const GXY = (lon, lat) => [(lon - 37.30) * 0.563 * 2600, (55.93 - lat) * 2600];
+  const RIVER = [[37.30, 55.815], [37.345, 55.80], [37.385, 55.805], [37.41, 55.79], [37.40, 55.772], [37.43, 55.762], [37.47, 55.752], [37.505, 55.758], [37.535, 55.752], [37.555, 55.737], [37.555, 55.718], [37.575, 55.708], [37.60, 55.716], [37.604, 55.735], [37.617, 55.748], [37.64, 55.746], [37.658, 55.733], [37.665, 55.712], [37.685, 55.70], [37.69, 55.683], [37.67, 55.668], [37.70, 55.66], [37.735, 55.645], [37.77, 55.638], [37.81, 55.63], [37.86, 55.615]];
+  function cityLights() {
+    let x = 12345, out = ''; const rnd = () => { x = (x * 16807) % 2147483647; return x / 2147483647; };
+    const b = GEO.box;
+    for (let k = 0; k < 1400; k++) { const px = b[0] + rnd() * b[2], py = b[1] + rnd() * b[3], r = rnd(); out += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="' + (r < 0.85 ? 0.7 : 1.3) + '" fill="' + (r < 0.6 ? '#f3c97a' : r < 0.9 ? '#e8a35a' : '#fff3d6') + '" opacity="' + (0.15 + rnd() * 0.45).toFixed(2) + '"/>'; }
+    return out;
+  }
   function buildMap() {
     const pth = c => 'M' + c.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L') + 'Z';
-    let h = '<g id="cells">' + GEO.cells.map((c, i) => '<path class="cell" data-i="' + i + '" d="' + pth(c) + '"></path>').join('') + '</g><g id="okb">';
+    const kr = GXY(37.6175, 55.7515), riv = 'M' + RIVER.map(p => GXY(p[0], p[1]).map(v => v.toFixed(1)).join(' ')).join('L');
+    let h = '<defs><clipPath id="mkad"><path d="' + pth(GEO.hull) + '"/></clipPath><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+      '<radialGradient id="night" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#2a2230"/><stop offset="1" stop-color="#0d0b10"/></radialGradient></defs>' +
+      '<path id="town" d="' + pth(GEO.hull) + '" fill="url(#night)"/>' +
+      '<g id="cells">' + GEO.cells.map((c, i) => '<path class="cell" data-i="' + i + '" d="' + pth(c) + '"></path>').join('') + '</g><g id="okb">';
     GEO.borders.forEach(b => { if (D.DISTRICTS[b.i].ok !== D.DISTRICTS[b.j].ok) h += '<line x1="' + b.a[0].toFixed(1) + '" y1="' + b.a[1].toFixed(1) + '" x2="' + b.b[0].toFixed(1) + '" y2="' + b.b[1].toFixed(1) + '"></line>'; });
-    h += '</g><path id="rim" d="' + pth(GEO.hull) + '"></path><g id="marks">';
+    h += '</g><g id="lights" clip-path="url(#mkad)">' + cityLights() + '</g><path id="river" clip-path="url(#mkad)" d="' + riv + '"/><path id="rim" d="' + pth(GEO.hull) + '"></path><g id="kremlin" transform="translate(' + kr[0].toFixed(1) + ' ' + kr[1].toFixed(1) + ')"><circle r="11" fill="#f0a73c" opacity=".22" filter="url(#glow)"/><path d="M-6 3h12v-5l-2 -1.5v-3l-1.5 -1v-4l-1 -2.5l-1 2.5v4l-1.5 1v3l-2 1.5z" fill="#f6c46a"/><path d="M0 -12.5l.6 1.6h1.6l-1.3 1 .5 1.6-1.4-1-1.4 1 .5-1.6-1.3-1h1.6z" fill="#ff5a4d"/></g><g id="dots"></g><g id="marks">';
     D.DISTRICTS.forEach((d, i) => { const c = GEO.centers[i]; if (d.ent) h += '<rect class="ent" data-m="' + i + '" x="' + (c[0] - 2.6).toFixed(1) + '" y="' + (c[1] - 10.5).toFixed(1) + '" width="5.2" height="5.2" transform="rotate(45 ' + c[0].toFixed(1) + ' ' + (c[1] - 7.9).toFixed(1) + ')"></rect>'; });
     h += '</g><g id="oklab">';
-    Object.keys(D.OKRUGS).forEach(ok => { const ids = E.okrugIds(ok), x = ids.reduce((s, i) => s + GEO.centers[i][0], 0) / ids.length, y = ids.reduce((s, i) => s + GEO.centers[i][1], 0) / ids.length; h += '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '">' + D.OKRUGS[ok].short + '</text>'; });
+    Object.keys(D.OKRUGS).forEach(ok => { const ids = E.okrugIds(ok), x = ids.reduce((s, i) => s + GEO.centers[i][0], 0) / ids.length, y = ids.reduce((s, i) => s + GEO.centers[i][1], 0) / ids.length; const nm = D.OKRUGS[ok].name.replace(' округ', '').split('-'); h += '<text x="' + x.toFixed(1) + '" y="' + (y - (nm.length > 1 ? 6 : 0)).toFixed(1) + '">' + nm.map((t, k) => '<tspan x="' + x.toFixed(1) + '" dy="' + (k ? 13 : 0) + '">' + t + (k < nm.length - 1 ? '-' : '') + '</tspan>').join('') + '<tspan x="' + x.toFixed(1) + '" dy="13">АО</tspan></text>'; });
     h += '</g><g id="labels">';
     D.DISTRICTS.forEach((d, i) => { const c = GEO.centers[i], parts = d.name.length > 11 ? d.name.split(/[- ]/) : [d.name]; h += '<text x="' + c[0].toFixed(1) + '" y="' + (c[1] + 2 - (parts.length - 1) * 3).toFixed(1) + '">' + parts.map((t, k) => '<tspan x="' + c[0].toFixed(1) + '" dy="' + (k ? 6.4 : 0) + '">' + esc(t) + '</tspan>').join('') + '</text>'; });
     svg.innerHTML = h + '</g>';
@@ -147,6 +160,8 @@
       el.classList.toggle('watched', spectating && !!o && o === watchFid);
     });
     svg.querySelectorAll('.ent').forEach(el => el.classList.toggle('got', S.d[+el.dataset.m].ent));
+    let dots = ''; D.DISTRICTS.forEach((d, i) => { const o = S.d[i].o, k = o === me ? 'mine' : E.attackable(S, me, i) ? 'tgt' : o ? 'foe' : ''; if (!k) return; const c = GEO.centers[i]; dots += '<circle class="dot ' + k + '" cx="' + c[0].toFixed(1) + '" cy="' + c[1].toFixed(1) + '" r="' + (k === 'mine' ? 5 : 4) + '"/>'; });
+    const dg = svg.querySelector('#dots'); if (dg) dg.innerHTML = dots;
     const s = svg.querySelector('.cell.sel'); if (s) s.parentNode.appendChild(s);
   }
 
@@ -1285,11 +1300,11 @@
   function showStart() {
     const sv = load();
     let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + acctHTML() + diffHTML() + '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button>';
-    h += '<div class="modes"><section><h3>Онлайн</h3><div id="online"><p class="muted">Ищу сервер…</p></div></section><section><h3>Одиночная игра</h3>';
+    h += '<div class="modes"><section><h3>Одиночная игра</h3>';
     if (sv) h += '<button class="btn primary wide" data-a="continue">Продолжить: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
     h += '<p class="muted">Выбери бригаду. Остальных ведут боты.</p><div class="factions f5">';
     D.FACTIONS.forEach(f => { const d = D.DISTRICTS.find(x => x.name === f.home); h += '<button class="fac" data-a="start" data-k="' + f.id + '"><span class="ava">' + A.bossFace(f) + '</span><i style="background:' + f.color + '"></i><b>' + f.name + '</b><span>' + f.home + ', ' + D.OKRUGS[d.ok].short + '</span><small>' + esc(f.perk) + '</small></button>'; });
-    h += '</div>' + scenHTML() + '</section></div><p class="muted">Ход — один месяц. В начале месяца случается событие с пятью решениями. Потом у тебя три хода: нападай на соседние районы, похищай, покупай людей во власти, веди крупный бизнес. Бойцы, стволы, тачки, точки на районах и их улучшения стоят только денег.</p>' + installHTML();
+    h += '</div>' + scenHTML() + '</section><section><h3>Онлайн · комнаты</h3><div id="online"><p class="muted">Ищу сервер…</p></div></section></div><p class="muted">Ход — один месяц. В начале месяца случается событие с пятью решениями. Потом у тебя три хода: нападай на соседние районы, похищай, покупай людей во власти, веди крупный бизнес. Бойцы, стволы, тачки, точки на районах и их улучшения стоят только денег.</p>' + installHTML();
     openModal(h, 'start', 'start');
     Net.rooms().then(list => {
       const box = $('#online'); if (!box || modalKey !== 'start') return;

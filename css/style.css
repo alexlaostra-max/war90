@@ -840,3 +840,25 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 /* личный кабинет на старте */
 .acct { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 12px; margin: 10px 0; border: 1px solid var(--line); border-radius: 6px; background: #1b1822; font-size: 14px; }
 .acct small { color: var(--dim); } .acct b { color: var(--gold); }
+
+/* ночная карта Москвы */
+#stage:has(#mapview:not([hidden])) { background: #09080c; }
+#town { stroke: none; }
+#river { fill: none; stroke: #2f5a85; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: .75; pointer-events: none; }
+#lights { pointer-events: none; }
+.cell { fill: #1a1620; fill-opacity: .35; stroke: #3a3242; stroke-width: .7; }
+.cell.foe { fill-opacity: .32; }
+.cell.mine { fill-opacity: .45; }
+.cell:hover { fill-opacity: .7; }
+.cell.target { stroke: #f0a73c; stroke-width: 1.2; stroke-dasharray: 3 2.5; }
+.cell.sel { stroke: #fff3d6; stroke-width: 2.4; fill-opacity: .7; }
+#okb line { stroke: #f0a73c; stroke-width: 2.4; opacity: .95; filter: url(#glow); }
+#rim { stroke: #f0a73c; stroke-width: 3; opacity: 1; filter: url(#glow); }
+#oklab text { font: 400 15px var(--display); fill: #fff; opacity: .78; paint-order: stroke; stroke: #0d0b10; stroke-width: 3px; }
+#kremlin, #dots { pointer-events: none; }
+.dot { stroke: #0d0b10; stroke-width: .8; }
+.dot.mine { fill: #57d97a; filter: url(#glow); } .dot.tgt { fill: #f0a73c; } .dot.foe { fill: #ee5a4f; opacity: .85; }
+#map:not(.zoomed) .dot.foe { opacity: .55; }
+#legend { top: 10px; bottom: auto; left: 12px; right: 60px; align-items: center; color: var(--fg); background: rgba(13, 11, 16, .72); padding: 6px 10px; border-radius: 6px; width: max-content; max-width: calc(100% - 80px); }
+#legend b { font: 400 16px var(--display); margin-right: 6px; }
+.lg.gdot, .lg.odot, .lg.rdot { border-radius: 50%; width: 10px; height: 10px; } .lg.gdot { background: #57d97a; box-shadow: 0 0 6px #57d97a; } .lg.odot { background: #f0a73c; } .lg.rdot { background: #ee5a4f; }
