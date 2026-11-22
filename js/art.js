@@ -720,5 +720,18 @@
   };
   const icon = k => '<svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + ICONS[k] + '</svg>';
 
-  G.ART = { eventScene, moneyRain, build, face, bossFace, legendFace, officialFace, rulerFace, vacantFace, arm, vest, car, deal, hash, icon, ICONS };
+  // личные вещи главы (DATA.ELITE): машины рисуются корпусом нужной формы, стволы — в золоте
+  function elite(k) {
+    const X = (G.DATA.ELITE || []).find(x => x.id === k); if (!X) return '';
+    const key = 'el' + k; if (cache[key]) return cache[key];
+    if (X.kind === 'car') {
+      const kind = CAR_SHAPES[X.shape] ? X.shape : 'merc', len = CAR_SHAPES[kind].len || 60, s = Math.min(1.6, 100 / len);
+      const bg = R(0, 0, 120, 48, '#1d1a24') + R(0, 38, 120, 10, '#24202b') + R(0, 38, 120, 0.8, '#d8b35a', 'opacity=".5"') + C(60, 8, 26, '#d8b35a', 'opacity=".06"');
+      return (cache[key] = svg('0 0 120 48', bg + carBody(kind, X.col, (120 - len * s) / 2, 40, s), X.name, 'car'));
+    }
+    const gold = '<defs><filter id="gold' + k + '"><feColorMatrix type="matrix" values=".55 .45 .2 0 .12  .45 .38 .15 0 .08  .12 .1 .06 0 0  0 0 0 1 0"/></filter></defs>';
+    return (cache[key] = svg('0 0 120 48', gold + R(0, 0, 120, 48, '#1d1a24') + R(0, 40, 120, 8, '#17141d') + C(60, 24, 30, '#d8b35a', 'opacity=".08"') + '<g transform="translate(0 4)" filter="url(#gold' + k + ')">' + (ARM[X.shape] || ARM.pm)() + '</g>', X.name, 'arm'));
+  }
+
+  G.ART = { elite, eventScene, moneyRain, build, face, bossFace, legendFace, officialFace, rulerFace, vacantFace, arm, vest, car, deal, hash, icon, ICONS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));
