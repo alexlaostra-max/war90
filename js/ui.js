@@ -1275,13 +1275,12 @@
   const savedNick = () => { let v = ''; try { v = localStorage.getItem('war90.nick') || ''; } catch (e) { /* ignore */ } const u = tgUser(); return v || (u ? (u.first_name || u.username || '').slice(0, 20) : ''); };
   function showStart() {
     const sv = load();
-    let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + diffHTML() + scenHTML() + '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button>' + installHTML();
+    let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1><p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + diffHTML() + '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button>';
     h += '<div class="modes"><section><h3>Онлайн</h3><div id="online"><p class="muted">Ищу сервер…</p></div></section><section><h3>Одиночная игра</h3>';
-    h += '<div class="row cloadrow"><label class="field"><span>Продолжить по коду из облака</span><input id="cloudcode" maxlength="9" placeholder="K7F3-9QX2" autocapitalize="characters" value="' + esc(cloudCode()) + '"></label><button class="btn" data-a="cloudload">Загрузить</button></div>';
     if (sv) h += '<button class="btn primary wide" data-a="continue">Продолжить: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
-    h += '<p class="muted">Выбери бригаду. Остальных ведут боты.</p><div class="factions">';
+    h += '<p class="muted">Выбери бригаду. Остальных ведут боты.</p><div class="factions f5">';
     D.FACTIONS.forEach(f => { const d = D.DISTRICTS.find(x => x.name === f.home); h += '<button class="fac" data-a="start" data-k="' + f.id + '"><span class="ava">' + A.bossFace(f) + '</span><i style="background:' + f.color + '"></i><b>' + f.name + '</b><span>' + f.home + ', ' + D.OKRUGS[d.ok].short + '</span><small>' + esc(f.perk) + '</small></button>'; });
-    h += '</div></section></div><p class="muted">Ход — один месяц. В начале месяца случается событие с пятью решениями. Потом у тебя три хода: нападай на соседние районы, похищай, покупай людей во власти, веди крупный бизнес. Бойцы, стволы, тачки, точки на районах и их улучшения стоят только денег.</p>';
+    h += '</div>' + scenHTML() + '</section></div><p class="muted">Ход — один месяц. В начале месяца случается событие с пятью решениями. Потом у тебя три хода: нападай на соседние районы, похищай, покупай людей во власти, веди крупный бизнес. Бойцы, стволы, тачки, точки на районах и их улучшения стоят только денег.</p>' + installHTML();
     openModal(h, 'start', 'start');
     Net.rooms().then(list => {
       const box = $('#online'); if (!box || modalKey !== 'start') return;

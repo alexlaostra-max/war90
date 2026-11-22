@@ -825,3 +825,14 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 .lvb.sm { position: static; display: inline-block; font-size: 10px; padding: 0 4px; }
 
 .box.brk { border-color: #6b3a3a; } .box.brk p { margin: 0 0 8px; }
+
+/* старт: группировки по 5 в ряд, ниже — год начала */
+.modes:has(.f5) { grid-template-columns: 1fr; }
+.factions.f5 { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.factions.f5 .fac { padding: 8px 6px 8px; min-width: 0; }
+.factions.f5 .fac .ava { position: static; width: 44px; height: 44px; margin: 0 auto 4px; }
+.factions.f5 .fac b { font-size: 13px; display: block; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.factions.f5 .fac > span:not(.ava), .factions.f5 .fac small { display: block; text-align: center; font-size: 10px; }
+.factions.f5 .fac small { display: none; }
+.factions.f5 .fac i { left: 6px; top: 6px; }
+@media (max-width: 520px) { .factions.f5 { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; } .factions.f5 .fac { padding: 6px 2px; } .factions.f5 .fac .ava { width: 40px; height: 40px; } .factions.f5 .fac b { font-size: 9.5px; white-space: normal; overflow-wrap: anywhere; line-height: 1.15; } .factions.f5 .fac > span:not(.ava) { display: none; } .factions.f5 .fac i { left: 3px; top: 3px; } }
