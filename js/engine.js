@@ -200,6 +200,7 @@
     let nick = ''; for (let k = 0; k < 12; k++) { nick = D.NICKS[Math.floor(rnd(S) * D.NICKS.length)]; if (!used.has(nick)) break; }
     const st = v => clamp(Math.round(v + rr(S, -1, 2)), 1, 10);
     const c = { id: p.nid++, name: D.NAMES[Math.floor(rnd(S) * D.NAMES.length)] + ' ' + D.SURNAMES[Math.floor(rnd(S) * D.SURNAMES.length)], nick, age: ri(S, 19, 48), bio: b[0], str: st(4 + b[1]), wit: st(4 + b[2]), loy: st(4 + b[3]), pos: null, ok: null, st: 'ok', until: 0, since: S.turn };
+    if (fid === 'laz') c.loy = Math.min(10, c.loy + 2); // землячество
     p.crew.push(c); return c;
   }
   // что случилось с человеком: hurt — ранен, jail — посадили, dead — убит
