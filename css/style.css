@@ -988,3 +988,18 @@ h2 .gon2 { font-size: 12px; margin-left: 8px; }
 .entbig span { font-size: 13px; color: var(--dim); }
 .entbig.off { background: var(--raise); border-color: var(--line); } .entbig.off b { color: var(--gold); }
 .hitcard small { display: block; }
+/* плюшки империи в общаке */
+#strip { display: none !important; }
+.perklist { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.perkrow { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--raise); }
+.perkrow.max { border-color: var(--gold); }
+.perkrow .pv { flex: none; width: 70px; display: flex; flex-direction: column; align-items: center; }
+.perkrow .pv b { font: 400 20px var(--display); color: var(--good); white-space: nowrap; } .perkrow .pv small { font-size: 11px; color: var(--dim); }
+.perkrow .pt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.perkrow .pt > b { font-size: 14px; } .perkrow .pt > span { font-size: 12px; color: var(--dim); } .perkrow .pt small { font-size: 11px; color: var(--gold); }
+.perkrow .pt u { display: block; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; margin: 2px 0; } .perkrow .pt u s { display: block; height: 100%; background: var(--good); }
+.perkrow .gold { color: var(--gold); }
+.perkoff b { color: var(--fg); }
+/* покупка ползунком: кнопка на своей строке и не вылезает */
+.qty input[type=range] { flex: 1 1 100%; }
+.qty .btn { flex: 1 1 100%; min-width: 0; white-space: normal; line-height: 1.25; }

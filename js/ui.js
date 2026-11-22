@@ -188,7 +188,7 @@
       st('conn', 'Связи', E.conn(S, me)) +
       '<button class="st heat l' + L + '" data-go="law" title="Розыск">' + A.icon('heat') + '<b class="hnum">' + R(p.heat) + '</b><div><span>Розыск · ' + D.LAW[L].name + '</span><div class="meter"><em style="width:' + p.heat + '%"></em><s style="left:20%"></s><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div><i>' + R(p.heat) + ' из 100, ' + sign(E.heatDelta(S, me)) + ' в мес.</i></div></button>' +
       '';
-    $('#perks').innerHTML = fxStrip();
+    $('#perks').innerHTML = '';
     $('#apm').innerHTML = '<div class="pips">' + pips + '</div><span class="tmr" hidden></span>';
     $('#ap').innerHTML = '<span>Ходы</span><div class="pips">' + pips + '</div><b>' + p.ap + ' из ' + E.apMax(S, me) + '</b><span class="tmr" hidden></span>';
     tickTimer();
@@ -334,6 +334,7 @@
     const p = P(), inc = E.income(S, me), cap = E.menCap(S, me);
     let h = '<p class="eyebrow">Общак ' + tipAsk('cash') + '</p><h2>' + fd(me).name + '</h2><p class="sub">' + esc(fd(me).perk) + '</p>';
     h += '<dl class="kv"><dt>Сила бригады</dt><dd>' + R(E.power(p)) + '</dd><dt>Касса</dt><dd>' + rubP(E.cur(p).rub) + ' и ' + usdP(E.cur(p).usd) + '</dd><dt>Из них белыми</dt><dd class="good">' + kfmt(Math.max(0, E.cash(p).white) * 1000) + '</dd><dt>Чёрными</dt><dd>' + kfmt(Math.max(0, E.cash(p).black) * 1000) + '</dd><dt>Капитал</dt><dd>' + usdP(E.capital(S, me)) + '</dd><dt>Цены для тебя</dt><dd>×' + (Math.round(E.priceK(S, me) * 10) / 10).toLocaleString('ru-RU') + ' <span class="muted">растут с годами и богатством</span></dd><dt>Авторитет</dt><dd>' + R(p.rep) + ' из ' + E.repCap(S, me) + ' возможных</dd><dt>Бойцы</dt><dd>' + p.men + ' из ' + cap + '</dd><dt>Районы</dt><dd>' + E.count(S, me) + ' из 102</dd></dl>';
+    h += perksHTML();
     h += '<h3>Потолок авторитета · ' + E.repCap(S, me) + ' из 100</h3><table class="tbl">' + E.repParts(S, me).filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td>+' + r[1] + '</td></tr>').join('') + '</table><p class="muted">Авторитет растёт от побед, крупных дел и стрелок, но не выше потолка, и с каждой ступенью медленнее. Сам по себе он остывает. Громкое имя притягивает ментов: от 50 розыск +1 в месяц, от 80 — +2. Капитал — касса, бизнес по оценке (пять лет нынешнего дохода) и купленное статусное и личное.</p>';
     h += '<h3>Касса за месяц</h3><table class="tbl">' + inc.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="' + (r[1] < 0 ? 'bad' : 'good') + '">' + plus(r[1], r[2] === 'usd') + '</td></tr>').join('') + '<tr class="sum"><td>Итого</td><td>' + [inc.total - inc.usd ? plus(inc.total - inc.usd) : '', inc.usd ? plus(inc.usd, true) : ''].filter(Boolean).join(' и ') + '</td></tr></table>';
     const tot = inc.white + inc.black;
@@ -727,6 +728,28 @@
     const chips = rows.map(r => { const cap = W90.DATA.FX_CAP[r[0][0]]; return '<span class="perk' + (cap && r[1] >= cap ? ' max' : '') + '" title="' + (cap && r[1] >= cap ? 'Потолок' : '') + '">' + r[0][1] + ' <b>' + (r[0][3] || '') + r[1] + r[0][2] + '</b></span>'; }).join('');
     return '<button class="slabel" data-a="perkstoggle" aria-expanded="' + perksOpen + '">Плюшки империи' + (rows.length ? ' · ' + rows.length : '') + '<i>' + (perksOpen ? '▴' : '▾') + '</i></button>' + (chips || '<span class="muted">пока нет: строй точки на районах</span>');
   }
+  // Плюшки империи в «Общаке»: что дают все точки вместе, откуда это и сколько ещё можно набрать
+  const FXH = { car: 'Покупка и ремонт машин', gun: 'Стволы и броники', upkeep: 'Сколько стоит содержать бойцов', med: 'Сколько бойцов гибнет в бою', talk: 'Шанс на стрелках, переговорах и в крупных делах', hide: 'Сколько людей берут при облавах', wash: 'Какая часть чёрного дохода становится белой', kid: 'Шанс похищения коммерсанта', cool: 'Насколько каждый месяц снижается розыск', conn: 'Связи во власти: захват предприятий, отпускают задержанных', cap: 'Сколько людей помещается в бригаду' };
+  function perksHTML() {
+    const src = {}, recSrc = {};
+    E.owned(S, me).forEach(i => S.d[i].b.forEach((b, x) => {
+      const B = D.BUILDS[b], lv = E.pointLvl(S.d[i], x), nm = bname(b, lv) + (lv > 1 ? ' ' + ROMAN[lv] : '');
+      Object.keys(B.fx || {}).forEach(k => { (src[k] = src[k] || {})[nm] = (src[k][nm] || 0) + 1; });
+      if (B.rec) recSrc[nm] = (recSrc[nm] || 0) + 1;
+    }));
+    const who = k => Object.keys(D.BUILDS).filter(b => (D.BUILDS[b].fx || {})[k]).map(b => bname(b, 1).toLowerCase());
+    const list = m => Object.keys(m).map(n => n + (m[n] > 1 ? ' ×' + m[n] : '')).join(', ');
+    const rows = FXL.map(f => ({ f, v: E.fx(S, me, f[0]), cap: D.FX_CAP[f[0]] }));
+    const on = rows.filter(r => r.v), off = rows.filter(r => !r.v);
+    const recr = E.inflow(S, me).rows.filter(r => r[0] === 'Спортзалы' || r[0] === 'Другие точки').reduce((a, r) => a + r[1], 0);
+    const row = r => { const val = (r.f[3] || '') + r.v + r.f[2], full = r.cap && r.v >= r.cap;
+      return '<div class="perkrow' + (full ? ' max' : '') + '"><div class="pv"><b>' + val + '</b>' + (r.cap ? '<small>из ' + r.cap + r.f[2] + '</small>' : '') + '</div><div class="pt"><b>' + r.f[1] + '</b><span>' + FXH[r.f[0]] + '</span>' + (r.cap ? '<u><s style="width:' + Math.min(100, r.v / r.cap * 100) + '%"></s></u>' : '') + '<small>Дают: ' + esc(list(src[r.f[0]] || {})) + (full ? ' · <b class="gold">потолок, больше не нужно</b>' : '') + '</small></div></div>'; };
+    let h = '<h3>Плюшки империи <span class="muted">что дают все твои точки вместе</span></h3><p class="muted">Каждая точка кроме дохода даёт империи пользу. Польза складывается по всем районам и растёт с уровнем точки (II — вдвое, III — втрое), но у многих есть потолок.</p>';
+    if (!on.length && !recr) h += '<p class="muted">Пока ничего: строй точки на районах.</p>';
+    h += '<div class="perklist">' + on.map(row).join('') + (recr ? '<div class="perkrow"><div class="pv"><b>+' + recr + '</b><small>в мес.</small></div><div class="pt"><b>Новобранцы</b><span>Сколько людей готово прийти в бригаду каждый месяц сверх двора, районов и авторитета</span><small>Дают: ' + esc(list(recSrc)) + '</small></div></div>' : '') + '</div>';
+    if (off.length) h += '<p class="muted perkoff"><b>Ещё можно получить:</b> ' + off.map(r => r.f[1].toLowerCase() + ' — ' + who(r.f[0]).join(', ')).join('; ') + '.</p>';
+    return h;
+  }
   // кто сейчас президент и мэр: карточки с портретом на странице власти
   const MON = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
   function rulersHTML() {
@@ -893,7 +916,7 @@
       h += '<tr class="' + (x.alive ? '' : 'dead') + '"><td><span class="ava xs">' + A.bossFace(f) + '</span><i class="dot" style="background:' + f.color + '"></i>' + f.name + (mine ? ' (ты)' : x.human ? ' · ' + esc(x.nick || 'игрок') : '') + (!mine && !x.human && x.alive ? '<br><small class="' + relCls(E.rel(S, me, f.id)) + '">' + relName(E.rel(S, me, f.id)) + (E.inTruce(S, me, f.id) ? ' · мир до ' + E.date(p.truce[f.id]).label : '') + '</small>' : '') + '</td><td>' + E.count(S, f.id) + '</td><td>' + (x.alive ? R(E.power(x)) : '—') + '</td><td>';
       if (!mine && x.alive) {
         if (x.human) h += '<span class="' + (x.auto ? 'bad' : x.ready ? 'good' : 'muted') + '">' + (x.auto ? 'ведёт бот' : x.ready ? 'готов' : 'ходит') + '</span>' + (E.inTruce(S, me, f.id) ? '<br><small class="good">мир до ' + E.date(p.truce[f.id]).label + '</small>' : '') + (net && !x.over ? ' ' + btn('Сделка', 'deal', 'data-k="' + f.id + '"', false, 'sm') : '');
-        else h += '<button class="btn sm" data-a="parley" data-k="' + f.id + '">Стрелка</button>';
+        else h += (E.atWar(S, me, f.id) ? '<small class="bad warb">⚔ война до ' + E.date(p.war[f.id]).label + '</small><br>' : '') + '<button class="btn sm" data-a="parley" data-k="' + f.id + '">Стрелка</button>';
       }
       h += '</td></tr>';
     });
@@ -1319,7 +1342,7 @@
     const key = 'as:' + x.att + ':' + x.i + ':' + p.assaults.length; if (modalKey === key) return;
     const dd = D.DISTRICTS[x.i], f = fd(x.att), our = E.districtDef(S, x.i), odds = R(E.defendOdds(S, me, x, true) * 100), oddsA = R(E.defendOdds(S, me, x, false) * 100), cost = E.buyOffCost(S, x), cp = E.crew(S, me).find(c => c.st === 'ok' && c.pos === 'capo' && c.ok === dd.ok);
     if (G.Sfx) G.Sfx.play('siren');
-    let h = '<div class="evscene">' + A.eventScene('law', 'as' + x.i) + '</div><p class="eyebrow">Наезд · ' + E.date(S.turn).label + (p.assaults.length > 1 ? ' · ещё ' + (p.assaults.length - 1) : '') + '</p><h2>' + esc(f.name) + ' напали на ' + esc(dd.name) + '</h2>';
+    let h = '<div class="evscene">' + A.eventScene('law', 'as' + x.i) + '</div><p class="eyebrow">Наезд · ' + E.date(S.turn).label + (p.assaults.length > 1 ? ' · ещё ' + (p.assaults.length - 1) : '') + '</p><h2>' + (x.war ? '⚔ Война: ' : '') + esc(f.name) + ' напали на ' + esc(dd.name) + '</h2>';
     h += '<div class="vs"><div><span class="ava">' + (cp ? A.face(cp) : A.bossFace(fd(me))) + '</span><b>' + (cp ? esc(E.cname(cp)) : 'Твои на районе') + '</b><small>оборона ' + R(our) + '</small></div><i>×</i><div><span class="ava">' + A.bossFace(f) + '</span><b>' + esc(f.name) + '</b><small>едут ' + x.men + ' бойцов · сила ' + x.a + '</small></div></div>';
     h += '<p class="lead">Машины у ' + esc(dd.name) + ', пацаны с битами и стволами. Решать надо сейчас.</p><div class="opts">';
     h += '<button class="opt" data-a="defend" data-k="0" data-h="fight"><span>Вступить в бой самому: приводишь подмогу, бой считается сразу</span><em>отобьёмся ~' + odds + '%</em></button>';
@@ -1343,6 +1366,7 @@
     let h = '<div class="dhero"><span class="ava big">' + A.bossFace(f) + '</span><div><p class="eyebrow">Стрелка · ' + esc(f.name) + '</p><h2>' + esc(f.boss) + '</h2><p class="sub">районов ' + E.count(S, parleyWith) + ' · сила ' + R(E.power(x)) + ' (у тебя ' + R(E.power(p)) + ')</p></div></div>';
     h += '<div class="relm"><span>Отношения</span><div><em class="' + (rl < 0 ? 'neg' : 'pos') + '" style="' + (rl < 0 ? 'right:50%;width:' + (-rl / 2) : 'left:50%;width:' + (rl / 2)) + '%"></em><s></s></div><b class="' + relCls(rl) + '">' + relName(rl) + '</b></div>';
     if (E.inTruce(S, me, parleyWith)) h += '<p class="good">Мир до ' + E.date(p.truce[parleyWith]).label + '.</p>';
+    if (E.atWar(S, me, parleyWith)) h += '<p class="bad">⚔ Война до ' + E.date(p.war[parleyWith]).label + ': каждый месяц они едут на твои районы. Мир на год остановит войну.</p>';
     if (busy) h += '<p class="bad">' + esc(busy) + '</p>';
     const card = (kind, title, sub, note, lock, arg) => '<button class="card" data-a="talk" data-k="' + kind + '"' + (arg != null ? ' data-i="' + arg + '"' : '') + (busy || lock ? ' disabled' : '') + '><b>' + title + '</b><span>' + sub + '</span>' + (note ? '<small>' + note + '</small>' : '') + (lock ? '<small class="bad">' + lock + '</small>' : '') + '</button>';
     h += '<div class="grid">';

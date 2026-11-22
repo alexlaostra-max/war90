@@ -649,6 +649,15 @@
     p.advice = { t: S.turn, k: 'vests', s: who + ': броников осталось ' + (p.vests || 0) + ' на ' + p.men + ' бойцов, часть порвана в последних разборках. Надо обновить, иначе потери вырастут.' };
     log(S, p.advice.s, 'bad', fid);
   }
+  // Война: напал на бригаду — она полгода каждый месяц едет на твои районы. Заканчивается миром на стрелке
+  // или сама, когда срок вышел. Повторное нападение продлевает войну
+  const WAR_LEN = 6;
+  const atWar = (S, fid, other) => ((S.f[fid].war || {})[other] || -1) >= S.turn;
+  function startWar(S, fid, other) {
+    const p = S.f[fid]; p.war = p.war || {}; const was = atWar(S, fid, other);
+    p.war[other] = S.turn + WAR_LEN;
+    if (!was) log(S, fdef(other).name + ' объявили тебе войну: полгода будут каждый месяц приезжать на твои районы. Остановить — мир на стрелке.', 'bad', fid);
+  }
   function attackGo(S, fid, i, men, t) {
     const e = spend(S, fid, 1); if (e) return fail(e);
     i = +i; t = ATK[t] ? t : 'storm';
@@ -672,7 +681,7 @@
     const kit = loseKit(S, fid, B.q, la);
     addHeat(S, fid, Math.round(3 + 8 * men / Math.max(1, p.men)) + (dd.ok === 'CAO' ? 2 : 0));
     // напал на бригаду — с ней сразу вражда
-    if (foe && !S.f[foe].human) { p.rel = p.rel || {}; p.rel[foe] = -100; }
+    if (foe && !S.f[foe].human) { p.rel = p.rel || {}; p.rel[foe] = -100; startWar(S, fid, foe); }
     const held = okrugHeld(S, fid, dd.ok);
     const r = fight(S, fid, i, null, { committed: men, win, la, ratio: surr ? 1.2 : clamp(win ? ratio : ratio * 0.8, 0.2, 2.5), final: true });
     let msg;
@@ -1182,7 +1191,7 @@
       if (inTruce(S, fid, other)) return fail('Перемирие уже действует');
       const c = truceCost(S, other); if (p.money < c) return fail('На стол и подарки нужно ' + fm(c));
       meet(); p.money -= c;
-      if (rnd(S) * 100 < truceOdds(S, fid, other)) { p.truce[other] = S.turn + 12; addRel(S, fid, other, 15); log(S, 'Стрелка с ' + boss + ' (' + nm + '): мир на год.', 'good', fid); return { ok: true, msg: boss + ' пожал руку. Год друг друга не трогаете' }; }
+      if (rnd(S) * 100 < truceOdds(S, fid, other)) { p.truce[other] = S.turn + 12; addRel(S, fid, other, 15); if (p.war) delete p.war[other]; log(S, 'Стрелка с ' + boss + ' (' + nm + '): мир на год.', 'good', fid); return { ok: true, msg: boss + ' пожал руку. Год друг друга не трогаете' }; }
       addRep(S, fid, -1); addRel(S, fid, other, -5);
       return { ok: true, msg: boss + ' не согласился. Считает, что ты слаб', win: false };
     }
@@ -1216,7 +1225,7 @@
     }
     if (kind === 'hit') {
       const l = hitLock(S, fid, other); if (l) return fail(l);
-      meet(); p.money -= hitCost(S, other); p.hitT = p.hitT || {}; p.hitT[other] = S.turn;
+      meet(); p.money -= hitCost(S, other); p.hitT = p.hitT || {}; p.hitT[other] = S.turn; startWar(S, fid, other);
       p.rel = p.rel || {}; p.rel[other] = -100;
       if (rnd(S) * 100 < hitOdds(S, fid, other)) {
         const lost = beheadGang(S, other, 0.3); addHeat(S, fid, 15); addRep(S, fid, 4);
@@ -1498,6 +1507,15 @@
       log(S, 'Раскол у бригады ' + fdef(fid).name + ': бригадиры не поделили деньги, ' + k + ' районов отошли местным.', 'big');
       return;
     }
+    // война с живым игроком: каждый месяц наезд на самый слабый пограничный район, даже без перевеса
+    active(S).forEach(h => {
+      const P0 = S.f[h]; if (!atWar(S, h, fid) || inTruce(S, h, fid) || P0.over) return;
+      if ((P0.assaults || []).some(x => x.att === fid)) return;
+      const tg = owned(S, h).filter(i => GEO.adj[i].some(j => S.d[j].o === fid)).sort((a, b) => districtDef(S, a) * (isHome(S, h, a) ? 2 : 1) - districtDef(S, b) * (isHome(S, h, b) ? 2 : 1));
+      if (!tg.length || f.men < 4) return;
+      const men = strike(f, 0.8); P0.assaults = (P0.assaults || []).filter(x => x.i !== tg[0]);
+      P0.assaults.push({ att: fid, i: tg[0], men, a: Math.round(power(f) * men / Math.max(1, f.men) * rr(S, 0.9, 1.2)), t: S.turn + 1, war: true });
+    });
     // Живой игрок обычно растёт быстрее ботов, поэтому против лидера боты сбиваются в стаю: нападают чаще,
     // соседние бригады подкидывают людей, а враги (отношения −50 и ниже) лезут даже без перевеса — налётом.
     const top = Math.max(0, ...active(S).map(h => count(S, h))), lead = top > n * 1.5;
@@ -1771,5 +1789,5 @@
 
   const ACTIONS = { attackGo, train, propose, buyElite, job, place, repairAll, scrapAll, exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
-  G.Engine = { hitCost, hitOdds, hitLock, fu, gunHeat, priceK, wealthK, fxChange, fmtK, fm, fxQuote, fxBoard, fxLiq, fxBought, fxBooths, FX_SPREAD, repCap, repParts, ATK, atkLock, attackOdds, strikeMax, squad, surrOdds, XP_NEED, LV_MAX, trainCost, trainLock, eliteHas, eliteFx, eliteLock, jobGain, jobCost, jobOdds, jobLock, capital, realRub, LATER_IN, upgradeLock, LVL_FROM, repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { atWar, WAR_LEN, hitCost, hitOdds, hitLock, fu, gunHeat, priceK, wealthK, fxChange, fmtK, fm, fxQuote, fxBoard, fxLiq, fxBought, fxBooths, FX_SPREAD, repCap, repParts, ATK, atkLock, attackOdds, strikeMax, squad, surrOdds, XP_NEED, LV_MAX, trainCost, trainLock, eliteHas, eliteFx, eliteLock, jobGain, jobCost, jobOdds, jobLock, capital, realRub, LATER_IN, upgradeLock, LVL_FROM, repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);
