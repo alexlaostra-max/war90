@@ -1154,6 +1154,18 @@
   const tributeOk = (S, fid, other) => power(S.f[fid]) > power(S.f[other]) * 1.3;
   const tributeOdds = (S, fid, other) => clamp(25 + (power(S.f[fid]) / Math.max(1, power(S.f[other])) - 1.3) * 60 + S.f[fid].rep / 4, 5, 85);
   const tributeSum = (S, other) => Math.round(count(S, other) * 6 * era(S) + 10);
+  // ---------- убийство главаря ОПГ ----------
+  // Без главаря бригада теряет часть районов (кроме родного) — их забирает местная шпана — и четверть бойцов.
+  function beheadGang(S, fid, share) {
+    const f = S.f[fid], own = owned(S, fid).filter(i => !isHome(S, fid, i)), k = Math.min(own.length, Math.max(1, Math.round(count(S, fid) * share))), lost = [];
+    for (let j = 0; j < k && own.length; j++) { const x = own.splice(Math.floor(rnd(S) * own.length), 1)[0]; S.d[x].o = null; S.d[x].ent = false; lost.push(D.DISTRICTS[x].name); }
+    f.men = Math.max(0, Math.round(f.men * 0.75));
+    if (f.human) crew(S, fid).forEach(c => { if (c.pos === 'watch' && S.d[watchDist(c)].o !== fid) { c.pos = null; c.ok = null; } });
+    return lost;
+  }
+  const hitCost = (S, other) => Math.round((40 + count(S, other) * 4) * era(S));
+  const hitOdds = (S, fid, other) => Math.round(clamp(22 + S.f[fid].rep / 3 + (power(S.f[fid]) / Math.max(1, power(S.f[other])) - 1) * 12 + conn(S, fid) - count(S, other) * 0.6, 5, 60));
+  const hitLock = (S, fid, other) => { const p = S.f[fid], last = (p.hitT || {})[other]; return last != null && S.turn - last < 12 ? 'на них уже покушались, снова — ' + date(last + 12).label : p.men < 6 ? 'нужно 6 бойцов' : p.money < hitCost(S, other) ? 'нужно ' + fm(hitCost(S, other)) : null; };
   function parleyCheck(S, fid, other) {
     const p = S.f[fid], f = S.f[other];
     if (!f || !f.alive || other === fid) return 'Не с кем договариваться';
@@ -1201,6 +1213,23 @@
       }
       addRel(S, fid, other, -5);
       return { ok: true, msg: boss + ': «Свою землю не продаём»', win: false };
+    }
+    if (kind === 'hit') {
+      const l = hitLock(S, fid, other); if (l) return fail(l);
+      meet(); p.money -= hitCost(S, other); p.hitT = p.hitT || {}; p.hitT[other] = S.turn;
+      p.rel = p.rel || {}; p.rel[other] = -100;
+      if (rnd(S) * 100 < hitOdds(S, fid, other)) {
+        const lost = beheadGang(S, other, 0.3); addHeat(S, fid, 15); addRep(S, fid, 4);
+        log(S, 'Убит ' + boss + ', главарь бригады ' + nm + '. Без него бригада трещит: районы ' + (lost.join(', ') || '—') + ' отошли местной шпане.', 'big');
+        if (count(S, other) === 0) eliminate(S, other);
+        return { ok: true, msg: boss + ' убит. ' + nm + ' потеряли районов: ' + lost.length + '. Розыск +15, авторитет +4' };
+      }
+      const l2 = Math.min(p.men, ri(S, 2, 5)); p.men -= l2; addHeat(S, fid, 10); addRep(S, fid, -2);
+      // промах: они знают, кто заказал, и едут мстить
+      const tgt = owned(S, fid).filter(i => GEO.adj[i].some(j => S.d[j].o === other));
+      if (tgt.length && S.f[other].alive) { const i = tgt[Math.floor(rnd(S) * tgt.length)], f = S.f[other], men = strike(f, 0.65); p.assaults = (p.assaults || []).filter(x => x.i !== i); p.assaults.push({ att: other, i, men, a: Math.round(power(f) * men / Math.max(1, f.men) * 1.15), t: S.turn + 1 }); }
+      log(S, 'Покушение на ' + boss + ' сорвалось. Киллеры потеряны: ' + l2 + '. ' + nm + ' знают, кто заказал.', 'bad', fid);
+      return { ok: true, msg: 'Сорвалось: ' + boss + ' жив, потеряно бойцов ' + l2 + '. Жди ответа', win: false };
     }
     if (kind === 'tribute') {
       if (!tributeOk(S, fid, other)) return fail('Дань требуют, только когда ты заметно сильнее');
@@ -1507,6 +1536,27 @@
     }
   }
 
+  // Покушения ботов: враждующие бригады изредка заказывают главарей друг друга, а лидера-человека — если он всех обогнал
+  function aiHits(S) {
+    const bots = D.FACTIONS.map(f => f.id).filter(id => S.f[id].alive && !S.f[id].human), X = S.online ? DIFF.hard : dif(S);
+    bots.forEach(a => {
+      if (rnd(S) > 0.012 * X.aggr) return;
+      const pool = D.FACTIONS.map(f => f.id).filter(b => b !== a && S.f[b].alive && !S.f[b].over && count(S, b) > 1);
+      if (!pool.length) return;
+      const b = pool[Math.floor(rnd(S) * pool.length)], B = S.f[b];
+      if (B.human) {
+        if (S.turn - (S.t0 || 0) < X.grace || inTruce(S, b, a) || rel(S, b, a) > -30 || (B.hitAt != null && S.turn - B.hitAt < 18)) return;
+        B.hitAt = S.turn;
+        if (rnd(S) < 0.45 * armorK(B)) {
+          const lost = beheadGang(S, b, 0.2); addRep(S, b, -5);
+          log(S, 'Покушение на тебя: заказ ' + fdef(a).name + '. Ты выжил, но пока лежал в больнице, районы ' + (lost.join(', ') || '—') + ' разбежались к местным, ушла четверть бойцов.', 'bad', b);
+          if (count(S, b) === 0) eliminate(S, b);
+        } else log(S, 'Покушение на тебя сорвалось: охрана заметила снайпера. Заказ ' + fdef(a).name + '.', 'bad', b);
+        return;
+      }
+      if (rnd(S) < 0.5) { const lost = beheadGang(S, b, 0.25); log(S, 'Убит ' + fdef(b).boss + ', главарь бригады ' + fdef(b).name + '. Говорят, заказ ' + fdef(a).name + '. Районов отошло шпане: ' + lost.length + '.', 'big'); if (count(S, b) === 0) eliminate(S, b); }
+    });
+  }
   function scoreOf(S, fid) { const p = S.f[fid], inc = income(S, fid); return Math.round(p.money / 10 + count(S, fid) * 20 + p.rep * 5 + conn(S, fid) * 30 + inc.white * 5); }
   function finale(S, fid) {
     const p = S.f[fid], inc = income(S, fid), c = conn(S, fid), n = count(S, fid), tot = inc.white + inc.black || 1, wshare = inc.white / tot;
@@ -1545,6 +1595,7 @@
     active(S).forEach(h => { if (S.f[h].battle) { if (S.f[h].battle.def) defendEnd(S, h, false, 'Месяц кончился'); else finishBattle(S, h, false, 'Месяц кончился'); } (S.f[h].assaults || []).slice().forEach(x => resolveAssault(S, h, x, 'auto')); snapshot(S, h); S.f[h].event = null; S.f[h].queue = []; humanPhase(S, h); });
     S.hits = {}; S.offers = [];
     D.FACTIONS.forEach(f => { if (!S.f[f.id].human) aiTurn(S, f.id); });
+    aiHits(S);
     active(S).forEach(h => { if (count(S, h) === 0) eliminate(S, h); });
     if (S.turn >= LAST_TURN) active(S).forEach(h => finale(S, h));
     checkDone(S);
@@ -1720,5 +1771,5 @@
 
   const ACTIONS = { attackGo, train, propose, buyElite, job, place, repairAll, scrapAll, exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
-  G.Engine = { fu, gunHeat, priceK, wealthK, fxChange, fmtK, fm, fxQuote, fxBoard, fxLiq, fxBought, fxBooths, FX_SPREAD, repCap, repParts, ATK, atkLock, attackOdds, strikeMax, squad, surrOdds, XP_NEED, LV_MAX, trainCost, trainLock, eliteHas, eliteFx, eliteLock, jobGain, jobCost, jobOdds, jobLock, capital, realRub, LATER_IN, upgradeLock, LVL_FROM, repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { hitCost, hitOdds, hitLock, fu, gunHeat, priceK, wealthK, fxChange, fmtK, fm, fxQuote, fxBoard, fxLiq, fxBought, fxBooths, FX_SPREAD, repCap, repParts, ATK, atkLock, attackOdds, strikeMax, squad, surrOdds, XP_NEED, LV_MAX, trainCost, trainLock, eliteHas, eliteFx, eliteLock, jobGain, jobCost, jobOdds, jobLock, capital, realRub, LATER_IN, upgradeLock, LVL_FROM, repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);

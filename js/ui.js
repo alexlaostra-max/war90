@@ -249,8 +249,10 @@
     h += '<p class="muted">Можно поставить сейчас: ' + nOk + ' из ' + keys.length + '. Сначала доступные, по цене.</p><div class="grid">';
     keys.forEach(({ k, lock, c }) => {
       const B = D.BUILDS[k], r = rank(k);
-      h += '<div class="card bcard' + (r === 0 ? ' special' : r === 1 ? ' fit' : '') + (lock ? ' locked' : '') + '" title="' + esc(B.desc) + '">' + A.build(k, 1, true) + (r === 0 ? '<em class="btag">особая</em>' : r === 1 ? '<em class="btag fit">+50% здесь</em>' : '') + '<b>' + bname(k, 1) + (B.lv ? ' <span class="muted">→ ' + B.lv[1] + ' → ' + B.lv[2] + '</span>' : '') + '</b>' + kindTag(B.kind) + '<span>' + plus(E.pointInc(me, k, i), B.usd) + ' в мес.' + (B.usd ? ' · валюта' : '') + '</span>' + (B.perk ? '<i class="perk">' + esc(B.perk) + '</i>' : '') +
-        '<button class="btn sm primary' + (lock ? ' off' : '') + '" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? offAttr(lock) : '') + '>' + (c ? 'Поставить · ' + rubP(c) : 'Поставить бесплатно') + '</button>' + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</div>';
+      h += '<div class="card bcard' + (r === 0 ? ' special' : r === 1 ? ' fit' : '') + (lock ? ' locked' : '') + '" title="' + esc(B.desc) + '"><div class="bimg">' + A.build(k, 1, true) + (r === 0 ? '<em class="btag">особая</em>' : r === 1 ? '<em class="btag fit">+50% здесь</em>' : '') + '</div>' +
+        '<b class="bt">' + bname(k, 1) + '</b><span class="bchain">' + (B.lv ? '→ ' + B.lv[1] + ' → ' + B.lv[2] : '&nbsp;') + '</span><span class="brow2">' + kindTag(B.kind) + '<span class="binc">' + plus(E.pointInc(me, k, i), B.usd) + '/мес.</span></span><i class="perk">' + esc(B.perk || '') + '</i>' +
+        '<button class="btn sm primary' + (lock ? ' off' : '') + '" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? offAttr(lock) : '') + '>' + (lock && /года/.test(lock) ? lock : c ? 'Поставить · ' + rubP(c) : 'Поставить бесплатно') + '</button></div>';
+        '<button class="btn sm primary' + (lock ? ' off' : '') + '" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? offAttr(lock) : '') + '>' + (c ? 'Поставить · ' + rubP(c) : 'Поставить · даром') + '</button>' + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</div>';
     });
     return h + '</div></div>';
   }
@@ -305,11 +307,11 @@
     if (dd.ent) {
       const e = dd.ent;
       h += '<div class="box"><h3>' + esc(e.name) + '</h3>';
-      if (d.ent && mine) h += '<p class="good">Под тобой. ' + plus(e.inc) + ' в мес.</p>';
+      if (d.ent && mine) h += '<div class="entbig"><b>' + plus(e.inc) + '</b><span>в месяц с предприятия · под тобой</span></div>';
       else if (d.ent) h += '<p class="muted">Под хозяином района. Доход ' + money(e.inc) + ' в мес.</p>';
       else {
         const ok = (v, need) => '<b class="' + (v >= need ? 'good' : 'bad') + '">' + need + '</b>';
-        h += '<p>Доход ' + money(e.inc) + ' в мес. Для захвата нужны бойцы ' + ok(p.men, e.men) + ', связи во власти ' + ok(c, e.conn) + ' и <b class="' + (p.money >= e.cost ? 'good' : 'bad') + '">' + rubP(e.cost) + '</b> на суды и реестр.</p>';
+        h += '<div class="entbig off"><b>' + plus(e.inc) + '</b><span>в месяц, если взять предприятие</span></div><p>Для захвата нужны бойцы ' + ok(p.men, e.men) + ', связи во власти ' + ok(c, e.conn) + ' и <b class="' + (p.money >= e.cost ? 'good' : 'bad') + '">' + rubP(e.cost) + '</b> на суды и реестр.</p>';
         if (mine) h += btn('Захватить предприятие · 2 хода · шанс ' + R(E.raidOdds(S, me, sel)) + '%', 'raid', '', p.men < e.men || c < e.conn || p.money < e.cost || p.ap < 2, 'wide');
         else h += '<p class="muted">Сначала возьми район.</p>';
       }
@@ -1348,6 +1350,7 @@
     h += card('truce', 'Мир на год', rubP(tc) + ' · шанс ' + R(E.truceOdds(S, me, parleyWith)) + '%', 'отношения +15', E.inTruce(S, me, parleyWith) ? 'мир уже есть' : p.money < tc ? 'не хватает денег' : '');
     h += card('gift', 'Подарок', rubP(E.giftCost(S)), 'отношения +20 без риска', p.money < E.giftCost(S) ? 'не хватает денег' : '');
     h += card('deal', 'Совместное дело', rubP(E.dealCost(S)) + ' · шанс ' + R(E.dealOdds(S, me, parleyWith)) + '%', 'вернётся ×1,8 через 3–6 мес.', rl < -20 ? 'с врагами дел не ведут' : p.money < E.dealCost(S) ? 'не хватает денег' : '');
+    { const hl = E.hitLock(S, me, parleyWith); h += '<button class="card atk hitcard" data-a="talk" data-k="hit"' + (busy || hl ? offAttr(busy || ('Нельзя: ' + hl)) : '') + '><b>Убрать главаря</b><span>' + rubP(E.hitCost(S, parleyWith)) + ' · шанс ' + E.hitOdds(S, me, parleyWith) + '%</span><small>удача: треть их районов уходит шпане · отношения −100, розыск +15</small><small class="bad">промах: теряешь людей, они едут мстить</small></button>'; }
     h += card('tribute', 'Потребовать дань', rubP(E.tributeSum(S, parleyWith)) + ' · шанс ' + R(E.tributeOdds(S, me, parleyWith)) + '%', 'отказ — вражда', E.tributeOk(S, me, parleyWith) ? '' : 'нужно быть сильнее в 1,3 раза');
     h += '</div>';
     const ids = E.owned(S, parleyWith).filter(i => E.attackable(S, me, i) && !E.isHome(S, parleyWith, i));
