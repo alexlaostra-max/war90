@@ -986,7 +986,8 @@
     else if (a === 'promote') act('promote', []);
     else if (a === 'proj') act('projStep', [k, b.dataset.h || null]);
     else if (a === 'cashout') act('cashOut', []);
-    else if (a === 'opt') act('choose', [+k]);
+    else if (a === 'opt') { hush(); act('choose', [+k]); }
+    else if (a === 'voice') { voiceOn = !voiceOn; try { localStorage.setItem(VOICE_KEY, voiceOn ? '1' : '0'); } catch (er) { /* ignore */ } b.textContent = voiceOn ? '🔊 Озвучка включена' : '🔇 Озвучка выключена'; if (voiceOn) { const ev = E.currentEvent(S, me); if (ev) speak(E.evText(S, me, ev.title) + '. ' + E.evText(S, me, ev.text)); } else hush(); }
     else if (a === 'force') netCall('force');
     else if (a === 'goto') { sel = +b.dataset.i; section = 'map'; sheet = true; showOnMap(sel); render(); }
     else if (a === 'person') { focus = { id: +b.dataset.id }; section = 'gang'; sheet = true; render(); }
@@ -1096,6 +1097,27 @@
   })();
   function closeModal() { modal.hidden = true; modal.innerHTML = ''; modalKey = ''; }
 
+  // ---------- озвучка событий: строгий мужской голос (синтез речи в браузере) ----------
+  const VOICE_KEY = 'war90.voice';
+  let voiceOn = (() => { try { return localStorage.getItem(VOICE_KEY) !== '0'; } catch (e) { return true; } })();
+  const synth = window.speechSynthesis;
+  function maleVoice() {
+    if (!synth) return null;
+    const vs = synth.getVoices().filter(v => /^ru/i.test(v.lang));
+    return vs.find(v => /yuri|юрий|dmitr|дмитр|pavel|павел|maxim|максим|ermil|filipp|алексей|aleksei|male|мужск/i.test(v.name)) || vs.find(v => !/milena|милена|katya|катя|irina|ирина|alena|алёна|alyona|female|женск|google/i.test(v.name)) || vs[0] || null;
+  }
+  if (synth && synth.onvoiceschanged !== undefined) synth.onvoiceschanged = () => {};
+  function speak(text) {
+    if (!synth || !voiceOn || !text) return;
+    try {
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(text.replace(/[«»]/g, '').replace(/\s+/g, ' '));
+      const v = maleVoice(); if (v) u.voice = v;
+      u.lang = 'ru-RU'; u.rate = 0.95; u.pitch = v && /yuri|юрий|dmitr|pavel|maxim|ermil|filipp|male|мужск/i.test(v.name) ? 0.85 : 0.55; // если голос женский — опускаем тон
+      synth.speak(u);
+    } catch (e) { /* озвучка не обязательна */ }
+  }
+  const hush = () => { try { if (synth) synth.cancel(); } catch (e) { /* ignore */ } };
   function showEvent() {
     const p = P(), ev = E.currentEvent(S, me); if (!ev) return;
     const key = 'ev:' + S.turn + ':' + ev.id + ':' + R(p.money); if (modalKey === key) return;
@@ -1117,7 +1139,10 @@
     else if (w) h += '<div class="evwho"><span class="ava">' + A.face(w) + '</span><div><b>' + esc(E.cname(w)) + '</b><small>' + (w.pos ? slotName(w.pos, w.ok) : 'резерв') + ' · сила ' + w.str + ', ум ' + w.wit + ', верность ' + w.loy + (ev.advice ? '. Чем умнее советчик, тем вернее его совет' : '') + '</small></div></div>';
     h += '<p class="lead">' + tx(ev.text) + '</p><div class="opts">';
     ev.opts.forEach((o, k) => { const os = E.optState(S, me, o); h += '<button class="opt" data-a="opt" data-k="' + k + '"' + (os.lock ? ' disabled' : '') + '><span>' + tx(o.t) + '</span>' + (os.cost ? '<em>' + rubP(os.cost) + '</em>' : '') + (os.lock ? '<small>' + esc(os.lock) + '</small>' : '') + '</button>'; });
-    openModal(h + '</div>', 'event', key);
+    h += '</div>' + (synth ? '<button class="btn sm ghost voicebtn" data-a="voice">' + (voiceOn ? '🔊 Озвучка включена' : '🔇 Озвучка выключена') + '</button>' : '');
+    openModal(h, 'event', key);
+    const plain = x => String(E.evText(S, me, x) || '');
+    setTimeout(() => speak(plain(ev.title) + '. ' + plain(ev.text)), 350);
   }
   const relName = v => (v >= 50 ? 'дружба' : v >= 15 ? 'тепло' : v > -15 ? 'нейтрально' : v > -50 ? 'холодно' : 'вражда') + ' · ' + sign(v);
   const relCls = v => v >= 15 ? 'good' : v <= -15 ? 'bad' : 'muted';

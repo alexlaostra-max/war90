@@ -862,3 +862,5 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 #legend { top: 10px; bottom: auto; left: 12px; right: 60px; align-items: center; color: var(--fg); background: rgba(13, 11, 16, .72); padding: 6px 10px; border-radius: 6px; width: max-content; max-width: calc(100% - 80px); }
 #legend b { font: 400 16px var(--display); margin-right: 6px; }
 .lg.gdot, .lg.odot, .lg.rdot { border-radius: 50%; width: 10px; height: 10px; } .lg.gdot { background: #57d97a; box-shadow: 0 0 6px #57d97a; } .lg.odot { background: #f0a73c; } .lg.rdot { background: #ee5a4f; }
+
+.voicebtn { margin-top: 10px; }
