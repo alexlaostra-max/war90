@@ -112,6 +112,7 @@
 | b-land3.jpg | Земля, уровень III | lincoln1403 | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | [Коттеджный посёлок - panoramio (4)](https://commons.wikimedia.org/wiki/File:%D0%9A%D0%BE%D1%82%D1%82%D0%B5%D0%B4%D0%B6%D0%BD%D1%8B%D0%B9_%D0%BF%D0%BE%D1%81%D1%91%D0%BB%D0%BE%D0%BA_-_panoramio_%284%29.jpg) |
 | b-vokzal2.jpg | Вокзальная крыша, уровень II | Алексей Задонский | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Ленинградский вокзал, Москва](https://commons.wikimedia.org/wiki/File:%D0%9B%D0%B5%D0%BD%D0%B8%D0%BD%D0%B3%D1%80%D0%B0%D0%B4%D1%81%D0%BA%D0%B8%D0%B9_%D0%B2%D0%BE%D0%BA%D0%B7%D0%B0%D0%BB%2C_%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0.jpg) |
 | b-vokzal3.jpg | Вокзальная крыша, уровень III | Mike1979 Russia | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Komsomolskaya Square Moscow 2023-06-10 4450](https://commons.wikimedia.org/wiki/File:Komsomolskaya_Square_Moscow_2023-06-10_4450.jpg) |
+| b-chop2.jpg | ЧОП (охрана, уровень II) | сгенерировано нейросетью Gemini 2.5 Flash Image | — | — |
 | b-chop3.jpg | Личная охрана (охрана, уровень III) | Dmitri Chubarov | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/) | [Viktor Yuschenko bodyguards](https://commons.wikimedia.org/wiki/File:Viktor_Yuschenko_bodyguards.jpg) |
 
 vest.jpg — бронежилет: фото прислал владелец проекта, источник и лицензия не указаны. Права на него — на владельце проекта; при сомнениях замените фото со свободной лицензией.

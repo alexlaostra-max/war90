@@ -440,6 +440,7 @@
     'b-land3': { src: 'img/b-land3.jpg', author: 'lincoln1403', license: 'CC BY 3.0', url: W + 'Коттеджный_посёлок_-_panoramio_(4).jpg' },
     'b-vokzal2': { src: 'img/b-vokzal2.jpg', author: 'Алексей Задонский', license: 'CC BY-SA 4.0', url: W + 'Ленинградский_вокзал,_Москва.jpg' },
     'b-vokzal3': { src: 'img/b-vokzal3.jpg', author: 'Mike1979 Russia', license: 'CC BY-SA 3.0', url: W + 'Komsomolskaya_Square_Moscow_2023-06-10_4450.jpg' },
+    'b-chop2': { src: 'img/b-chop2.jpg' }, // сгенерировано нейросетью (Gemini 2.5 Flash Image через OpenRouter)
     'b-chop3': { src: 'img/b-chop3.jpg', author: 'Dmitri Chubarov', license: 'CC BY-SA 2.0', url: W + 'Viktor_Yuschenko_bodyguards.jpg' },
     // здания точек: по одному фото на тип, кадр 5:3, слегка приглушены и тонированы
     'b-kiosk': { src: 'img/b-kiosk.jpg', author: 'Главархив Москвы', license: 'CC BY 4.0', url: W + 'Kiosks_with_square_of_Kievsky_rail_terminal.jpg' },
