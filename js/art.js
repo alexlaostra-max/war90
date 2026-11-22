@@ -274,7 +274,8 @@
   // c: человек семьи или { name, nick, age, str, wit, loy, look, role, st, seed }
   function face(c, opts) {
     opts = opts || {};
-    const look = Object.assign({}, c.look || {}, opts.look || {});
+    const LG = c.leg && G.DATA && G.DATA.LEGENDS && G.DATA.LEGENDS[c.leg];
+    const look = Object.assign({}, (LG && LG.look) || {}, c.look || {}, opts.look || {});
     const r = rng(hash((c.seed != null ? c.seed : '') + '|' + (c.name || '') + '|' + (c.nick || '') + '|' + (c.leg || '')));
     const age = c.age || 35, str = c.str || 5, wit = c.wit || 5, loy = c.loy || 5;
     const skin = look.skin || pick(r, SKIN), dskin = 'rgba(80,40,30,.28)';

@@ -1,6 +1,6 @@
 # Авторы фото
 
-Фото снаряжения, машин и зданий точек взяты с Викисклада (Wikimedia Commons) под свободными лицензиями.
+Фото снаряжения, машин, зданий точек и крупных дел взяты с Викисклада (Wikimedia Commons) под свободными лицензиями.
 Все они обрезаны и тонированы под игру, у фото оружия убран фон, фото зданий обрезаны до кадра 5:3. Обработанные версии распространяются
 под той же лицензией, что и оригинал. Код игры — под лицензией из файла LICENSE, на эти фото она не распространяется.
 
@@ -53,5 +53,24 @@
 | b-ritual.jpg | Ритуальные услуги | SergeyA-Russia | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | [20220223 Vagankovo Cemetery 04](https://commons.wikimedia.org/wiki/File:20220223_Vagankovo_Cemetery_04.jpg) |
 | b-tir.jpg | Тир и шашлычная | Rickie97 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Shooting Gallery Attractiepark Slagharen](https://commons.wikimedia.org/wiki/File:Shooting_Gallery_Attractiepark_Slagharen.jpg) |
 | b-land.jpg | Земля | ЮляШка Ш | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Стройка динамо](https://commons.wikimedia.org/wiki/File:%D0%A1%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0_%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%BE.JPG) |
+| d-cars.jpg | Перегон иномарок | Alexander Migl | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Mercedes-Benz W124 (1989) IMG 0021](https://commons.wikimedia.org/wiki/File:Mercedes-Benz_W124_%281989%29_IMG_0021.jpg) |
+| d-vodka.jpg | Левая водка | JustKronos | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) | [Полка с водкой](https://commons.wikimedia.org/wiki/File:%D0%9F%D0%BE%D0%BB%D0%BA%D0%B0_%D1%81_%D0%B2%D0%BE%D0%B4%D0%BA%D0%BE%D0%B9.jpg) |
+| d-guns.jpg | Оружие из Чечни | SPEC. 4 Long | Общественное достояние | [A Soviet-made 7.62mm PKM light machine gun and other weapons seized during Operation Urgent Fury DD-ST-86-03415](https://commons.wikimedia.org/wiki/File:A_Soviet-made_7.62mm_PKM_light_machine_gun_and_other_weapons_seized_during_Operation_Urgent_Fury_DD-ST-86-03415.jpg) |
+| d-drugs.jpg | Наркотрафик | U.S. Customs and Border Protection | Общественное достояние | [CBP Seizes Concealed Drugs at Calexico Port of Entry (9471926467)](https://commons.wikimedia.org/wiki/File:CBP_Seizes_Concealed_Drugs_at_Calexico_Port_of_Entry_%289471926467%29.jpg) |
+| d-bank.jpg | Коммерческий банк | Stas Lobov | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Moscow Kuznetsky Most Street 15-8](https://commons.wikimedia.org/wiki/File:Moscow_Kuznetsky_Most_Street_15-8.jpg) |
+| d-metal.jpg | Алюминий на экспорт | uc_rusal_photo_gallery | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/) | [Shelekhov-aluminium-factory-3](https://commons.wikimedia.org/wiki/File:Shelekhov-aluminium-factory-3.jpg) |
+| d-oil.jpg | Нефтетрейдинг | ShinePhantom | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Oil pumpjack, Togliatti](https://commons.wikimedia.org/wiki/File:Oil_pumpjack%2C_Togliatti.JPG) |
+| d-media.jpg | Телеканал | Sergey Pesterev | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Ostankino Tower](https://commons.wikimedia.org/wiki/File:Ostankino_Tower.jpg) |
+| d-mall.jpg | Торговые центры | Chris Rycroft | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Atrium in the Westgate shopping center](https://commons.wikimedia.org/wiki/File:Atrium_in_the_Westgate_shopping_center.jpg) |
+| d-gsm.jpg | Сотовая связь | R. Henrik Nilsson | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | [Mobira Nokia NMT 450 phone TMF 4SP from 1994 Made in Finland](https://commons.wikimedia.org/wiki/File:Mobira_Nokia_NMT_450_phone_TMF_4SP_from_1994_Made_in_Finland.jpg) |
+| d-coal.jpg | Уголь Кузбасса | Stephen Codrington | [CC BY 2.5](https://creativecommons.org/licenses/by/2.5/) | [Kalgoorlie open cast mine](https://commons.wikimedia.org/wiki/File:Kalgoorlie_open_cast_mine.jpg) |
+| d-avtoz.jpg | Дилерство «Жигулей» | Ржавый номер | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | [1998 Lada Samara Baltic red front](https://commons.wikimedia.org/wiki/File:1998_Lada_Samara_Baltic_red_front.jpg) |
+| d-slots.jpg | Сеть игровых залов | Redactor Maxim | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Азартные игровые автоматы](https://commons.wikimedia.org/wiki/File:%D0%90%D0%B7%D0%B0%D1%80%D1%82%D0%BD%D1%8B%D0%B5_%D0%B8%D0%B3%D1%80%D0%BE%D0%B2%D1%8B%D0%B5_%D0%B0%D0%B2%D1%82%D0%BE%D0%BC%D0%B0%D1%82%D1%8B.jpg) |
+| d-seaport.jpg | Морской порт | bibikoff | Общественное достояние | [Port Novorossiysk](https://commons.wikimedia.org/wiki/File:Port_Novorossiysk.JPG) |
+| d-club.jpg | Футбольный клуб | Maarten | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Lokomotiv - Spartak (19)](https://commons.wikimedia.org/wiki/File:Lokomotiv_-_Spartak_%2819%29.jpg) |
+| d-gold.jpg | Золотой прииск | Adams & Larkin | Общественное достояние | [Gold bars stacked in a pyramid, Dawson, probably between 1902 and 1910 (AL+CA 1405)](https://commons.wikimedia.org/wiki/File:Gold_bars_stacked_in_a_pyramid%2C_Dawson%2C_probably_between_1902_and_1910_%28AL%2BCA_1405%29.jpg) |
+| d-tower.jpg | Башня в Сити | Gennady Grachev from Moscow, Russia | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Moscow, construction of Moscow-City concert hall (30590377513)](https://commons.wikimedia.org/wiki/File:Moscow%2C_construction_of_Moscow-City_concert_hall_%2830590377513%29.jpg) |
+| d-olymp.jpg | Олимпийская стройка | Sasha Krotov | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | [Fisht Olympic Stadium Sochi March 2013](https://commons.wikimedia.org/wiki/File:Fisht_Olympic_Stadium_Sochi_March_2013.JPG) |
+| d-kidnap.jpg | Похищение коммерсанта | неизвестен | Общественное достояние | [StrappedCurrency](https://commons.wikimedia.org/wiki/File:StrappedCurrency.jpg) |
 
 vest.jpg — бронежилет: фото прислал владелец проекта, источник и лицензия не указаны. Права на него — на владельце проекта; при сомнениях замените фото со свободной лицензией.

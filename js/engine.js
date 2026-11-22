@@ -81,7 +81,7 @@
   // Старые сохранения и новые бригады: склад по моделям, броники, легенды
   function kitInit(f) { f.arms = { pm: f.guns || 0 }; f.garage = { nine: f.cars || 0 }; if (f.vests == null) f.vests = 0; }
   function migrate(S) {
-    (S.humans || []).forEach(h => { const x = S.f[h]; if (!x) return; if (!x.arms) kitInit(x); if (x.vests == null) x.vests = 0; if (!x.once) x.once = []; });
+    (S.humans || []).forEach(h => { const x = S.f[h]; if (!x) return; if (!x.arms) kitInit(x); if (x.vests == null) x.vests = 0; if (!x.once) x.once = []; (x.crew || []).forEach(c => { if (c.leg && D.LEGENDS[c.leg]) { c.name = D.LEGENDS[c.leg].name; c.nick = D.LEGENDS[c.leg].nick; } }); });
     return S;
   }
 
@@ -598,7 +598,7 @@
         const mix = (d.b.includes(k) ? 0.25 : 1) / (1 + (have[k] || 0) / 3);
         opts.push({ v: (pointInc(fid, k, i) + (B.fx || B.rec || B.def ? 2 : 0)) / c * (B.need ? 1.2 : 1) * mix, i, k, c });
       });
-      d.b.forEach((k, x) => { if (pointLvl(d, x) >= MAX_LVL) return; const c = upgradeCost(S, i, x); if (c > budget) return; opts.push({ v: (pointInc(fid, k, i) + (D.BUILDS[k].fx ? 1 : 0)) / c, i, x, c }); });
+      d.b.forEach((k, x) => { if (pointLvl(d, x) >= MAX_LVL || upgradeLock(S, pointLvl(d, x))) return; const c = upgradeCost(S, i, x); if (c > budget) return; opts.push({ v: (pointInc(fid, k, i) + (D.BUILDS[k].fx ? 1 : 0)) / c, i, x, c }); });
     });
     opts.sort((a, b) => b.v - a.v);
     return opts.length ? opts[sloppy ? Math.floor(rnd(S) * Math.min(3, opts.length)) : 0] : null;
@@ -736,12 +736,16 @@
     const v = carSale(k, broken); p.money += v;
     return { ok: true, msg: D.CARS[k].name + (broken ? ' ушла на запчасти' : ' продана') + ': +' + v + ' тыс.' };
   }
+  // улучшения привязаны ко времени: II уровень — с 1993-го (павильоны, ремонт по-европейски), III — с 1997-го (сети, торговые центры)
+  const LVL_FROM = { 2: 1993, 3: 1997 };
+  const upgradeLock = (S, lv) => { const y = LVL_FROM[lv + 1]; return y && date(S.turn).year < y ? 'до ' + ['', 'I', 'II', 'III'][lv + 1] + ' — с ' + y + ' года' : null; };
   function upgrade(S, fid, i, x) {
     const e = spend(S, fid, 0); if (e) return fail(e);
     const d = S.d[i], p = S.f[fid];
     if (!d || d.o !== fid) return fail('Район не твой');
     const k = d.b[x]; if (!k) return fail('Нет такой точки');
     const lv = pointLvl(d, x); if (lv >= MAX_LVL) return fail('Улучшать больше некуда');
+    const ul = upgradeLock(S, lv); if (ul) return fail('Улучшение ' + ul);
     const c = upgradeCost(S, i, x);
     if (p.money < c) return fail('Не хватает денег: нужно ' + c);
     doUpgrade(S, fid, i, x);
@@ -1431,5 +1435,5 @@
 
   const ACTIONS = { place, repairAll, scrapAll, exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
-  G.Engine = { repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { upgradeLock, LVL_FROM, repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);
