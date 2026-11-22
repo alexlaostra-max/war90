@@ -10,6 +10,8 @@
   --mono: 'PT Mono', 'Courier New', monospace;
 }
 html, body { height: 100%; }
+/* без приближения по двойному нажатию: кнопки и вкладки жмутся быстро, как в приложении */
+html, body, button, a, input, select, label { touch-action: manipulation; }
 body { background: var(--bg); color: var(--fg); font: 15px/1.4 var(--body); overflow: hidden; }
 * { box-sizing: border-box; }
 button { font: inherit; color: inherit; cursor: pointer; }

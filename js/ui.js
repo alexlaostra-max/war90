@@ -60,6 +60,8 @@
   [0, 300, 1000, 2500].forEach(ms => setTimeout(fitDock, ms));
   const tgSync = () => { if (!TG) return; if (sheet || modalKey === 'records' || modalKey === 'lawinfo') TG.BackButton.show(); else TG.BackButton.hide(); };
   const haptic = kind => { try { if (TG && TG.HapticFeedback) TG.HapticFeedback.impactOccurred(kind || 'medium'); } catch (e) { /* ignore */ } };
+  // Safari на iPhone иногда всё равно приближает: глушим жест масштаба двумя пальцами вне карты
+  ['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, e => { if (!(e.target.closest && e.target.closest('#map'))) e.preventDefault(); }, { passive: false }));
   // короткий щелчок при переключении вкладок: в Телеграме — его вибрация, в браузере на Android — navigator.vibrate (iPhone в Safari не умеет)
   const tick = () => { try { if (TG && TG.HapticFeedback) TG.HapticFeedback.selectionChanged(); else if (navigator.vibrate) navigator.vibrate(12); } catch (e) { /* ignore */ } };
   const DONATE = '+79936338436', DONATE_SHOW = '+7 993 633-84-36'; // донат автору: Т-Банк по номеру
