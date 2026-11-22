@@ -769,7 +769,7 @@
       h += '<div class="box proj ' + (stage === 3 ? 'live' : '') + (ps.lock ? ' locked' : '') + '"><div class="dpic">' + A.deal(pr.id) + (stage === 3 ? '<em>в деле</em>' : '<em>' + esc(pr.where) + '</em>') + '</div><h3>' + pr.name + ' ' + kindTag(pr.kind) + '</h3>';
       h += '<p>' + (stage === 3 ? '<b class="good">' + plus(pi, true) + ' в мес.</b>' : 'Доход ' + money(pr.inc, true) + ' в мес.') + (pr.heat ? ' · розыск ' + sign(pr.heat) + ' в мес.' : '') + (pr.note ? ' · ' + pr.note : '') + '</p>';
       if (stage < 3) { const u = E.usdOf(p); h += reqs([['Авторитет', pr.rep, p.rep >= pr.rep], ['Поездка', usdP(E.has(S, me, 'jet') ? 0 : pr.trip), u >= pr.trip || stage > 0], ['Вход', usdP(pr.buy), u >= pr.buy], ['Год', pr.from, E.date(S.turn).year >= pr.from]]); }
-      if (stage === 3) { if (pr.pyramid) h += btn('Соскочить и вывезти кассу · +' + pi * 2, 'cashout', '', p.ap < 1, 'wide'); }
+      if (stage === 3) { if (pr.pyramid) h += btn('Соскочить и вывезти кассу · +' + usdP(pi * 2), 'cashout', '', p.ap < 1, 'wide'); }
       else {
         h += '<ol class="steps"><li class="' + (stage > 0 ? 'done' : 'cur') + '">Поездка: ' + pr.where + '</li><li class="' + (stage > 1 ? 'done' : stage === 1 ? 'cur' : '') + '">Переговоры: ' + pr.who + '</li><li class="' + (stage === 2 ? 'cur' : '') + '">' + pr.buyLabel + '</li></ol>';
         if (ps.lock) h += '<p class="muted">' + ps.lock + '</p>';
@@ -843,7 +843,7 @@
     if (E.inTruce(S, me, dealWith)) h += '<p class="good">Мир до ' + E.date(p.truce[dealWith]).label + '.</p>';
     h += '<div class="seg dkinds">' + DEAL_KINDS.map(k => '<button class="' + (k[0] === dealKind ? 'on' : '') + '" data-a="dkind" data-k="' + k[0] + '">' + k[1] + '</button>').join('') + '</div>';
     if (dealKind === 'truce') h += '<label class="field"><span>Срок мира</span><select id="dx">' + [3, 6, 12, 24].map(m => '<option value="' + m + '"' + (m === 12 ? ' selected' : '') + '>' + m + ' мес.</option>').join('') + '</select></label><p class="muted">Пока действует мир, вы не можете нападать на районы друг друга.</p>';
-    else if (dealKind === 'pay' || dealKind === 'ask') h += '<label class="field"><span>Сумма в тысячах $' + (dealKind === 'pay' ? ' (у тебя ' + usdP(p.money) + ')' : '') + '</span><input id="dx" type="number" inputmode="numeric" min="1" value="50"></label>';
+    else if (dealKind === 'pay' || dealKind === 'ask') h += '<label class="field"><span>Сумма в тысячах ₽' + (dealKind === 'pay' ? ' (у тебя ' + rubP(p.money) + ')' : '') + '</span><input id="dx" type="number" inputmode="numeric" min="1" value="50"></label>';
     else {
       const ds = dealDistricts(dealKind, dealWith);
       if (!ds.length) h += '<p class="muted">' + (dealKind === 'sell' ? 'Нет районов на продажу: продать можно не родной район, который граничит с их землёй.' : 'Купить нечего: можно только их не родной район рядом с твоими.') + '</p>';
@@ -1373,7 +1373,7 @@
     let h = '<p class="eyebrow">' + E.date(S.turn).label + '</p><h2>' + esc(o.title) + '</h2><p class="lead">' + esc(o.text) + '</p>';
     if (WHY[o.title]) h += '<div class="box why"><h3>Почему так вышло</h3><p>' + WHY[o.title] + '</p></div>';
     if (net && !S.done) h += btn('👁 Смотреть за игрой дальше', 'spectate', '', false, 'wide primary') + '<p class="muted">Карта, чат и бригады других игроков — до конца партии.</p>';
-    if (o.stats) h += '<dl class="kv"><dt>Счёт</dt><dd>' + o.score + '</dd><dt>Касса</dt><dd>' + usdP(o.stats.money) + '</dd><dt>Районы</dt><dd>' + o.stats.districts + '</dd><dt>Авторитет</dt><dd>' + o.stats.rep + '</dd><dt>Связи</dt><dd>' + o.stats.conn + '</dd><dt>Белый доход</dt><dd>' + o.stats.white + '%</dd></dl>';
+    if (o.stats) h += '<dl class="kv"><dt>Счёт</dt><dd>' + o.score + '</dd><dt>Касса</dt><dd>' + rubP(o.stats.money) + '</dd><dt>Районы</dt><dd>' + o.stats.districts + '</dd><dt>Авторитет</dt><dd>' + o.stats.rep + '</dd><dt>Связи</dt><dd>' + o.stats.conn + '</dd><dt>Белый доход</dt><dd>' + o.stats.white + '%</dd></dl>';
     if (net && S.humans.length > 1) {
       h += '<h3>Игроки</h3><table class="tbl">' + S.humans.map(f => { const x = S.f[f]; return '<tr><td><i class="dot" style="background:' + fd(f).color + '"></i>' + who(f) + '</td><td>' + (x.over ? esc(x.over.title) + (x.over.score ? ' · ' + x.over.score : '') : 'ещё играет') + '</td></tr>'; }).join('') + '</table>';
       if (!S.done) h += '<p class="muted">Остальные доигрывают. Итоги обновятся здесь.</p>';

@@ -73,7 +73,8 @@
     const M = Math.round(K / 1000); if (M < 1000) return s + M + 'М';
     const B = Math.floor(M / 1000), m = M % 1000; return s + B + ' млрд' + (m ? ' ' + m + 'М' : '');
   }
-  const fm = v => fmtK(v) + ' $';
+  // знак валюты: всё, что зарабатывается и тратится в Москве, — рубли; доллары — обменник, крупные дела, статус и личное
+  const fm = v => fmtK(v) + ' ₽', fu = v => fmtK(v) + ' $';
   const cash = p => { const w = Math.min(Math.max(0, p.clean || 0), Math.max(0, p.money)); return { white: Math.round(w), black: Math.round(p.money - w) }; };
   const fdef = id => D.FACTIONS.find(f => f.id === id);
   // to — кому видна запись (бригада); без to видят все
@@ -868,7 +869,7 @@
     checkDone(S);
     return { ok: true, msg: 'Ты отошёл от дел.' };
   }
-  const statusLock = (S, fid, X) => { const p = S.f[fid]; return has(S, fid, X.id) ? 'уже есть' : date(S.turn).year < X.from ? 'с ' + X.from + ' года' : X.needConn && conn(S, fid) < X.needConn ? 'нужны связи: ' + X.needConn : usdOf(p) < X.cost ? 'нужно ' + fm(X.cost) + ' долларами' : p.money < X.cost ? 'не хватает денег' : null; };
+  const statusLock = (S, fid, X) => { const p = S.f[fid]; return has(S, fid, X.id) ? 'уже есть' : date(S.turn).year < X.from ? 'с ' + X.from + ' года' : X.needConn && conn(S, fid) < X.needConn ? 'нужны связи: ' + X.needConn : usdOf(p) < X.cost ? 'нужно ' + fu(X.cost) + ' долларами' : p.money < X.cost ? 'не хватает денег' : null; };
   // обменник: купить доллары за рубли или продать, сумма в тыс. $ по среднему курсу; спред и наценка за объём — см. fxQuote
   function exchange(S, fid, dir, amt) {
     const e = spend(S, fid, 0); if (e) return fail(e);
@@ -878,12 +879,12 @@
       if (amt > c.rub) return fail('Рублей только на ' + fm(c.rub));
       const q = fxQuote(S, fid, 'buy', amt); if (q.get < 1) return fail('Слишком мало: на такую сумму доллара не дадут');
       p.money -= q.fee; p.usd = c.usd + q.get; p.fxb = { t: S.turn, v: fxBought(S, fid) + amt };
-      return { ok: true, msg: 'Купили ' + fm(q.get) + ', будка взяла ' + fm(q.fee) + ' (' + q.pct + '%)' };
+      return { ok: true, msg: 'Купили ' + fu(q.get) + ', будка взяла ' + fm(q.fee) + ' (' + q.pct + '%)' };
     }
     if (dir === 'sell') {
-      if (amt > c.usd) return fail('Долларов только ' + fm(c.usd));
+      if (amt > c.usd) return fail('Долларов только ' + fu(c.usd));
       const q = fxQuote(S, fid, 'sell', amt); p.money -= q.fee; p.usd = c.usd - amt;
-      return { ok: true, msg: 'Продали ' + fm(amt) + ', на руки рублями ' + fmtK(q.get) + ' ₽ по курсу' };
+      return { ok: true, msg: 'Продали ' + fu(amt) + ', на руки ' + fm(q.get) };
     }
     return fail('Купить или продать?');
   }
@@ -899,7 +900,7 @@
   // ---------- личное главы: элитные машины и именное оружие ----------
   const eliteHas = (S, fid, id) => !!(S.f[fid].elite || {})[id];
   const eliteFx = (S, fid, key) => { const e = S.f[fid].elite || {}; return (D.ELITE || []).reduce((a, X) => a + (e[X.id] ? (X[key] === true ? 1 : X[key] || 0) : 0), 0); };
-  const eliteLock = (S, fid, X) => eliteHas(S, fid, X.id) ? 'уже есть' : date(S.turn).year < X.from ? 'с ' + X.from + ' года' : usdOf(S.f[fid]) < X.cost ? 'нужно ' + fm(X.cost) + ' долларами' : null;
+  const eliteLock = (S, fid, X) => eliteHas(S, fid, X.id) ? 'уже есть' : date(S.turn).year < X.from ? 'с ' + X.from + ' года' : usdOf(S.f[fid]) < X.cost ? 'нужно ' + fu(X.cost) + ' долларами' : null;
   function buyElite(S, fid, id) {
     const e = spend(S, fid, 0); if (e) return fail(e);
     const X = (D.ELITE || []).find(x => x.id === id); if (!X) return fail('Нет такого');
@@ -932,8 +933,8 @@
     if (rnd(S) * 100 < jobOdds(S, fid, J)) {
       const m = ri(S, g[0], g[1]); p.money += m; if (J.usd) p.usd = cur(p).usd + m;
       addHeat(S, fid, J.heat); addRep(S, fid, J.repWin || 1); if (J.cars) addCar(p, J.id === 'vlad' ? 'lc100' : 'audi', J.cars);
-      log(S, J.name + ' (' + J.where + '): +' + fm(m) + (J.usd ? ' долларами' : '') + '.', 'good', fid);
-      return { ok: true, msg: J.name + ': +' + fm(m) + (J.cars ? ', машин в гараж: ' + J.cars : '') };
+      log(S, J.name + ' (' + J.where + '): +' + (J.usd ? fu(m) : fm(m)) + '.', 'good', fid);
+      return { ok: true, msg: J.name + ': +' + (J.usd ? fu(m) : fm(m)) + (J.cars ? ', машин в гараж: ' + J.cars : '') };
     }
     const lost = Math.min(p.men, ri(S, 1, Math.max(2, Math.round(J.men / 3)))); p.men -= lost; addHeat(S, fid, J.heat + 3); addRep(S, fid, -2);
     log(S, J.name + ' (' + J.where + ') сорвалось: местные встретили. Потеряно бойцов: ' + lost + '.', 'bad', fid);
@@ -1230,7 +1231,7 @@
   // Доллары нужны для крупного: крупные дела и статусные покупки берут только $ (рубли там не принимают).
   // Остальное (бойцы, стволы, точки, взятки) — сначала рублями, потом долларами.
   const usdOf = p => cur(p).usd;
-  const needUsd = (p, c) => usdOf(p) < c ? 'Нужно ' + fm(c) + ' долларами (есть ' + usdOf(p) + '). Поменяй рубли в обменнике' : null;
+  const needUsd = (p, c) => usdOf(p) < c ? 'Нужно ' + fu(c) + ' долларами (есть ' + fu(usdOf(p)) + '). Поменяй рубли в обменнике' : null;
   function payUsd(p, c) { const u = usdOf(p); p.money -= c; p.usd = Math.max(0, u - c); }
   function projStep(S, fid, id, how) {
     const e = spend(S, fid, 1); if (e) return fail(e);
@@ -1259,8 +1260,8 @@
     if (st.stage === 2) {
       const nu = needUsd(p, pr.buy); if (nu) return fail(nu);
       payUsd(p, pr.buy); st.stage = 3; st.age = 0; st.last = S.turn; p.ap--; addRep(S, fid, pr.kind === 'w' ? 4 : 3);
-      log(S, 'Запущен бизнес: ' + pr.name + '. +' + projIncome(S, fid, pr) + ' в месяц.', 'big', fid);
-      return { ok: true, msg: pr.name + ': дело пошло. +' + projIncome(S, fid, pr) + ' в месяц' };
+      log(S, 'Запущен бизнес: ' + pr.name + '. +' + fu(projIncome(S, fid, pr)) + ' в месяц.', 'big', fid);
+      return { ok: true, msg: pr.name + ': дело пошло. +' + fu(projIncome(S, fid, pr)) + ' в месяц' };
     }
     return fail('Бизнес уже работает');
   }
@@ -1268,9 +1269,9 @@
     const e = spend(S, fid, 1); if (e) return fail(e);
     const p = S.f[fid], st = p.proj.pyramid; if (!st || st.stage !== 3) return fail('Пирамиды нет');
     const pr = D.PROJECTS.find(x => x.id === 'pyramid'), m = projIncome(S, fid, pr) * 2;
-    p.money += m; p.proj.pyramid = { stage: 0, dead: true }; p.ap--; addRep(S, fid, -5); addHeat(S, fid, 8);
-    log(S, 'Ты закрыл пирамиду и вывез кассу: ' + m + '. Вкладчики остались у дверей.', 'big', fid);
-    return { ok: true, msg: 'Касса вывезена: +' + m };
+    p.money += m; p.usd = cur(p).usd + m; p.proj.pyramid = { stage: 0, dead: true }; p.ap--; addRep(S, fid, -5); addHeat(S, fid, 8);
+    log(S, 'Ты закрыл пирамиду и вывез кассу: ' + fu(m) + '. Вкладчики остались у дверей.', 'big', fid);
+    return { ok: true, msg: 'Касса вывезена: +' + fu(m) };
   }
 
   // ---------- события ----------
@@ -1719,5 +1720,5 @@
 
   const ACTIONS = { attackGo, train, propose, buyElite, job, place, repairAll, scrapAll, exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
-  G.Engine = { gunHeat, priceK, wealthK, fxChange, fmtK, fm, fxQuote, fxBoard, fxLiq, fxBought, fxBooths, FX_SPREAD, repCap, repParts, ATK, atkLock, attackOdds, strikeMax, squad, surrOdds, XP_NEED, LV_MAX, trainCost, trainLock, eliteHas, eliteFx, eliteLock, jobGain, jobCost, jobOdds, jobLock, capital, realRub, LATER_IN, upgradeLock, LVL_FROM, repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { fu, gunHeat, priceK, wealthK, fxChange, fmtK, fm, fxQuote, fxBoard, fxLiq, fxBought, fxBooths, FX_SPREAD, repCap, repParts, ATK, atkLock, attackOdds, strikeMax, squad, surrOdds, XP_NEED, LV_MAX, trainCost, trainLock, eliteHas, eliteFx, eliteLock, jobGain, jobCost, jobOdds, jobLock, capital, realRub, LATER_IN, upgradeLock, LVL_FROM, repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);
