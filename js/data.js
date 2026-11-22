@@ -430,6 +430,7 @@
     'b-scrap2': { src: 'img/b-scrap2.jpg', author: 'Syced', license: 'CC0', url: W + 'Metal_scrap_in_Aomi.jpg' },
     'b-scrap3': { src: 'img/b-scrap3.jpg', author: 'Lenispolkom', license: 'CC BY-SA 4.0', url: W + 'Юзовский_металлургический_завод.jpg' },
     'b-fuel2': { src: 'img/b-fuel2.jpg', author: 'Nikolai Bulykin', license: 'CC BY-SA 4.0', url: W + 'Алматы,_АЗС_на_Райымбека.jpg' },
+    'b-fuel3': { src: 'img/b-fuel3.jpg' }, // прислал владелец проекта
     'b-port2': { src: 'img/b-port2.jpg', author: 'Sergey Norin from Moscow, Russia', license: 'CC BY 2.0', url: W + 'Moscow,_frozen_South_River_Port_pier,_January_2014.jpg' },
     'b-port3': { src: 'img/b-port3.jpg', author: 'ru:User:Russianname', license: 'CC BY-SA 2.5', url: W + 'Вид_на_Одесский_порт_2.jpg' },
     'b-ritual2': { src: 'img/b-ritual2.jpg', author: 'Andykatib', license: 'CC0', url: W + 'Gillions_funeral_home_Hillside_Road,_5_Jan_2026.jpg' },
