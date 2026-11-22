@@ -864,3 +864,6 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 .lg.gdot, .lg.odot, .lg.rdot { border-radius: 50%; width: 10px; height: 10px; } .lg.gdot { background: #57d97a; box-shadow: 0 0 6px #57d97a; } .lg.odot { background: #f0a73c; } .lg.rdot { background: #ee5a4f; }
 
 .voicebtn { margin-top: 10px; }
+
+.evcash { margin: -4px 0 10px; font: 13px var(--mono); color: var(--dim); } .evcash b { color: #e8a35a; font-weight: 400; } .evcash b.good { color: var(--good); }
+.opt em.gain { color: var(--good); }

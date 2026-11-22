@@ -987,7 +987,7 @@
     else if (a === 'proj') act('projStep', [k, b.dataset.h || null]);
     else if (a === 'cashout') act('cashOut', []);
     else if (a === 'opt') { hush(); act('choose', [+k]); }
-    else if (a === 'voice') { voiceOn = !voiceOn; try { localStorage.setItem(VOICE_KEY, voiceOn ? '1' : '0'); } catch (er) { /* ignore */ } b.textContent = voiceOn ? '🔊 Озвучка включена' : '🔇 Озвучка выключена'; if (voiceOn) { const ev = E.currentEvent(S, me); if (ev) speak(E.evText(S, me, ev.title) + '. ' + E.evText(S, me, ev.text)); } else hush(); }
+    else if (a === 'voice') { voiceOn = !voiceOn; try { localStorage.setItem(VOICE_KEY, voiceOn ? '1' : '0'); } catch (er) { /* ignore */ } b.textContent = voiceOn ? '🔊 Озвучка включена' : '🔇 Озвучка выключена'; if (voiceOn) { const ev = E.currentEvent(S, me); if (ev) speak(E.evText(S, me, ev.text)); } else hush(); }
     else if (a === 'force') netCall('force');
     else if (a === 'goto') { sel = +b.dataset.i; section = 'map'; sheet = true; showOnMap(sel); render(); }
     else if (a === 'person') { focus = { id: +b.dataset.id }; section = 'gang'; sheet = true; render(); }
@@ -1137,12 +1137,14 @@
     if (L) h += '<div class="evwho"><span class="ava">' + A.legendFace(ev.npc) + '</span><div><b>' + esc(L.nick) + '</b><small>' + esc(L.name) + ', ' + esc(L.bio.charAt(0).toLowerCase() + L.bio.slice(1)) + '</small></div></div>';
     else if (ev.off) h += '<div class="evwho"><span class="ava">' + A.officialFace(ev.off) + '</span><div><b>' + esc(D.OFFICIALS[ev.off].name) + '</b><small>Пришёл не с пустыми руками: с папкой.' + (p.off[ev.off] ? ' Свой такой у тебя уже есть, но этот — чужой.' : '') + '</small></div></div>';
     else if (w) h += '<div class="evwho"><span class="ava">' + A.face(w) + '</span><div><b>' + esc(E.cname(w)) + '</b><small>' + (w.pos ? slotName(w.pos, w.ok) : 'резерв') + ' · сила ' + w.str + ', ум ' + w.wit + ', верность ' + w.loy + (ev.advice ? '. Чем умнее советчик, тем вернее его совет' : '') + '</small></div></div>';
-    h += '<p class="lead">' + tx(ev.text) + '</p><div class="opts">';
-    ev.opts.forEach((o, k) => { const os = E.optState(S, me, o); h += '<button class="opt" data-a="opt" data-k="' + k + '"' + (os.lock ? ' disabled' : '') + '><span>' + tx(o.t) + '</span>' + (os.cost ? '<em>' + rubP(os.cost) + '</em>' : '') + (os.lock ? '<small>' + esc(os.lock) + '</small>' : '') + '</button>'; });
+    h += '<p class="lead">' + tx(ev.text) + '</p>';
+    { const cc = E.cur(p); h += '<div class="evcash">В кассе: <b>' + rubP(cc.rub) + '</b> и <b class="good">' + usdP(cc.usd) + '</b></div>'; }
+    h += '<div class="opts">';
+    ev.opts.forEach((o, k) => { const os = E.optState(S, me, o); h += '<button class="opt" data-a="opt" data-k="' + k + '"' + (os.lock ? ' disabled' : '') + '><span>' + tx(o.t) + '</span>' + (os.cost ? '<em>−' + rubP(os.cost) + '</em>' : '') + (() => { const m = E.era(S), g = (o.$ > 0 ? Math.round(o.$ * m) : 0) + (o.get ? Math.round(o.get * m) : 0), l = o.later ? Math.round(o.later * m) : 0; return (g ? '<em class="gain">+' + rubP(g) + '</em>' : '') + (l ? '<em class="' + (l > 0 ? 'gain' : '') + '">' + (l > 0 ? '+' : '−') + rubP(Math.abs(l)) + ' потом</em>' : ''); })() + (os.lock ? '<small>' + esc(os.lock) + '</small>' : '') + '</button>'; });
     h += '</div>' + (synth ? '<button class="btn sm ghost voicebtn" data-a="voice">' + (voiceOn ? '🔊 Озвучка включена' : '🔇 Озвучка выключена') + '</button>' : '');
     openModal(h, 'event', key);
     const plain = x => String(E.evText(S, me, x) || '');
-    setTimeout(() => speak(plain(ev.title) + '. ' + plain(ev.text)), 350);
+    setTimeout(() => speak(plain(ev.text)), 350);
   }
   const relName = v => (v >= 50 ? 'дружба' : v >= 15 ? 'тепло' : v > -15 ? 'нейтрально' : v > -50 ? 'холодно' : 'вражда') + ' · ' + sign(v);
   const relCls = v => v >= 15 ? 'good' : v <= -15 ? 'bad' : 'muted';
