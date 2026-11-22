@@ -185,7 +185,7 @@ async function tgPoll() {
       tgApi('sendMessage', { chat_id: m.chat.id, text: 'Код для входа в «Передел»: ' + code + '\nВведи его в игре. Код действует 10 минут.' });
     } else if (/^\/start/.test(m.text)) tgApi('sendMessage', { chat_id: m.chat.id, text: 'Это бот игры «Передел». Играть: https://peredel-msk.ru' });
   });
-  setTimeout(tgPoll, r ? 200 : 5000);
+  setTimeout(tgPoll, r && r.ok ? 200 : r ? 30000 : 5000); // неверный токен или нет связи — не долбим API
 }
 tgPoll();
 // проверка подписи данных мини-приложения Телеграма
@@ -201,6 +201,7 @@ function tgInitUser(initData) {
 const lastSend = new Map();
 const AUTH = {
   async email(b) {
+    if (!process.env.AUTH_EMAIL) return { err: 'Вход только через Телеграм' }; // почта отключена
     const email = String(b.email || '').trim().toLowerCase();
     if (!/^[^@\s]{1,64}@[^@\s]{1,190}\.[a-z]{2,}$/.test(email)) return { err: 'Проверь адрес почты' };
     if (Date.now() - (lastSend.get(email) || 0) < 60e3) return { err: 'Код уже отправлен. Новый — через минуту' };

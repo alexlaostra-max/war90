@@ -881,13 +881,10 @@
     if (a === 'refresh') { showStart(); return; }
     if (a === 'scen') { scen = k; try { localStorage.setItem('war90.scen', k); } catch (er) { /* ignore */ } document.querySelectorAll('[data-a=scen]').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); }); $('#scennote').textContent = D.SCENARIOS[k].desc; return; }
     if (a === 'records') { showRecords(); return; }
-    if (a === 'login') { loginStep = { tab: TG ? 'tg' : 'email' }; showLogin(); return; }
-    if (a === 'logtab') { loginStep = { tab: k }; showLogin(); return; }
-    if (a === 'logreset') { loginStep = { tab: 'email', email: loginStep.email }; showLogin(); return; }
-    if (a === 'logsend') { const em = (($('#lemail') || {}).value || '').trim(); authPost('email', { email: em }).then(r => { if (r.ok) { loginStep = { tab: 'email', email: em, sent: true }; showLogin(); } else toast(r.err || 'Сервер недоступен', true); }); return; }
-    if (a === 'logtg') { authPost('tgstart').then(r => { if (!r.ok) return toast(r.err || 'Сервер недоступен', true); loginStep = { tab: 'tg', nonce: r.nonce, link: r.link }; showLogin(); if (TG) TG.openTelegramLink(r.link); else window.open(r.link, '_blank'); }); return; }
+    if (a === 'login') { loginStep = {}; showLogin(); return; }
+    if (a === 'logtg') { authPost('tgstart').then(r => { if (!r.ok) return toast(r.err || 'Сервер недоступен', true); loginStep = { nonce: r.nonce, link: r.link }; showLogin(); if (TG) TG.openTelegramLink(r.link); else window.open(r.link, '_blank'); }); return; }
     if (a === 'logtgapp') { authPost('tgapp', { initData: TG && TG.initData }).then(r => { if (authSet(r)) { toast('Ты вошёл'); closeModal(); showStart(); } else toast(r.err || 'Не получилось', true); }); return; }
-    if (a === 'logverify') { const c = (($('#lcode') || {}).value || '').trim(); authPost('verify', loginStep.nonce ? { nonce: loginStep.nonce, code: c } : { email: loginStep.email, code: c }).then(r => { if (authSet(r)) { toast('Ты вошёл'); closeModal(); if (S) render(); else showStart(); } else toast(r.err || 'Не получилось', true); }); return; }
+    if (a === 'logverify') { const c = (($('#lcode') || {}).value || '').trim(); authPost('verify', { nonce: loginStep.nonce, code: c }).then(r => { if (authSet(r)) { toast('Ты вошёл'); closeModal(); if (S) render(); else showStart(); } else toast(r.err || 'Не получилось', true); }); return; }
     if (a === 'cabinet') { showCabinet(); return; }
     if (a === 'cnick') { authPost('nick', { nick: ($('#cnick') || {}).value || '' }).then(r => { if (authSet(r)) { toast('Имя сохранено'); showCabinet(); } else toast(r.err || 'Ошибка', true); }); return; }
     if (a === 'logout') { authPost('logout'); acct = null; authTok = ''; try { localStorage.removeItem(AUTH_KEY); } catch (e) { /* ignore */ } closeModal(); showStart(); return; }
@@ -1309,7 +1306,7 @@
 
   // ---------- личный кабинет: вход по почте или через Телеграм ----------
   const AUTH_KEY = 'war90.auth';
-  let acct = null, authTok = (() => { try { return localStorage.getItem(AUTH_KEY) || ''; } catch (e) { return ''; } })(), loginStep = { tab: TG ? 'tg' : 'email' }, acctTurn = -1;
+  let acct = null, authTok = (() => { try { return localStorage.getItem(AUTH_KEY) || ''; } catch (e) { return ''; } })(), loginStep = {}, acctTurn = -1;
   const authPost = (m, body) => Net.post('auth/' + m, Object.assign({ token: authTok }, body || {}));
   function authSet(r) {
     if (!r || !r.ok) return false;
@@ -1340,22 +1337,18 @@
     return h;
   }
   const acctBox = () => { const b = $('#acct'); if (!b || modalKey !== 'start') return; showStart(); };
+  // вход только через Телеграм: в мини-приложении — сразу, в браузере — код от бота
   function showLogin() {
-    const t = loginStep.tab;
-    let h = '<p class="eyebrow">Личный кабинет</p><h2>Вход</h2><p class="sub">Партия и достижения сохраняются в кабинете — заходи с любого устройства.</p>';
-    h += '<div class="seg">' + [['email', 'По почте'], ['tg', 'Через Телеграм']].map(x => '<button class="btn' + (t === x[0] ? ' on' : '') + '" data-a="logtab" data-k="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>';
-    if (t === 'email') {
-      if (!loginStep.sent) h += '<label class="field"><span>Почта</span><input id="lemail" type="email" inputmode="email" autocomplete="email" placeholder="you@mail.ru" value="' + esc(loginStep.email || '') + '"></label>' + btn('Получить код', 'logsend', '', false, 'wide primary');
-      else h += '<p>Код отправлен на <b>' + esc(loginStep.email) + '</b>. Проверь «Входящие» и «Спам».</p><label class="field"><span>Код из письма</span><input id="lcode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"></label>' + btn('Войти', 'logverify', '', false, 'wide primary') + btn('Другая почта', 'logreset', '', false, 'wide ghost');
-    } else if (TG && TG.initData) h += '<p>Ты в Телеграме — код не нужен.</p>' + btn('Войти через Телеграм', 'logtgapp', '', false, 'wide primary');
-    else if (!loginStep.nonce) h += '<p>Бот <b>@' + TG_BOT + '</b> пришлёт код входа в Телеграм.</p>' + btn('Получить код в Телеграме', 'logtg', '', false, 'wide primary');
-    else h += '<p>Открой бота и нажми «Старт» — он пришлёт код. <a href="' + esc(loginStep.link) + '" target="_blank" rel="noopener">Открыть бота</a></p><label class="field"><span>Код от бота</span><input id="lcode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"></label>' + btn('Войти', 'logverify', '', false, 'wide primary');
+    let h = '<p class="eyebrow">Личный кабинет</p><h2>Вход через Телеграм</h2><p class="sub">Партия и достижения сохраняются в кабинете — заходи с любого устройства.</p>';
+    if (TG && TG.initData) h += '<p>Ты в Телеграме — код не нужен.</p>' + btn('Войти через Телеграм', 'logtgapp', '', false, 'wide primary');
+    else if (!loginStep.nonce) h += '<p>Бот <b>@' + TG_BOT + '</b> пришлёт код входа тебе в Телеграм.</p>' + btn('Получить код в Телеграме', 'logtg', '', false, 'wide primary');
+    else h += '<p>Открой бота и нажми «Старт» — он пришлёт 6-значный код. <a href="' + esc(loginStep.link) + '" target="_blank" rel="noopener">Открыть бота</a></p><label class="field"><span>Код от бота</span><input id="lcode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"></label>' + btn('Войти', 'logverify', '', false, 'wide primary') + btn('Получить новый код', 'logtg', '', false, 'wide ghost');
     openModal(h, '', 'lawinfo:login');
   }
   function showCabinet() {
     const a = acct; if (!a) return showLogin();
     const n = Object.keys(achAll()).filter(k => !/^end:/.test(k)).length;
-    let h = '<p class="eyebrow">Личный кабинет</p><h2>' + esc(a.nick || 'Без имени') + '</h2><p class="sub">' + (a.tg ? 'Вход через Телеграм · ' + esc(a.tg.name) : 'Почта · ' + esc(a.email)) + '</p>';
+    let h = '<p class="eyebrow">Личный кабинет</p><h2>' + esc(a.nick || 'Без имени') + '</h2><p class="sub">' + 'Телеграм · ' + esc(a.tg ? a.tg.name : (a.email || '')) + '</p>';
     h += '<label class="field"><span>Имя в игре и рекордах</span><input id="cnick" maxlength="20" value="' + esc(a.nick || '') + '"></label>' + btn('Сохранить имя', 'cnick', '', false, 'sm');
     h += '<dl class="kv"><dt>Достижения</dt><dd>' + n + ' из ' + D.ACH.length + '</dd><dt>Сохранение</dt><dd>' + (a.save ? fd(a.save.fid).name + ', ' + E.date(a.save.turn).label : 'нет') + '</dd></dl>';
     h += '<p class="muted">Одиночная партия сама сохраняется в кабинет раз в месяц игры.</p>' + btn('Выйти из кабинета', 'logout', '', false, 'wide ghost');
