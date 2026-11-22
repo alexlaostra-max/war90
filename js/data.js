@@ -411,7 +411,7 @@
     'b-gunshop3': { src: 'img/b-gunshop3.jpg', author: 'Nishantp10', license: 'CC BY-SA 4.0', url: W + '10_metre_indoor_range_by_Gun_For_Glory_Shooting_Academy_Jabalpur.jpg' },
     'b-clinic2': { src: 'img/b-clinic2.jpg', author: 'Retired electrician', license: 'CC0', url: W + 'Moscow,_Botkin_Hospital_-_Medsi_clinic_Aug_2025_01.jpg' },
     'b-clinic3': { src: 'img/b-clinic3.jpg', author: 'Kemal KOZBAEV', license: 'CC BY-SA 4.0', url: W + 'Голицынская_больница,_Москва.jpg' },
-    'b-bordel2': { src: 'img/b-bordel2.jpg', author: 'Basile Morin', license: 'CC BY-SA 4.0', url: W + 'Sauna_of_the_spa_at_Amantaka_luxury_Resort_&_Hotel_in_Luang_Prabang_Laos.jpg' },
+    'b-bordel2': { src: 'img/b-bordel2.jpg', author: 'Marine 69-71', license: 'CC BY-SA 4.0', url: W + 'Prescott-Building-Palace_Hotel-1901-5-Brothel_room-3.jpg' },
     'b-bordel3': { src: 'img/b-bordel3.jpg', author: 'Paul Sableman', license: 'CC BY 2.0', url: W + 'Magic_City_strip_club.jpg' },
     'b-flat2': { src: 'img/b-flat2.jpg', author: 'пресс-служба Градостроительного комплекса Москвы', license: 'CC BY 4.0', url: W + 'Новостройка_на_Демьяна_Бедного,_17_01.jpg' },
     'b-flat3': { src: 'img/b-flat3.jpg', author: 'Юрий Д.К.', license: 'CC BY 4.0', url: W + '"Symphony_of_the_Embankments"_-_elite_residential_complex_on_Kotelnicheskaya_Embankment.jpg' },
