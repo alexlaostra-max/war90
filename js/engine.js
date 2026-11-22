@@ -1287,7 +1287,7 @@
     m.acts[name] = (m.acts[name] || 0) + 1;
     if (name === 'choose') m.ev.push([evId, args[0], r.delta && r.delta.money || 0]);
   }
-  const PALS = ['malaya', 'chernysh', 'medved', 'kosoy', 'lobster', 'pyatigor', 'bordur'];
+  const PALS = ['malaya', 'chernysh', 'medved', 'kosoy', 'lobster', 'pyatigor', 'bordur', 'dagir', 'ildar', 'voron'];
   const ownsName = (S, fid, name) => { const d = D.DISTRICTS.find(x => x.name === name); return !!d && S.d[d.id].o === fid; };
   const ACHC = {
     first_blood: (S, f) => count(S, f) >= 2 + (S.scen && D.SCENARIOS[S.scen].extra || 0), okrug: (S, f) => okrugsHeld(S, f).length >= 1, ten: (S, f) => count(S, f) >= 10, quarter: (S, f) => count(S, f) >= 26,

@@ -72,7 +72,7 @@
   const R = Math.round;
   const P = () => S.f[me];
 
-  function save() { if (net) return; try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) { /* без сохранения */ } cloudAuto(); if (typeof acctAuto === 'function') acctAuto(); }
+  function save() { if (net) return; try { localStorage.setItem(SAVE, JSON.stringify(S)); localStorage.setItem(SAVE + '.at', String(Date.now())); } catch (e) { /* без сохранения */ } cloudAuto(); if (typeof acctAuto === 'function') acctAuto(); }
   // облачное сохранение по коду: после первого раза партия сама уходит в облако раз в месяц игры
   const CLOUD = 'war90.cloud';
   const cloudCode = () => { try { return localStorage.getItem(CLOUD) || ''; } catch (e) { return ''; } };
@@ -1326,7 +1326,7 @@
   function authSet(r) {
     if (!r || !r.ok) return false;
     if (r.token) { authTok = r.token; try { localStorage.setItem(AUTH_KEY, authTok); } catch (e) { /* ignore */ } }
-    if (r.me) { acct = r.me; mergeAch(); }
+    if (r.me) { acct = r.me; mergeAch(); const loc = load(), locAt = (() => { try { return +localStorage.getItem(SAVE + '.at') || 0; } catch (e) { return 0; } })(); if (loc && (!acct.save || locAt > acct.save.at)) authPost('save', { state: loc }).then(x => { if (x.ok) acct = x.me; }); }
     return true;
   }
   // достижения: объединяем браузерные и из кабинета
@@ -1346,9 +1346,10 @@
   function acctAuto() { if (!acct || !S || net || S.turn === acctTurn) return; acctTurn = S.turn; authPost('save', { state: S }).then(r => { if (r.ok) acct = r.me; }); }
   function acctHTML() {
     if (!acct) return '<div class="acct" id="acct"><span>Войди, чтобы партия и достижения были на всех устройствах</span>' + btn('Войти', 'login', '', false, 'sm primary') + '</div>';
-    const who = acct.tg ? 'Телеграм · ' + esc(acct.tg.name) : esc(acct.email || '');
+    const who = acct.tg && acct.tg.name !== acct.nick ? 'Телеграм · ' + esc(acct.tg.name) : 'Телеграм';
     let h = '<div class="acct" id="acct"><span>👤 <b>' + esc(acct.nick || 'Без имени') + '</b> <small>' + who + '</small></span>' + btn('Кабинет', 'cabinet', '', false, 'sm') + '</div>';
-    if (acct.save) h += btn('Продолжить из кабинета: ' + fd(acct.save.fid).name + ', ' + E.date(acct.save.turn).label, 'acctload', '', false, 'wide primary');
+    const loc = load(), locAt = (() => { try { return +localStorage.getItem(SAVE + '.at') || 0; } catch (e) { return 0; } })();
+    if (acct.save && (!loc || acct.save.at > locAt + 60e3)) h += btn('Продолжить из кабинета: ' + fd(acct.save.fid).name + ', ' + E.date(acct.save.turn).label, 'acctload', '', false, 'wide primary');
     return h;
   }
   const acctBox = () => { const b = $('#acct'); if (!b || modalKey !== 'start') return; showStart(); };
