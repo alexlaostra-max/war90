@@ -847,7 +847,7 @@
     return { ok: true, msg: 'Задание «' + q.title + '» выполнено: +' + fm(m) + ', авторитет +' + q.rep };
   }
   // «Тихий пенсионер»: с 2000 года можно выйти из игры с белыми деньгами и чистым досье
-  const retireLock = (S, fid) => { const p = S.f[fid], w = cash(p).white; return date(S.turn).year < 2000 ? 'с 2000 года' : w < 1500 ? 'нужно белого нала 1500, есть ' + w : p.heat >= 20 ? 'розыск должен быть ниже 20' : null; };
+  const retireLock = (S, fid) => { const p = S.f[fid], w = cash(p).white; return date(S.turn).year < 2000 ? 'с 2000 года' : w < 1500 ? 'нужно белого нала ' + fm(1500) + ', есть ' + fm(w) : p.heat >= 20 ? 'розыск должен быть ниже 20' : null; };
   function retire(S, fid) {
     const e = spend(S, fid, 0) || retireLock(S, fid); if (e) return fail(e);
     const p = S.f[fid], w = cash(p).white, score = scoreOf(S, fid);

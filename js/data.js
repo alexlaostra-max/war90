@@ -405,7 +405,7 @@
     'b-market2': { src: 'img/b-market2.jpg', author: 'Andrey Butko', license: 'CC BY-SA 3.0', url: W + 'Крытый_рынок_в_Донецке_008.jpg' },
     'b-market3': { src: 'img/b-market3.jpg', author: 'Lev.Borisovitch', license: 'CC BY-SA 4.0', url: W + 'Торговый_центр_"Петровский",_Москва.jpg' },
     'b-gym2': { src: 'img/b-gym2.jpg', author: 'Gennady Grachev from Moscow, Russia', license: 'CC BY 2.0', url: W + 'Moscow,_sports_hall_in_Lefortovsky_Park_(30586164233).jpg' },
-    'b-gym3': { src: 'img/b-gym3.jpg', author: 'Artyom Svetlov', license: 'CC BY 4.0', url: W + 'Moscow_tram_2848_2003-09_1064666918_Durova_Street_Tatra_T3.jpg' },
+    'b-gym3': { src: 'img/b-gym3.jpg', author: 'GymNation', license: 'CC BY-SA 4.0', url: W + 'GymNation_gym_interior_2024.jpg' },
     'b-service2': { src: 'img/b-service2.jpg', author: 'Martin Vorel', license: 'CC BY-SA 4.0', url: W + 'Car_repair_shop.jpg' },
     'b-service3': { src: 'img/b-service3.jpg', author: 'Андрей Москаленко', license: 'CC0', url: W + 'Comtrans_2015_(2).jpg' },
     'b-gunshop3': { src: 'img/b-gunshop3.jpg', author: 'Nishantp10', license: 'CC BY-SA 4.0', url: W + '10_metre_indoor_range_by_Gun_For_Glory_Shooting_Academy_Jabalpur.jpg' },
@@ -446,7 +446,7 @@
     'b-gunshop': { src: 'img/b-gunshop.jpg', author: 'Thayne Tuason', license: 'CC BY-SA 4.0', url: W + 'Gun_section_in_Stans_Merry_Mart_Wenatchee.jpg' },
     'b-clinic': { src: 'img/b-clinic.jpg', author: 'И. А. Озерский', license: 'общественное достояние', url: W + 'В_операционной_47-го_медсанбата_25-й_стрелковой_дивизии_Приморской_армии.jpg' },
     'b-rest': { src: 'img/b-rest.jpg', author: 'Викидим', license: 'CC BY-SA 4.0', url: W + 'Central_House_of_Writers_in_Moscow._Restaurant_interior_06.jpg' },
-    'b-bordel': { src: 'img/b-bordel.jpg', author: 'Klarqa', license: 'CC BY-SA 4.0', url: W + 'Sauna_in_Meremäe,_Setomaa.jpg' },
+    'b-bordel': { src: 'img/b-bordel.jpg', author: 'Basile Morin', license: 'CC BY-SA 4.0', url: W + 'Sauna_of_the_spa_at_Amantaka_luxury_Resort_&_Hotel_in_Luang_Prabang_Laos.jpg' },
     'b-flat': { src: 'img/b-flat.jpg', author: 'Seanzwiki', license: 'CC BY-SA 4.0', url: W + '1-я_Мелитопольская_ул.,_8б(Москва).jpg' },
     'b-prem': { src: 'img/b-prem.jpg', author: 'Gennady Grachev', license: 'CC BY 2.0', url: W + 'Moscow,_Kosmonavta_Volkova_27_storefront_(21237518022).jpg' },
     'b-chop': { src: 'img/b-chop.jpg', author: 'DemieK07', license: 'CC BY-SA 4.0', url: W + 'The_defenders_of_Stara_Zagora_Memorial_Complex_-_Security_booth_01.jpg' },
@@ -573,8 +573,8 @@
   // Сценарии старта: дата, сколько районов и сил у игрока и ботов
   const SCENARIOS = {
     s91: { name: 'Декабрь 1991', desc: 'Один район, восемь пацанов, вся эпоха впереди' },
-    s95: { name: 'Январь 1995', desc: 'Три района, 22 бойца, 250 тыс. Боты тоже подросли', turn: 37, extra: 2, money: 250, men: 22, guns: 20, cars: 4, rep: 30, botExtra: 2, botMen: 14 },
-    s00: { name: 'Январь 2000', desc: 'Шесть районов, 40 бойцов, 900 тыс. и новая жёсткая власть', turn: 97, extra: 5, money: 900, men: 40, guns: 40, cars: 8, rep: 45, botExtra: 4, botMen: 26 }
+    s95: { name: 'Январь 1995', desc: 'Три района, 22 бойца, 250К $. Боты тоже подросли', turn: 37, extra: 2, money: 250, men: 22, guns: 20, cars: 4, rep: 30, botExtra: 2, botMen: 14 },
+    s00: { name: 'Январь 2000', desc: 'Шесть районов, 40 бойцов, 900К $ и новая жёсткая власть', turn: 97, extra: 5, money: 900, men: 40, guns: 40, cars: 8, rep: 45, botExtra: 4, botMen: 26 }
   };
 
   G.DATA = { ELITE, JOBS, ACH, ENDINGS, SCENARIOS, STATUS, QUESTS, PHOTOS, RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };

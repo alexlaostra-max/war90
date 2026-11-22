@@ -838,7 +838,7 @@
     if (E.inTruce(S, me, dealWith)) h += '<p class="good">Мир до ' + E.date(p.truce[dealWith]).label + '.</p>';
     h += '<div class="seg dkinds">' + DEAL_KINDS.map(k => '<button class="' + (k[0] === dealKind ? 'on' : '') + '" data-a="dkind" data-k="' + k[0] + '">' + k[1] + '</button>').join('') + '</div>';
     if (dealKind === 'truce') h += '<label class="field"><span>Срок мира</span><select id="dx">' + [3, 6, 12, 24].map(m => '<option value="' + m + '"' + (m === 12 ? ' selected' : '') + '>' + m + ' мес.</option>').join('') + '</select></label><p class="muted">Пока действует мир, вы не можете нападать на районы друг друга.</p>';
-    else if (dealKind === 'pay' || dealKind === 'ask') h += '<label class="field"><span>Сумма, тысяч $' + (dealKind === 'pay' ? ' (у тебя ' + R(p.money) + ')' : '') + '</span><input id="dx" type="number" inputmode="numeric" min="1" value="50"></label>';
+    else if (dealKind === 'pay' || dealKind === 'ask') h += '<label class="field"><span>Сумма в тысячах $' + (dealKind === 'pay' ? ' (у тебя ' + usdP(p.money) + ')' : '') + '</span><input id="dx" type="number" inputmode="numeric" min="1" value="50"></label>';
     else {
       const ds = dealDistricts(dealKind, dealWith);
       if (!ds.length) h += '<p class="muted">' + (dealKind === 'sell' ? 'Нет районов на продажу: продать можно не родной район, который граничит с их землёй.' : 'Купить нечего: можно только их не родной район рядом с твоими.') + '</p>';
@@ -1347,7 +1347,7 @@
   function showResult(r) {
     const d = r.delta, names = { money: 'Касса', rep: 'Авторитет', heat: 'Розыск', men: 'Бойцы', guns: 'Стволы', cars: 'Тачки', vests: 'Бронежилеты', later: d.later < 0 ? 'Долг, заберут' + (d.laterAt ? ' (' + d.laterAt + ')' : ' позже') : 'Вернётся' + (d.laterAt ? ' (' + d.laterAt + ')' : ' позже'), loy: 'Верность', str: 'Сила', wit: 'Ум' };
     let ch = '';
-    Object.keys(names).forEach(k => { if (d[k]) { const good = k === 'heat' ? d[k] < 0 : d[k] > 0; ch += '<span class="' + (good ? 'good' : 'bad') + '">' + names[k] + ' ' + sign(d[k]) + '</span>'; } });
+    Object.keys(names).forEach(k => { if (d[k]) { const good = k === 'heat' ? d[k] < 0 : d[k] > 0; ch += '<span class="' + (good ? 'good' : 'bad') + '">' + names[k] + ' ' + (k === 'money' || k === 'later' ? plus(d[k]) : sign(d[k])) + '</span>'; } });
     if (d.arm) ch += '<span class="good">' + esc(d.arm) + '</span>';
     if (d.car) ch += '<span class="good">В гараже: ' + esc(d.car) + '</span>';
     if (d.join) ch += '<span class="good">В семье: ' + esc(d.join) + '</span>';
