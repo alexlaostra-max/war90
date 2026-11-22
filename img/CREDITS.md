@@ -127,3 +127,5 @@ vest.jpg — бронежилет: фото прислал владелец пр
 ## Главари ОПГ и сцены дел
 
 Портреты главарей `boss-*.jpg` (вымышленные лица) и сцены `d-kidnap.jpg`, `d-raid.jpg` сгенерированы нейросетью Gemini 2.5 Flash Image через OpenRouter.
+
+Также сгенерированы нейросетью уровни точек: `b-rest2.jpg`, `b-rest3.jpg`, `b-prem2.jpg`, `b-casino2.jpg`, `b-exchange2.jpg`, `b-club3.jpg`, `b-dorm3.jpg`.

@@ -467,6 +467,13 @@
     'b-vokzal3': { src: 'img/b-vokzal3.jpg', author: 'Mike1979 Russia', license: 'CC BY-SA 3.0', url: W + 'Komsomolskaya_Square_Moscow_2023-06-10_4450.jpg' },
     'b-chop2': { src: 'img/b-chop2.jpg' }, // сгенерировано нейросетью (Gemini 2.5 Flash Image через OpenRouter)
     'b-chop3': { src: 'img/b-chop3.jpg' }, // прислал владелец проекта
+    'b-rest2': { src: 'img/b-rest2.jpg' }, // сгенерировано нейросетью
+    'b-rest3': { src: 'img/b-rest3.jpg' }, // сгенерировано нейросетью
+    'b-prem2': { src: 'img/b-prem2.jpg' }, // сгенерировано нейросетью
+    'b-casino2': { src: 'img/b-casino2.jpg' }, // сгенерировано нейросетью
+    'b-exchange2': { src: 'img/b-exchange2.jpg' }, // сгенерировано нейросетью
+    'b-club3': { src: 'img/b-club3.jpg' }, // сгенерировано нейросетью
+    'b-dorm3': { src: 'img/b-dorm3.jpg' }, // сгенерировано нейросетью
     // здания точек: по одному фото на тип, кадр 5:3, слегка приглушены и тонированы
     'b-kiosk': { src: 'img/b-kiosk.jpg', author: 'Главархив Москвы', license: 'CC BY 4.0', url: W + 'Kiosks_with_square_of_Kievsky_rail_terminal.jpg' },
     'b-market': { src: 'img/b-market.jpg', author: 'PoetVeches', license: 'CC BY-SA 4.0', url: W + 'Former_soviet_univermag_20200916_008.jpg' },
