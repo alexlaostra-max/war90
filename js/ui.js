@@ -1114,10 +1114,12 @@
       const u = new SpeechSynthesisUtterance(text.replace(/[«»]/g, '').replace(/\s+/g, ' '));
       const v = maleVoice(); if (v) u.voice = v;
       u.lang = 'ru-RU'; u.rate = 0.95; u.pitch = v && /yuri|юрий|dmitr|pavel|maxim|ermil|filipp|male|мужск/i.test(v.name) ? 0.85 : 0.55; // если голос женский — опускаем тон
+      const dk = v => { if (G.Music && G.Music.duck) G.Music.duck(v); };
+      u.onstart = () => dk(true); u.onend = u.onerror = () => dk(false);
       synth.speak(u);
     } catch (e) { /* озвучка не обязательна */ }
   }
-  const hush = () => { try { if (synth) synth.cancel(); } catch (e) { /* ignore */ } };
+  const hush = () => { try { if (synth) synth.cancel(); } catch (e) { /* ignore */ } if (G.Music && G.Music.duck) G.Music.duck(false); };
   function showEvent() {
     const p = P(), ev = E.currentEvent(S, me); if (!ev) return;
     const key = 'ev:' + S.turn + ':' + ev.id + ':' + R(p.money); if (modalKey === key) return;

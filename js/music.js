@@ -213,7 +213,9 @@
     const old = bus; bus = null;
     setTimeout(() => { if (old) old.disconnect(); if (!on && ctx) ctx.suspend(); }, 400);
   }
-  G.Music = { start, stop, skip, playing: () => on, track: () => (ti < 0 ? null : TRACKS[ti].name), tracks: TRACKS.map(T => T.name) };
+  // приглушить музыку, пока говорит диктор
+  function duck(v) { if (!ctx || !master || !on) return; const t = ctx.currentTime; master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(master.gain.value, t); master.gain.linearRampToValueAtTime(v ? 0.04 : 0.22, t + 0.4); }
+  G.Music = { duck, start, stop, skip, playing: () => on, track: () => (ti < 0 ? null : TRACKS[ti].name), tracks: TRACKS.map(T => T.name) };
 
   const b = document.getElementById('music'), nx = document.getElementById('mnext');
   const label = name => { if (!b) return; b.querySelector('span').textContent = on && name ? name : 'Музыка'; b.title = on && name ? 'Играет «' + name + '». Выключить музыку' : 'Включить музыку'; };
