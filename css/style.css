@@ -956,3 +956,4 @@ h2 .gon2 { font-size: 12px; margin-left: 8px; }
 .ava .fst.jail { background: repeating-linear-gradient(90deg, transparent 0 16%, rgba(30, 30, 34, .85) 16% 23%); }
 .ava .fst.hurt::after { content: ''; position: absolute; left: -10%; right: -10%; top: 18%; height: 16%; background: #efe9dc; transform: rotate(-14deg); box-shadow: 0 0 0 1px rgba(180, 40, 40, .5); }
 .ava .fst.hurt::before { content: ''; position: absolute; left: 44%; top: 20%; width: 10%; height: 10%; border-radius: 50%; background: rgba(190, 30, 30, .8); z-index: 1; }
+.ctier.bench > p { grid-column: 1 / -1; }
