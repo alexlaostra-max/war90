@@ -867,3 +867,5 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 
 .evcash { margin: -4px 0 10px; font: 13px var(--mono); color: var(--dim); } .evcash b { color: #e8a35a; font-weight: 400; } .evcash b.good { color: var(--good); }
 .opt em.gain { color: var(--good); }
+
+.voicerow { gap: 8px; align-items: center; margin-top: 10px; } .voicerow .voicebtn { margin: 0; } .voicesel { flex: 1; min-width: 0; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; font: inherit; font-size: 13px; }

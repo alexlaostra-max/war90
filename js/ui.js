@@ -1051,7 +1051,7 @@
     org.addEventListener('contextmenu', e => { if (e.target.closest('[draggable]')) e.preventDefault(); });
   })();
   document.addEventListener('input', e => { if (e.target && e.target.id === 'fxr') fxCalc(); });
-  document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.a === 'watch') { watchFid = t.value; sel = null; section = 'map'; sheet = true; render(); return; } if (t.dataset && t.dataset.a === 'reassign' && t.value) { const v = t.value.split('|'); act('assign', [+t.dataset.id, v[0], v[1] || null]); } });
+  document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.a === 'voicepick') { try { localStorage.setItem(VOICE_KEY + '.name', t.value); } catch (er) { /* ignore */ } voiceOn = true; const ev = S && E.currentEvent(S, me); if (ev) speak(E.evText(S, me, ev.text)); return; } if (t.dataset && t.dataset.a === 'watch') { watchFid = t.value; sel = null; section = 'map'; sheet = true; render(); return; } if (t.dataset && t.dataset.a === 'reassign' && t.value) { const v = t.value.split('|'); act('assign', [+t.dataset.id, v[0], v[1] || null]); } });
   $('#end').addEventListener('click', () => {
     if (!S || P().over) return;
     if (net) { netCall('ready', { ready: !P().ready }); return; }
@@ -1101,9 +1101,11 @@
   const VOICE_KEY = 'war90.voice';
   let voiceOn = (() => { try { return localStorage.getItem(VOICE_KEY) !== '0'; } catch (e) { return true; } })();
   const synth = window.speechSynthesis;
+  const ruVoices = () => synth ? synth.getVoices().filter(v => /^ru/i.test(v.lang)) : [];
   function maleVoice() {
     if (!synth) return null;
-    const vs = synth.getVoices().filter(v => /^ru/i.test(v.lang));
+    const vs = ruVoices(), pick = (() => { try { return localStorage.getItem(VOICE_KEY + '.name'); } catch (e) { return null; } })();
+    if (pick) { const v = vs.find(x => x.name === pick); if (v) return v; }
     return vs.find(v => /yuri|юрий|dmitr|дмитр|pavel|павел|maxim|максим|ermil|filipp|алексей|aleksei|male|мужск/i.test(v.name)) || vs.find(v => !/milena|милена|katya|катя|irina|ирина|alena|алёна|alyona|female|женск|google/i.test(v.name)) || vs[0] || null;
   }
   if (synth && synth.onvoiceschanged !== undefined) synth.onvoiceschanged = () => {};
@@ -1143,7 +1145,8 @@
     { const cc = E.cur(p); h += '<div class="evcash">В кассе: <b>' + rubP(cc.rub) + '</b> и <b class="good">' + usdP(cc.usd) + '</b></div>'; }
     h += '<div class="opts">';
     ev.opts.forEach((o, k) => { const os = E.optState(S, me, o); h += '<button class="opt" data-a="opt" data-k="' + k + '"' + (os.lock ? ' disabled' : '') + '><span>' + tx(o.t) + '</span>' + (os.cost ? '<em>−' + rubP(os.cost) + '</em>' : '') + (() => { const m = E.era(S), g = (o.$ > 0 ? Math.round(o.$ * m) : 0) + (o.get ? Math.round(o.get * m) : 0), l = o.later ? Math.round(o.later * m) : 0; return (g ? '<em class="gain">+' + rubP(g) + '</em>' : '') + (l ? '<em class="' + (l > 0 ? 'gain' : '') + '">' + (l > 0 ? '+' : '−') + rubP(Math.abs(l)) + ' потом</em>' : ''); })() + (os.lock ? '<small>' + esc(os.lock) + '</small>' : '') + '</button>'; });
-    h += '</div>' + (synth ? '<button class="btn sm ghost voicebtn" data-a="voice">' + (voiceOn ? '🔊 Озвучка включена' : '🔇 Озвучка выключена') + '</button>' : '');
+    const vs = ruVoices(), cur = maleVoice();
+    h += '</div>' + (synth ? '<div class="row voicerow"><button class="btn sm ghost voicebtn" data-a="voice">' + (voiceOn ? '🔊 Озвучка включена' : '🔇 Озвучка выключена') + '</button>' + (vs.length > 1 ? '<select class="voicesel" data-a="voicepick" aria-label="Голос">' + vs.map(v => '<option value="' + esc(v.name) + '"' + (cur && cur.name === v.name ? ' selected' : '') + '>' + esc(v.name.replace(/\s*\(.*\)/, '')) + '</option>').join('') + '</select>' : '') + '</div>' : '');
     openModal(h, 'event', key);
     const plain = x => String(E.evText(S, me, x) || '');
     setTimeout(() => speak(plain(ev.text)), 350);
