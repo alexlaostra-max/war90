@@ -400,8 +400,8 @@
     'd-olymp': { src: 'img/d-olymp.jpg', author: 'Sasha Krotov', license: 'CC BY 3.0', url: W + 'Fisht_Olympic_Stadium_Sochi_March_2013.JPG' },
     'd-kidnap': { src: 'img/d-kidnap.jpg', author: 'неизвестен', license: 'общественное достояние', url: W + 'StrappedCurrency.jpg' },
     // уровни II и III точек (если фото уровня нет — берётся фото I уровня)
-    'b-kiosk2': { src: 'img/b-kiosk2.jpg', author: 'Nikita77707', license: 'CC BY-SA 4.0', url: W + 'Торговый_павильон_«Цветы»_(Тюмень)_2.jpg' },
-    'b-kiosk3': { src: 'img/b-kiosk3.jpg', author: 'salech hcelas', license: 'CC BY 3.0', url: W + 'Универсам_-_panoramio_(6).jpg' },
+    'b-kiosk2': { src: 'img/b-kiosk2.jpg', author: 'Дмитрий Скляренко', license: 'CC BY 3.0', url: W + 'Магазин_Продукты_и_Настенька_-_panoramio.jpg' },
+    'b-kiosk3': { src: 'img/b-kiosk3.jpg', author: 'A.Savin', license: 'CC BY-SA 3.0', url: W + 'Golden_Babylon_Rostokino_01.jpg' },
     'b-market2': { src: 'img/b-market2.jpg', author: 'Andrey Butko', license: 'CC BY-SA 3.0', url: W + 'Крытый_рынок_в_Донецке_008.jpg' },
     'b-market3': { src: 'img/b-market3.jpg', author: 'Lev.Borisovitch', license: 'CC BY-SA 4.0', url: W + 'Торговый_центр_"Петровский",_Москва.jpg' },
     'b-gym2': { src: 'img/b-gym2.jpg', author: 'Gennady Grachev from Moscow, Russia', license: 'CC BY 2.0', url: W + 'Moscow,_sports_hall_in_Lefortovsky_Park_(30586164233).jpg' },
@@ -438,6 +438,7 @@
     'b-land3': { src: 'img/b-land3.jpg', author: 'lincoln1403', license: 'CC BY 3.0', url: W + 'Коттеджный_посёлок_-_panoramio_(4).jpg' },
     'b-vokzal2': { src: 'img/b-vokzal2.jpg', author: 'Алексей Задонский', license: 'CC BY-SA 4.0', url: W + 'Ленинградский_вокзал,_Москва.jpg' },
     'b-vokzal3': { src: 'img/b-vokzal3.jpg', author: 'Mike1979 Russia', license: 'CC BY-SA 3.0', url: W + 'Komsomolskaya_Square_Moscow_2023-06-10_4450.jpg' },
+    'b-chop3': { src: 'img/b-chop3.jpg', author: 'Dmitri Chubarov', license: 'CC BY-SA 2.0', url: W + 'Viktor_Yuschenko_bodyguards.jpg' },
     // здания точек: по одному фото на тип, кадр 5:3, слегка приглушены и тонированы
     'b-kiosk': { src: 'img/b-kiosk.jpg', author: 'Главархив Москвы', license: 'CC BY 4.0', url: W + 'Kiosks_with_square_of_Kievsky_rail_terminal.jpg' },
     'b-market': { src: 'img/b-market.jpg', author: 'PoetVeches', license: 'CC BY-SA 4.0', url: W + 'Former_soviet_univermag_20200916_008.jpg' },
