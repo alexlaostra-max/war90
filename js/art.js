@@ -272,8 +272,21 @@
     return pick(r, ['tracksuit', 'leather', 'leather', 'raspberry', 'sweater', 'tracksuit']);
   }
   // c: человек семьи или { name, nick, age, str, wit, loy, look, role, st, seed }
+  // фото-портреты людей семьи (DATA.FACES): мужские по возрасту, женские — для своих людей-женщин.
+  // Легенды эпохи (отсылки к реальным людям) и безымянные лица остаются рисованными
+  const FEM = { malaya: 'f01', chernysh: 'f02' };
+  function facePhoto(c) {
+    const F = G.DATA && G.DATA.FACES; if (!F || c.seed != null || c.id == null) return null;
+    const LG = c.leg && G.DATA.LEGENDS[c.leg]; let key = null;
+    if (c.leg && FEM[c.leg]) key = FEM[c.leg];
+    else if (LG && (LG.look || {}).fem) return null;
+    else if (c.leg && !LG.join) return null;
+    else { const g = (c.age || 35) < 30 ? 'y' : (c.age || 35) <= 42 ? 'm' : 'o', n = F[g]; if (!n) return null; key = 'm' + g + String(1 + hash((c.name || '') + '|' + (c.nick || '') + '|' + c.id) % n).padStart(2, '0'); }
+    return '<img class="pface" src="img/face-' + key + '.jpg" alt="' + xesc(c.nick || c.name || '') + '" loading="lazy" decoding="async">' + (c.st === 'jail' ? '<i class="fst jail"></i>' : c.st === 'hurt' ? '<i class="fst hurt"></i>' : '');
+  }
   function face(c, opts) {
     opts = opts || {};
+    { const ph = !opts.svg && facePhoto(c); if (ph) return ph; }
     const LG = c.leg && G.DATA && G.DATA.LEGENDS && G.DATA.LEGENDS[c.leg];
     const look = Object.assign({}, (LG && LG.look) || {}, c.look || {}, opts.look || {});
     const r = rng(hash((c.seed != null ? c.seed : '') + '|' + (c.name || '') + '|' + (c.nick || '') + '|' + (c.leg || '')));

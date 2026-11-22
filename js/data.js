@@ -569,6 +569,10 @@
     { id: 'vlad', name: 'Японские праворульки', where: 'Владивосток', from: 2001, rep: 45, men: 6, cost: 90, gain: [170, 300], heat: 2, wait: 5, cars: 2, text: 'Паром из Ниигаты: «Крузаки» и «Марки» по цене «Жигулей». Две машины остаются бригаде' }
   ];
 
+  // фото-портреты людей семьи: сколько мужских в каждой возрастной группе (до 30, 30–42, старше), img/face-m{группа}{номер}.jpg.
+  // Сгенерированы нейросетью, люди вымышленные
+  const FACES = { y: 17, m: 20, o: 13 };
+
   // Достижения: условия проверяет движок (engine.js, ACHC); концовки — отдельная группа, их отмечает интерфейс
   const ACH = [
     ['first_blood', 'Первая кровь', 'Взять первый чужой район', 'Улица'], ['okrug', 'Хозяин округа', 'Взять округ целиком', 'Улица'], ['ten', 'Десятка', 'Держать 10 районов', 'Улица'],
@@ -594,5 +598,5 @@
     s00: { name: 'Январь 2000', desc: 'Шесть районов, 40 бойцов, 900К $ и новая жёсткая власть', turn: 97, extra: 5, money: 900, men: 40, guns: 40, cars: 8, rep: 45, botExtra: 4, botMen: 26 }
   };
 
-  G.DATA = { ELITE, JOBS, ACH, ENDINGS, SCENARIOS, STATUS, QUESTS, PHOTOS, RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };
+  G.DATA = { FACES, ELITE, JOBS, ACH, ENDINGS, SCENARIOS, STATUS, QUESTS, PHOTOS, RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));

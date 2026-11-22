@@ -949,3 +949,10 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 .modebtn:hover { border-color: var(--gold); } .modebtn.on { border-color: var(--crimson); }
 @media (max-width: 560px) { .modepick { grid-template-columns: 1fr; } }
 h2 .gon2 { font-size: 12px; margin-left: 8px; }
+/* фото-портреты людей семьи */
+.ava { position: relative; }
+.ava .pface { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+.ava .fst { position: absolute; inset: 0; pointer-events: none; }
+.ava .fst.jail { background: repeating-linear-gradient(90deg, transparent 0 16%, rgba(30, 30, 34, .85) 16% 23%); }
+.ava .fst.hurt::after { content: ''; position: absolute; left: -10%; right: -10%; top: 18%; height: 16%; background: #efe9dc; transform: rotate(-14deg); box-shadow: 0 0 0 1px rgba(180, 40, 40, .5); }
+.ava .fst.hurt::before { content: ''; position: absolute; left: 44%; top: 20%; width: 10%; height: 10%; border-radius: 50%; background: rgba(190, 30, 30, .8); z-index: 1; }
