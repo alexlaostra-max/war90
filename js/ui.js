@@ -233,7 +233,8 @@
       if (lv >= E.MAX_LVL) up = '<p class="muted pmax">Высший уровень</p>';
       else {
         const yl = E.upgradeLock(S, lv), y = E.LVL_FROM[lv + 1], ml = p.money < c ? 'Не хватает денег: нужно ' + rubP(c) : '', lock = yl ? bname(b, lv + 1) + ' (' + ROMAN[lv + 1] + ' уровень) доступно с ' + y + ' года' : ml;
-        up = '<button class="btn sm pup' + (lock ? ' off' : '') + '" data-a="upgrade" data-i="' + i + '" data-x="' + x + '"' + (lock ? offAttr(lock) : '') + '><span class="pnext">' + A.build(b, lv + 1, true) + '</span><span><b class="pupt">' + (yl ? '🔒 ' : '▲ ') + 'Улучшить до ' + ROMAN[lv + 1] + (B.lv ? ': ' + bname(b, lv + 1) : '') + '</b>' + (yl ? '<small>с ' + y + ' года</small>' : rubP(c) + ' → ' + plus(inc * (lv + 1), B.usd) + (B.fx || B.rec || B.def ? '<small>' + esc(perkAt(B, lv + 1)) + '</small>' : '')) + '</span></button>';
+        up = '<div class="pupbox"><span class="pnext">' + A.build(b, lv + 1, true) + '</span><span class="pupi"><b>До ' + ROMAN[lv + 1] + (B.lv ? ': ' + bname(b, lv + 1) : '') + '</b>' + (yl ? '<small>с ' + y + ' года</small>' : '<small>' + plus(inc * (lv + 1), B.usd) + ' в мес.' + (B.fx || B.rec || B.def ? ' · ' + esc(perkAt(B, lv + 1)) : '') + '</small>') + '</span>' +
+          '<button class="btn sm primary' + (lock ? ' off' : '') + '" data-a="upgrade" data-i="' + i + '" data-x="' + x + '"' + (lock ? offAttr(lock) : '') + '>' + (yl ? 'С ' + y + ' года' : 'Улучшить · ' + rubP(c)) + '</button></div>';
       }
       return '<div class="ptile"><div class="pimg">' + A.build(b, lv) + '<b class="lvb">' + ROMAN[lv] + '</b></div><div class="pinfo"><b>' + bname(b, lv) + '</b><span class="good">' + plus(inc * lv, B.usd) + ' в мес.' + (E.pointGood(b, i) ? ' · место +50%' : '') + '</span>' + (B.perk ? '<small class="perk">' + esc(perkAt(B, lv)) + '</small>' : '') + '</div>' + up + '</div>';
     }).join('') + '</div>';
@@ -241,11 +242,15 @@
     if (d.b.length >= dd.slots) return h + '<p class="muted pfull">Свободных мест нет. Улучшай то, что стоит.</p>';
     h += '<div class="pnew"><h3>Построить новую <span class="muted">свободно мест: ' + (dd.slots - d.b.length) + '</span></h3>';
     const rank = k => D.BUILDS[k].need && k !== 'casino' ? 0 : E.pointGood(k, i) ? 1 : 2;
-    const keys = Object.keys(D.BUILDS).filter(k => !(D.BUILDS[k].onlyMarket && !dd.m) && !(D.BUILDS[k].need && !D.BUILDS[k].need.some(t => dd.t.includes(t)))).sort((a, b) => rank(a) - rank(b));
-    h += '<div class="grid">';
-    keys.forEach(k => {
-      const B = D.BUILDS[k], lock = E.canBuild(S, me, i, k), r = rank(k);
-      h += '<button class="card bcard' + (r === 0 ? ' special' : r === 1 ? ' fit' : '') + (lock ? ' off' : '') + '" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? offAttr(lock) : '') + ' title="' + esc(B.desc) + '">' + A.build(k, 1, true) + (r === 0 ? '<em class="btag">особая</em>' : r === 1 ? '<em class="btag fit">+50% здесь</em>' : '') + '<b>' + bname(k, 1) + (B.lv ? ' <span class="muted">→ ' + B.lv[1] + ' → ' + B.lv[2] + '</span>' : '') + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? rubP(E.buildCost(S, k, me)) : 'бесплатно') + ' → ' + plus(E.pointInc(me, k, i), B.usd) + '/мес.' + (B.usd ? ' · валюта' : '') + '</span>' + (B.perk ? '<i class="perk">' + esc(B.perk) + '</i>' : '') + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
+    // сначала то, что можно поставить прямо сейчас, по цене; потом недоступное, тоже по цене
+    const keys = Object.keys(D.BUILDS).filter(k => !(D.BUILDS[k].onlyMarket && !dd.m) && !(D.BUILDS[k].need && !D.BUILDS[k].need.some(t => dd.t.includes(t))))
+      .map(k => ({ k, lock: E.canBuild(S, me, i, k), c: E.buildCost(S, k, me) })).sort((a, b) => (!!a.lock - !!b.lock) || a.c - b.c);
+    const nOk = keys.filter(x => !x.lock).length;
+    h += '<p class="muted">Можно поставить сейчас: ' + nOk + ' из ' + keys.length + '. Сначала доступные, по цене.</p><div class="grid">';
+    keys.forEach(({ k, lock, c }) => {
+      const B = D.BUILDS[k], r = rank(k);
+      h += '<div class="card bcard' + (r === 0 ? ' special' : r === 1 ? ' fit' : '') + (lock ? ' locked' : '') + '" title="' + esc(B.desc) + '">' + A.build(k, 1, true) + (r === 0 ? '<em class="btag">особая</em>' : r === 1 ? '<em class="btag fit">+50% здесь</em>' : '') + '<b>' + bname(k, 1) + (B.lv ? ' <span class="muted">→ ' + B.lv[1] + ' → ' + B.lv[2] + '</span>' : '') + '</b>' + kindTag(B.kind) + '<span>' + plus(E.pointInc(me, k, i), B.usd) + ' в мес.' + (B.usd ? ' · валюта' : '') + '</span>' + (B.perk ? '<i class="perk">' + esc(B.perk) + '</i>' : '') +
+        '<button class="btn sm primary' + (lock ? ' off' : '') + '" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? offAttr(lock) : '') + '>' + (c ? 'Поставить · ' + rubP(c) : 'Поставить бесплатно') + '</button>' + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</div>';
     });
     return h + '</div></div>';
   }
