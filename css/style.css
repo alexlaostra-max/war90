@@ -865,7 +865,9 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 
 .voicebtn { margin-top: 10px; }
 
-.evcash { margin: -4px 0 10px; font: 13px var(--mono); color: var(--dim); } .evcash b { color: #e8a35a; font-weight: 400; } .evcash b.good { color: var(--good); }
+.evcash { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: -4px 0 10px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #17141c; font: 13px var(--mono); }
+.evcash span { display: inline-flex; align-items: center; gap: 4px; } .evcash .ico { width: 15px; height: 15px; } .evcash b { font-weight: 400; color: var(--fg); }
+.evcash span:nth-child(1) .ico { color: #e8a35a; } .evcash span:nth-child(2) .ico { color: var(--good); } .evcash span:nth-child(6) .ico { color: var(--gold); } .evcash span:nth-child(7) .ico { color: var(--good); }
 .opt em.gain { color: var(--good); }
 
 .voicerow { gap: 8px; align-items: center; margin-top: 10px; } .voicerow .voicebtn { margin: 0; } .voicesel { flex: 1; min-width: 0; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; font: inherit; font-size: 13px; }
