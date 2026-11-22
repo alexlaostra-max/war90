@@ -1326,7 +1326,7 @@
   function authSet(r) {
     if (!r || !r.ok) return false;
     if (r.token) { authTok = r.token; try { localStorage.setItem(AUTH_KEY, authTok); } catch (e) { /* ignore */ } }
-    if (r.me) { acct = r.me; mergeAch(); const loc = load(), locAt = (() => { try { return +localStorage.getItem(SAVE + '.at') || 0; } catch (e) { return 0; } })(); if (loc && (!acct.save || locAt > acct.save.at)) authPost('save', { state: loc }).then(x => { if (x.ok) acct = x.me; }); }
+    if (r.me) { acct = r.me; mergeAch(); const loc = load(), locAt = (() => { try { return +localStorage.getItem(SAVE + '.at') || 0; } catch (e) { return 0; } })(); if (loc && (!acct.save || !locAt || locAt > acct.save.at)) authPost('save', { state: loc }).then(x => { if (x.ok) acct = x.me; }); }
     return true;
   }
   // достижения: объединяем браузерные и из кабинета
@@ -1349,7 +1349,7 @@
     const who = acct.tg && acct.tg.name !== acct.nick ? 'Телеграм · ' + esc(acct.tg.name) : 'Телеграм';
     let h = '<div class="acct" id="acct"><span>👤 <b>' + esc(acct.nick || 'Без имени') + '</b> <small>' + who + '</small></span>' + btn('Кабинет', 'cabinet', '', false, 'sm') + '</div>';
     const loc = load(), locAt = (() => { try { return +localStorage.getItem(SAVE + '.at') || 0; } catch (e) { return 0; } })();
-    if (acct.save && (!loc || acct.save.at > locAt + 60e3)) h += btn('Продолжить из кабинета: ' + fd(acct.save.fid).name + ', ' + E.date(acct.save.turn).label, 'acctload', '', false, 'wide primary');
+    if (acct.save && !loc) h += btn('Продолжить из кабинета: ' + fd(acct.save.fid).name + ', ' + E.date(acct.save.turn).label, 'acctload', '', false, 'wide primary');
     return h;
   }
   const acctBox = () => { const b = $('#acct'); if (!b || modalKey !== 'start') return; showStart(); };
