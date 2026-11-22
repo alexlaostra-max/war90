@@ -183,7 +183,11 @@ async function tgPoll() {
       const p = pending.get('tg:' + mt[1]), code = code6();
       Object.assign(p, { code, tg: { id: String(m.from.id), name: [m.from.first_name, m.from.last_name].filter(Boolean).join(' ') || m.from.username || 'игрок' }, exp: Date.now() + 10 * 60e3 });
       tgApi('sendMessage', { chat_id: m.chat.id, text: 'Код для входа в «Передел»: ' + code + '\nВведи его в игре. Код действует 10 минут.' });
-    } else if (/^\/start/.test(m.text)) tgApi('sendMessage', { chat_id: m.chat.id, text: 'Это бот игры «Передел». Играть: https://peredel-msk.ru' });
+    } else if (/^\/(start|help|play)/.test(m.text)) tgApi('sendMessage', {
+      chat_id: m.chat.id, parse_mode: 'HTML',
+      text: '<b>Передел</b> — стратегия про Москву 1991–2007.\n\nСтраны больше нет. У тебя один район и восемь пацанов. Бери районы, строй точки, покупай людей во власти и веди крупные дела — от перегона иномарок до башни в Сити. Шестнадцать лет, чтобы стать хозяином Москвы и не сесть.\n\n🎮 Одиночная игра и онлайн с друзьями\n💾 Прогресс сохраняется в твоём аккаунте\n\n👇 Жми «Играть» — игра откроется прямо здесь, в Телеграме.',
+      reply_markup: { inline_keyboard: [[{ text: '🎮 Играть', web_app: { url: process.env.APP_URL || 'https://peredel-msk.ru/' } }], [{ text: '👥 Позвать друга', url: 'https://t.me/share/url?url=' + encodeURIComponent('https://t.me/' + (process.env.BOT_NAME || 'peredelmskbot')) + '&text=' + encodeURIComponent('Заходи в «Передел» — делим Москву 90-х') }]] }
+    });
   });
   setTimeout(tgPoll, r && r.ok ? 200 : r ? 30000 : 5000); // неверный токен или нет связи — не долбим API
 }
