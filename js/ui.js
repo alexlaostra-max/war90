@@ -163,7 +163,7 @@
     const st = (k, l, v, x, cls) => '<button class="st s-' + k + ' ' + (cls || '') + '" data-go="' + GO[k] + '" title="' + l + '">' + A.icon(k) + '<div><span>' + l + '</span><b>' + v + '</b>' + (x ? '<i>' + x + '</i>' : '') + '</div></button>';
     let pips = ''; for (let i = 0; i < E.apMax(S, me); i++) pips += '<u class="' + (i < p.ap ? 'on' : '') + '"></u>';
     $('#stats').innerHTML =
-      st('rub', 'Рубли', rubShort(cc.rub), '≈ ' + cc.rub + ' тыс. $ · ' + plus(inc.total - inc.usd) + '/мес', p.money < 0 ? 'bad' : '') +
+      st('rub', 'Рубли', rubShort(cc.rub), '≈ ' + usdP(cc.rub) + ' · ' + plus(inc.total - inc.usd) + '/мес', p.money < 0 ? 'bad' : '') +
       st('usd', 'Доллары', usdShort(cc.usd), (inc.usd ? plus(inc.usd, true) + '/мес · ' : '') + 'на крупные дела и статус') +
       st('men', 'Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('gun', 'Стволы', p.guns) + st('car', 'Тачки', p.cars) +
       st('conn', 'Связи', E.conn(S, me)) +
@@ -187,6 +187,7 @@
   const usdS = v => (v < 0 ? '−' : '') + kfmt(v * 1000) + ' $';
   const rubS = v => (v < 0 ? '−' : '') + kfmt(v * 1000 * E.rubRate(S)) + ' ₽';
   const money = (v, usd) => usd ? usdS(v) : rubS(v);
+  const rubP = c => kfmt(Math.max(0, c) * 1000 * E.rubRate(S)) + ' ₽', usdP = c => kfmt(Math.max(0, c) * 1000) + ' $';
   const plus = (v, usd) => (v > 0 ? '+' : '') + money(v, usd);
   const btn = (label, a, attrs, lock, cls) => '<button class="btn ' + (cls || '') + '" data-a="' + a + '" ' + (attrs || '') + (lock ? ' disabled' : '') + '>' + label + (lock && typeof lock === 'string' ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
   const kindTag = k => '<span class="tag ' + k + '">' + ({ w: 'белый', g: 'серый', b: 'чёрный' }[k]) + '</span>';
@@ -205,7 +206,7 @@
     if (d.b.length) h += '<div class="ptiles">' + d.b.map((b, x) => {
       const B = D.BUILDS[b], lv = E.pointLvl(d, x), c = E.upgradeCost(S, i, x), inc = E.pointInc(me, b, i);
       return '<div class="ptile"><div class="pimg">' + A.build(b, lv) + '<b class="lvb">' + ROMAN[lv] + '</b></div><div class="pinfo"><b>' + B.name + '</b><span class="good">' + plus(inc * lv, B.usd) + ' в мес.' + (E.pointGood(b, i) ? ' · место +50%' : '') + '</span>' + (B.perk ? '<small class="perk">' + esc(perkAt(B, lv)) + '</small>' : '') + '</div>' +
-        (lv >= E.MAX_LVL ? '<p class="muted pmax">Высший уровень</p>' : '<button class="btn sm pup" data-a="upgrade" data-i="' + i + '" data-x="' + x + '"' + (p.money < c ? ' disabled' : '') + '><span class="pnext">' + A.build(b, lv + 1, true) + '</span><span>До ' + ROMAN[lv + 1] + ' · ' + c + ' тыс. → ' + plus(inc * (lv + 1), B.usd) + (B.fx || B.rec || B.def ? '<small>' + esc(perkAt(B, lv + 1)) + '</small>' : '') + '</span></button>') + '</div>';
+        (lv >= E.MAX_LVL ? '<p class="muted pmax">Высший уровень</p>' : '<button class="btn sm pup" data-a="upgrade" data-i="' + i + '" data-x="' + x + '"' + (p.money < c ? ' disabled' : '') + '><span class="pnext">' + A.build(b, lv + 1, true) + '</span><span>До ' + ROMAN[lv + 1] + ' · ' + rubP(c) + ' → ' + plus(inc * (lv + 1), B.usd) + (B.fx || B.rec || B.def ? '<small>' + esc(perkAt(B, lv + 1)) + '</small>' : '') + '</span></button>') + '</div>';
     }).join('') + '</div>';
     h += '</div>';
     if (d.b.length >= dd.slots) return h + '<p class="muted pfull">Свободных мест нет. Улучшай то, что стоит.</p>';
@@ -215,7 +216,7 @@
     h += '<div class="grid">';
     keys.forEach(k => {
       const B = D.BUILDS[k], lock = E.canBuild(S, me, i, k), r = rank(k);
-      h += '<button class="card bcard' + (r === 0 ? ' special' : r === 1 ? ' fit' : '') + '" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? ' disabled' : '') + ' title="' + esc(B.desc) + '">' + A.build(k, 1, true) + (r === 0 ? '<em class="btag">особая</em>' : r === 1 ? '<em class="btag fit">+50% здесь</em>' : '') + '<b>' + B.name + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? B.cost + ' тыс. $' : 'бесплатно') + ' → ' + plus(E.pointInc(me, k, i), B.usd) + '/мес.' + (B.usd ? ' · валюта' : '') + '</span>' + (B.perk ? '<i class="perk">' + esc(B.perk) + '</i>' : '') + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
+      h += '<button class="card bcard' + (r === 0 ? ' special' : r === 1 ? ' fit' : '') + '" data-a="build" data-i="' + i + '" data-k="' + k + '"' + (lock ? ' disabled' : '') + ' title="' + esc(B.desc) + '">' + A.build(k, 1, true) + (r === 0 ? '<em class="btag">особая</em>' : r === 1 ? '<em class="btag fit">+50% здесь</em>' : '') + '<b>' + B.name + '</b>' + kindTag(B.kind) + '<span>' + (B.cost ? rubP(B.cost) : 'бесплатно') + ' → ' + plus(E.pointInc(me, k, i), B.usd) + '/мес.' + (B.usd ? ' · валюта' : '') + '</span>' + (B.perk ? '<i class="perk">' + esc(B.perk) + '</i>' : '') + (lock ? '<small>' + esc(lock) + '</small>' : '') + '</button>';
     });
     return h + '</div></div>';
   }
@@ -274,7 +275,7 @@
       else if (d.ent) h += '<p class="muted">Под хозяином района. Доход ' + money(e.inc) + ' в мес.</p>';
       else {
         const ok = (v, need) => '<b class="' + (v >= need ? 'good' : 'bad') + '">' + need + '</b>';
-        h += '<p>Доход ' + money(e.inc) + ' в мес. Для захвата нужны бойцы ' + ok(p.men, e.men) + ', связи во власти ' + ok(c, e.conn) + ' и ' + ok(p.money, e.cost) + ' тыс. $ на суды и реестр.</p>';
+        h += '<p>Доход ' + money(e.inc) + ' в мес. Для захвата нужны бойцы ' + ok(p.men, e.men) + ', связи во власти ' + ok(c, e.conn) + ' и <b class="' + (p.money >= e.cost ? 'good' : 'bad') + '">' + rubP(e.cost) + '</b> на суды и реестр.</p>';
         if (mine) h += btn('Захватить предприятие · 2 хода · шанс ' + R(E.raidOdds(S, me, sel)) + '%', 'raid', '', p.men < e.men || c < e.conn || p.money < e.cost || p.ap < 2, 'wide');
         else h += '<p class="muted">Сначала возьми район.</p>';
       }
@@ -297,7 +298,7 @@
   function paneBoss() {
     const p = P(), inc = E.income(S, me), cap = E.menCap(S, me);
     let h = '<p class="eyebrow">Общак ' + tipAsk('cash') + '</p><h2>' + fd(me).name + '</h2><p class="sub">' + esc(fd(me).perk) + '</p>';
-    h += '<dl class="kv"><dt>Сила бригады</dt><dd>' + R(E.power(p)) + '</dd><dt>Касса</dt><dd>' + R(p.money) + ' тыс. $</dd><dt>Белый нал</dt><dd class="good">' + E.cash(p).white + '</dd><dt>Чёрный нал</dt><dd>' + E.cash(p).black + '</dd><dt>В долларах</dt><dd class="good">' + E.cur(p).usd + '</dd><dt>В рублях</dt><dd>' + E.cur(p).rub + '</dd><dt>Авторитет</dt><dd>' + R(p.rep) + '</dd><dt>Бойцы</dt><dd>' + p.men + ' из ' + cap + '</dd><dt>Районы</dt><dd>' + E.count(S, me) + ' из 102</dd></dl>';
+    h += '<dl class="kv"><dt>Сила бригады</dt><dd>' + R(E.power(p)) + '</dd><dt>Касса</dt><dd>' + rubP(E.cur(p).rub) + ' и ' + usdP(E.cur(p).usd) + '</dd><dt>Белый нал</dt><dd class="good">' + E.cash(p).white + '</dd><dt>Чёрный нал</dt><dd>' + E.cash(p).black + '</dd><dt>В долларах</dt><dd class="good">' + E.cur(p).usd + '</dd><dt>В рублях</dt><dd>' + E.cur(p).rub + '</dd><dt>Авторитет</dt><dd>' + R(p.rep) + '</dd><dt>Бойцы</dt><dd>' + p.men + ' из ' + cap + '</dd><dt>Районы</dt><dd>' + E.count(S, me) + ' из 102</dd></dl>';
     h += '<h3>Касса за месяц</h3><table class="tbl">' + inc.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="' + (r[1] < 0 ? 'bad' : 'good') + '">' + plus(r[1], r[2] === 'usd') + '</td></tr>').join('') + '<tr class="sum"><td>Итого</td><td>' + [inc.total - inc.usd ? plus(inc.total - inc.usd) : '', inc.usd ? plus(inc.usd, true) : ''].filter(Boolean).join(' и ') + '</td></tr></table>';
     const tot = inc.white + inc.black;
     const k = p.usdK || 0, fee = R(E.exchangeFee(S, me) * 100), inf = E.inflation(S) * 100;
@@ -319,15 +320,15 @@
     const r = $('#fxr'), box = $('#fxcalc'); if (!r || !box) return;
     const v = +r.value, fee = Math.round(v * E.exchangeFee(S, me)), rate = E.rubRate(S), rub = x => bigRub(x * 1000 * rate) + ' ₽';
     box.innerHTML = fxDir === 'buy'
-      ? '<span>Отдаёшь <b>' + rub(v) + '</b><small>≈ ' + v + ' тыс. $</small></span><i>→</i><span>Получишь <b class="good">' + Math.max(0, v - fee) + ' тыс. $</b><small>комиссия ' + fee + ' тыс.</small></span>'
-      : '<span>Отдаёшь <b class="good">' + v + ' тыс. $</b><small>&nbsp;</small></span><i>→</i><span>Получишь <b>' + rub(Math.max(0, v - fee)) + '</b><small>комиссия ' + fee + ' тыс. $</small></span>';
+      ? '<span>Отдаёшь <b>' + rub(v) + '</b><small>≈ ' + usdP(v) + '</small></span><i>→</i><span>Получишь <b class="good">' + usdP(Math.max(0, v - fee)) + '</b><small>комиссия ' + usdP(fee) + '</small></span>'
+      : '<span>Отдаёшь <b class="good">' + usdP(v) + '</b><small>&nbsp;</small></span><i>→</i><span>Получишь <b>' + rub(Math.max(0, v - fee)) + '</b><small>комиссия ' + usdP(fee) + '</small></span>';
     const go = $('#fxgo'); if (go) go.disabled = v < 1;
   }
   function paneFx() {
     const p = P(), cc = E.cur(p), rate = E.rubRate(S), fee = R(E.exchangeFee(S, me) * 100), inf = E.inflation(S) * 100, y = E.date(S.turn).year;
     const max = fxDir === 'buy' ? Math.max(0, cc.rub) : Math.max(0, cc.usd);
     let h = '<h2>Обменник</h2><p class="sub">Курс как был в ' + y + '-м. Доход приходит в рублях, а рубли дешевеют вслед за курсом.</p>';
-    h += '<div class="fx"><div class="fxw rub"><span>₽ Рубли</span><b>' + bigRub(Math.max(0, cc.rub) * 1000 * rate) + ' ₽</b><small>≈ ' + cc.rub + ' тыс. $</small></div><div class="fxw usd"><span>$ Доллары</span><b>' + cc.usd + ' тыс. $</b><small>' + (cc.usd ? 'не дешевеют' : 'пусто') + '</small></div></div>';
+    h += '<div class="fx"><div class="fxw rub"><span>₽ Рубли</span><b>' + bigRub(Math.max(0, cc.rub) * 1000 * rate) + ' ₽</b><small>≈ ' + usdP(cc.rub) + '</small></div><div class="fxw usd"><span>$ Доллары</span><b>' + usdP(cc.usd) + '</b><small>' + (cc.usd ? 'не дешевеют' : 'пусто') + '</small></div></div>';
     h += '<div class="fxboard"><span>' + E.date(S.turn).label + '</span><b>1 $ = ' + rate.toLocaleString('ru-RU') + ' ₽</b>' + (y >= 1998 && y <= 1999 ? '<small>новые рубли (деноминация 1998-го)</small>' : '') + '<em class="' + (inf > 0.05 ? 'bad' : 'good') + '">' + (inf > 0.05 ? 'за месяц рубль подешевеет на ' + (Math.round(inf * 10) / 10) + '%' : inf < -0.05 ? 'за месяц рубль окрепнет на ' + (Math.round(-inf * 10) / 10) + '%' : 'рубль стоит на месте') + '</em></div>';
     h += '<div class="seg fxdir">' + [['buy', 'Купить $'], ['sell', 'Продать $']].map(d => '<button class="btn' + (fxDir === d[0] ? ' on' : '') + '" data-a="fxdir" data-k="' + d[0] + '">' + d[1] + '</button>').join('') + '</div>';
     if (!max) h += '<p class="muted">' + (fxDir === 'buy' ? 'Рублей в кассе нет — менять нечего.' : 'Долларов нет — продавать нечего.') + '</p>';
@@ -340,15 +341,10 @@
   // собственная недвижимость: все точки по районам и статусные покупки
   function estateInc() { let r = 0, u = 0; E.owned(S, me).forEach(i => S.d[i].b.forEach((b, x) => { const v = E.pointInc(me, b, i) * E.pointLvl(S.d[i], x); if (D.BUILDS[b].usd) u += v; else r += v; })); return [r, u]; }
   function paneEstate() {
-    const own = E.owned(S, me).filter(i => S.d[i].b.length), [r, u] = estateInc();
-    let h = '<p class="eyebrow">Бригада · сила</p><h2>Недвижимость</h2><p class="sub">Точки на твоих районах и большие покупки. Доход: ' + pairS(r, u) + ' в мес.</p>';
-    if (!own.length) h += '<p class="muted">Своих точек пока нет. Открой свой район на карте и построй первую.</p>';
-    own.forEach(i => {
-      const d = S.d[i];
-      h += '<div class="estd"><button class="link" data-a="goto" data-i="' + i + '"><b>' + esc(D.DISTRICTS[i].name) + '</b></button><span class="muted"> · ' + D.OKRUGS[D.DISTRICTS[i].ok].short + ' · ' + d.b.length + ' из ' + D.DISTRICTS[i].slots + '</span><ul class="plain">' +
-        d.b.map((b, x) => { const B = D.BUILDS[b], lv = E.pointLvl(d, x); return '<li>' + B.name + ' <span class="lvb sm">' + ROMAN[lv] + '</span> · <span class="good">' + plus(E.pointInc(me, b, i) * lv, B.usd) + '</span></li>'; }).join('') + '</ul></div>';
-    });
-    h += '<h3>Статус и большие покупки <span class="muted">только за $</span></h3><div class="box usdnote"><b>$ ' + E.usdOf(P()) + ' тыс.</b><span>Покупаются только за доллары.</span>' + btn('В обменник', 'gofx', '', false, 'sm') + '</div>' + statusHTML();
+    const st = D.STATUS.filter(X => E.has(S, me, X.id));
+    let h = '<p class="eyebrow">Бригада · сила</p><h2>Недвижимость</h2><p class="sub">Особняк, яхта и другие большие покупки. Точки на районах — в карточке района.</p>';
+    if (st.length) h += '<ul class="plain">' + st.map(X => '<li><b>' + X.name + '</b> — ' + esc(X.perk) + '</li>').join('') + '</ul>';
+    h += '<div class="box usdnote"><b>' + usdP(E.usdOf(P())) + '</b><span>Покупаются только за доллары.</span>' + btn('В обменник', 'gofx', '', false, 'sm') + '</div>' + statusHTML();
     return h;
   }
   // рядовые: вербовка
@@ -358,8 +354,8 @@
     h += '<dl class="kv"><dt>Со стволом</dt><dd>' + Math.min(p.men, p.guns) + '</dd><dt>На колёсах</dt><dd>' + Math.min(p.men, p.cars * 4) + '</dd><dt>Сила бригады</dt><dd>' + R(E.power(p)) + '</dd></dl>';
     const inf = E.inflow(S, me), have = E.pool(S, me), price = E.recruitPrice(S), room = cap - p.men, can = Math.max(0, Math.min(have, room, Math.floor(p.money / price)));
     const why = room < 1 ? 'бригада полна: нужны районы и авторитет' : have < 1 ? 'желающих нет до следующего месяца' : p.money < price ? 'не хватает денег' : '';
-    h += '<h3>Вербовка <span class="muted">ждут ' + have + ' чел., боец стоит ' + price + ' тыс.</span></h3><div class="grid g3">' +
-      [1, 5, can].map((n, x) => { const m = x === 2 ? Math.max(can, 1) : n; return '<button class="card" data-a="recruit" data-n="' + m + '"' + (can < m || (x === 2 && can < 1) ? ' disabled' : '') + '><b>' + (x === 2 ? 'Всех: ' + can : 'Нанять ' + n) + '</b><span>' + m * price + ' тыс.</span>' + (x === 0 && why ? '<small>' + why + '</small>' : '') + '</button>'; }).join('') + '</div>';
+    h += '<h3>Вербовка <span class="muted">ждут ' + have + ' чел., боец стоит ' + rubP(price) + '</span></h3><div class="grid g3">' +
+      [1, 5, can].map((n, x) => { const m = x === 2 ? Math.max(can, 1) : n; return '<button class="card" data-a="recruit" data-n="' + m + '"' + (can < m || (x === 2 && can < 1) ? ' disabled' : '') + '><b>' + (x === 2 ? 'Всех: ' + can : 'Нанять ' + n) + '</b><span>' + rubP(m * price) + '</span>' + (x === 0 && why ? '<small>' + why + '</small>' : '') + '</button>'; }).join('') + '</div>';
     h += '<table class="tbl">' + inf.rows.filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td>+' + r[1] + '</td></tr>').join('') + '<tr class="sum"><td>Приходит каждый месяц</td><td>+' + inf.total + '</td></tr></table>';
     h += '<p class="muted">Вербовка не тратит ход. Кого не нанял, подождут, но не больше трёх месячных притоков. Больше людей дают спортзалы и ЧОПы на районах: строй и улучшай их во вкладке «Районы».</p>';
     if (p.jail.length) h += '<h3>На зоне</h3><table class="tbl">' + p.jail.map(j => '<tr><td>' + j.n + ' чел.</td><td>выйдут: ' + E.date(j.t + 1).label + '</td></tr>').join('') + '</table>';
@@ -368,7 +364,7 @@
 
   // ---------- арсенал и гараж ----------
   const disc = (key, what) => E.fx(S, me, key) ? '<p class="muted">Скидка ' + E.fx(S, me, key) + '% ' + what + '.</p>' : '';
-  const buy = (a, k, n, cost, label, lock) => '<button class="btn sm" data-a="' + a + '" data-k="' + k + '" data-n="' + n + '"' + (lock || P().money < cost ? ' disabled' : '') + '>' + label + ' · ' + cost + ' тыс.</button>';
+  const buy = (a, k, n, cost, label, lock) => '<button class="btn sm" data-a="' + a + '" data-k="' + k + '" data-n="' + n + '"' + (lock || P().money < cost ? ' disabled' : '') + '>' + label + ' · ' + rubP(cost) + '</button>';
   function paneArms() {
     const p = P(), y = E.date(S.turn).year, arms = p.arms || {}, armed = Math.min(p.men, p.guns);
     let h = '<p class="eyebrow">Рядовые</p><h2>Арсенал</h2><p class="sub">Со стволом ' + armed + ' из ' + p.men + ', сила стволов +' + R(E.armedValue(p)) + '</p>' + disc('gun', 'от охотничьих магазинов' + (me === 'kopt' ? ' и ещё 30% от армейских складов' : '')) + '<div class="shop">';
@@ -385,14 +381,14 @@
     const brk = p.broken || {}, nb = Object.keys(brk).reduce((a, k) => a + (brk[k] || 0), 0);
     let h = '<p class="eyebrow">Рядовые</p><h2>Гараж</h2><p class="sub">Мест ' + seats + ', на разборку едут до ' + (10 + seats) + ' бойцов, сила колёс +' + R(E.mobility(p)) + '</p>' + disc('car', 'от автосервисов: и на покупку, и на ремонт');
     h += '<p class="muted">Машины изнашиваются и ломаются: сломанная стоит в гараже и бойцов не возит. Почини или продай на запчасти. Советские ломаются чаще, иномарки поновее — реже, автосервисы на районах берегут парк.</p>';
-    if (nb) { const ra = E.repairAllCost(S, me), sv = E.scrapAllValue(S, me); h += '<div class="box brk"><p class="bad">Сломано машин: ' + nb + '. Они стоят в гараже и бойцов не возят.</p><div class="grid">' + btn('Починить все · ' + ra + ' тыс.', 'repairall', '', p.money < E.repairCost(S, me, Object.keys(brk).find(k => brk[k] > 0)) ? 'не хватает денег' : false, 'primary') + btn('Сдать сломанные на металлолом · +' + sv + ' тыс.', 'scrapall', '', false) + '</div>' + (p.money < ra ? '<p class="muted">На все денег не хватит — починятся сначала самые дешёвые в ремонте.</p>' : '') + '</div>'; }
+    if (nb) { const ra = E.repairAllCost(S, me), sv = E.scrapAllValue(S, me); h += '<div class="box brk"><p class="bad">Сломано машин: ' + nb + '. Они стоят в гараже и бойцов не возят.</p><div class="grid">' + btn('Починить все · ' + rubP(ra), 'repairall', '', p.money < E.repairCost(S, me, Object.keys(brk).find(k => brk[k] > 0)) ? 'не хватает денег' : false, 'primary') + btn('Сдать сломанные на металлолом · +' + rubP(sv), 'scrapall', '', false) + '</div>' + (p.money < ra ? '<p class="muted">На все денег не хватит — починятся сначала самые дешёвые в ремонте.</p>' : '') + '</div>'; }
     h += '<div class="shop">';
     // сначала то, что уже есть в гараже, потом доступное, потом будущие модели
     const keys = Object.keys(D.CARS).sort((a, b) => ((gar[b] || 0) + (brk[b] || 0) > 0) - ((gar[a] || 0) + (brk[a] || 0) > 0) || (y >= D.CARS[b].from) - (y >= D.CARS[a].from) || D.CARS[a].from - D.CARS[b].from);
     keys.forEach(k => {
       const Cr = D.CARS[k], lock = y < Cr.from ? 'появится в ' + Cr.from + ' году' : '', nw = gar[k] || 0, nbk = brk[k] || 0, rc = E.repairCost(S, me, k);
       h += '<div class="item' + (lock ? ' locked' : '') + '">' + A.car(k) + '<div class="ii"><b>' + Cr.name + '</b><small>' + Cr.alt + ' · мест ' + Cr.seats + ', боец на ней +' + Cr.q + (Cr.rep ? ' · авторитет +' + Cr.rep : '') + '</small><span>на ходу: ' + nw + (nbk ? ' · <em class="bad">сломано: ' + nbk + '</em>' : '') + '</span><i>' + (lock || esc(Cr.desc)) + '</i><div class="row">' + buy('car', k, 1, E.carCost(S, me, k), 'Купить', lock) + '</div>';
-      if (nw || nbk) h += '<div class="row">' + (nbk ? '<button class="btn sm" data-a="repair" data-k="' + k + '"' + (p.money < rc ? ' disabled' : '') + '>Починить · ' + rc + ' тыс.</button><button class="btn sm ghost" data-a="sellcar" data-k="' + k + '" data-n="1">На запчасти · +' + E.carSale(k, true) + '</button>' : '<button class="btn sm ghost" data-a="sellcar" data-k="' + k + '" data-n="0">Продать · +' + E.carSale(k, false) + '</button>') + '</div>';
+      if (nw || nbk) h += '<div class="row">' + (nbk ? '<button class="btn sm" data-a="repair" data-k="' + k + '"' + (p.money < rc ? ' disabled' : '') + '>Починить · ' + rubP(rc) + '</button><button class="btn sm ghost" data-a="sellcar" data-k="' + k + '" data-n="1">На запчасти · +' + rubP(E.carSale(k, true)) + '</button>' : '<button class="btn sm ghost" data-a="sellcar" data-k="' + k + '" data-n="0">Продать · +' + rubP(E.carSale(k, false)) + '</button>') + '</div>';
       h += '</div></div>';
     });
     return h + '</div>' + (E.carTalk(S, me) ? '<p class="good">Представительские машины в гараже: переговоры +' + E.carTalk(S, me) + '%.</p>' : '') + (E.armorK(p) < 1 ? '<p class="good">Бронированный гелик: глава и бригадиры гибнут и ранятся вдвое реже.</p>' : '');
@@ -418,7 +414,7 @@
   const statBar = (l, v) => '<span class="stat"><i>' + l + '</i><b>' + v + '</b><u><s style="width:' + v * 10 + '%"></s></u></span>';
   function postEffect(c) {
     if (c.st !== 'ok') return '<p class="bad">Вне строя. Должность не работает, пока он не вернётся.</p>';
-    const t = { right: '+1 ход в месяц, нападения +' + c.str * 2 + '%', cons: 'Переговоры и стрелки +' + c.wit * 3 + '%, взятки наверх −' + c.wit * 3 + '%', treas: c.loy <= 3 ? 'Будет подворовывать: доход −5%. Верность низкая' : 'Доход +' + c.wit * 2 + '%', lawyer: 'Задержанных отпускают чаще на ' + c.wit * 3 + '%, сроки короче на ' + c.wit * 4 + '%, изъятия меньше на ' + c.wit * 5 + '%', capo: 'Оборона районов округа +' + c.str * 2 + ', дань +' + c.str * 5 + '%, нападения в округе +' + c.str * 3 + '%. Сам ставит смотрящих из резерва и строит точки в округе на половину дани' + (c.fund ? ' (накоплено ' + Math.round(c.fund) + ' тыс.)' : '') + (c.wit < 5 ? '. Умом не блещет: строит не самое выгодное' : ''), watch: 'Оборона района +' + c.str * 3 + ', дань +' + c.str * 3 + '%, доход точек +' + c.wit * 4 + '%' }[c.pos];
+    const t = { right: '+1 ход в месяц, нападения +' + c.str * 2 + '%', cons: 'Переговоры и стрелки +' + c.wit * 3 + '%, взятки наверх −' + c.wit * 3 + '%', treas: c.loy <= 3 ? 'Будет подворовывать: доход −5%. Верность низкая' : 'Доход +' + c.wit * 2 + '%', lawyer: 'Задержанных отпускают чаще на ' + c.wit * 3 + '%, сроки короче на ' + c.wit * 4 + '%, изъятия меньше на ' + c.wit * 5 + '%', capo: 'Оборона районов округа +' + c.str * 2 + ', дань +' + c.str * 5 + '%, нападения в округе +' + c.str * 3 + '%. Сам ставит смотрящих из резерва и строит точки в округе на половину дани' + (c.fund ? ' (накоплено ' + rubP(c.fund) + ')' : '') + (c.wit < 5 ? '. Умом не блещет: строит не самое выгодное' : ''), watch: 'Оборона района +' + c.str * 3 + ', дань +' + c.str * 3 + '%, доход точек +' + c.wit * 4 + '%' }[c.pos];
     if (c.pos === 'lawyer' && c.loy <= 3) return '<p class="bad">Сливает дела следствию: розыск +2 в месяц, защиты никакой. Верность низкая</p>';
     if (c.pos === 'watch' && c.loy <= 3) return '<p class="bad">Будет утаивать половину дани района: верность низкая</p>';
     return '<p class="good">' + t + '</p>';
@@ -457,10 +453,10 @@
     // сразу под главой — сама бригада: рядовые бойцы, их стволы и тачки
     const cap = E.menCap(S, me), seats = E.seatsOf(p), unit = (v, ic, title, big, line, warn) => '<button class="unit' + on(v) + '" data-a="unit" data-u="' + v + '">' + A.icon(ic) + '<span class="nb"><span class="role">' + title + '</span><b>' + big + '</b><small class="' + (warn ? 'bad' : '') + '">' + line + '</small></span></button>';
     h += '<p class="tlabel">Бригада · сила ' + R(E.power(p)) + '</p><div class="tier units">' +
-      unit('men', 'men', 'Бойцы · вербовка', p.men + ' из ' + cap, 'ждут ' + E.pool(S, me) + ' · по ' + E.recruitPrice(S) + ' тыс.') +
+      unit('men', 'men', 'Бойцы · вербовка', p.men + ' из ' + cap, 'ждут ' + E.pool(S, me) + ' · по ' + rubP(E.recruitPrice(S))) +
       unit('arms', 'gun', 'Арсенал', Math.min(p.men, p.guns) + ' со стволом', p.guns < p.men ? 'без ствола ' + (p.men - p.guns) : 'все вооружены', p.guns < p.men) +
       unit('cars', 'car', 'Гараж', 'мест ' + seats, 'на разборку до ' + (10 + seats) + ' бойцов') +
-      (() => { const ow = E.owned(S, me), np = ow.reduce((a, i) => a + S.d[i].b.length, 0), q = estateInc(); return unit('estate', 'home', 'Недвижимость', np + ' ' + (np % 10 === 1 && np % 100 !== 11 ? 'точка' : [2, 3, 4].includes(np % 10) && ![12, 13, 14].includes(np % 100) ? 'точки' : 'точек'), np ? pairS(q[0], q[1]) + ' в мес.' : 'строй точки на районах'); })() + '</div>';
+      (() => { const n = D.STATUS.filter(X => E.has(S, me, X.id)).length; return unit('estate', 'home', 'Недвижимость', n ? 'куплено ' + n + ' из ' + D.STATUS.length : 'пока ничего', 'особняк, яхта и прочее за $'); })() + '</div>';
     h += '<p class="tlabel">Ближний круг</p><div class="tier ctier">' + INNER.map(pos => cnode(cr.find(x => x.pos === pos), POSTS[pos].name, { pos })).join('') + '</div>';
     h += '<p class="tlabel">Бригадиры · ' + capos.length + ' из ' + max + '</p><div class="tier ctier">' + myOkrugs().map(ok => {
       const n = okDistricts(ok).length, zv = '<span class="zv">' + n + ' ' + (n === 1 ? 'район' : n < 5 ? 'района' : 'районов') + ' · ~' + Math.round(p.men * n / Math.max(1, total)) + '</span>';
@@ -470,7 +466,7 @@
     h += '<p class="tlabel">Смотрящие · ' + ws.length + ' из ' + total + ' районов</p><div class="tier">' + (ws.length ? ws.map(c => '<button class="wchip' + (c.st !== 'ok' ? ' out' : '') + (focus && focus.id === c.id ? ' sel' : '') + '" data-slot="watch|' + c.ok + '" draggable="true" data-a="person" data-id="' + c.id + '"><span class="ava">' + A.face(c) + '</span><span><b>«' + esc(c.nick) + '»</b><small>' + esc(DD.DISTRICTS[E.watchDist(c)].name) + '</small></span></button>').join('') : '<p class="muted">Смотрящих нет. Их ставят бригадиры округов из резерва — назначь бригадира, и он сам расставит людей и начнёт строить точки.</p>') + '</div>';
     const pc = E.promoteCost(S), plock = p.promoTurn === S.turn ? 'раз в месяц' : p.men < 6 ? 'нужно 6 бойцов' : p.money < pc ? 'не хватает денег' : '';
     h += '<p class="tlabel">Резерв · ' + bench.length + '</p><div class="tier bench">' + (bench.length ? bench.map(c => node(c, 'Резерв')).join('') : '<p class="muted">Пусто. Каждый месяц из бригады может выделиться новый человек.</p>') + '</div>';
-    h += '<div class="tier promo">' + btn('Выдвинуть бойца из рядовых · ' + pc + ' тыс.', 'promote', '', plock || false, 'ghost') + '</div>';
+    h += '<div class="tier promo">' + btn('Выдвинуть бойца из рядовых · ' + rubP(pc), 'promote', '', plock || false, 'ghost') + '</div>';
     $('#org').innerHTML = '<div class="mquest">' + questCard() + '</div>' + h;
   }
   // «Путь наверх»: карточка задания от наставника над досье
@@ -478,7 +474,7 @@
     const q = E.questNow(S, me); if (!q) return '';
     const done = E.questDone(S, me, q), n = (P().quest || 0) + 1, m = R(q.$ * (1 + S.turn / 60));
     return '<div class="quest' + (done ? ' done' : '') + '"><div class="qhead"><span class="ava">' + A.legendFace('hasan') + '</span><div><p class="eyebrow">Путь наверх · ' + n + ' из ' + D.QUESTS.length + '</p><b>' + q.title + '</b><small>Дед Хасан объясняет</small></div></div><p>' + q.text + '</p><p class="qhow">' + (done ? '✓ Сделано. ' : 'Задание: ') + q.how + '</p><div class="row">' +
-      (done ? '<button class="btn sm primary" data-a="quest">Забрать: +' + m + ' тыс., авторитет +' + q.rep + '</button>' : '<button class="btn sm" data-a="qgo" data-k="' + q.go + '">Показать, где</button>') + '<button class="btn sm ghost" data-a="qskip">Пропустить обучение</button></div></div>';
+      (done ? '<button class="btn sm primary" data-a="quest">Забрать: +' + rubP(m) + ', авторитет +' + q.rep + '</button>' : '<button class="btn sm" data-a="qgo" data-k="' + q.go + '">Показать, где</button>') + '<button class="btn sm ghost" data-a="qskip">Пропустить обучение</button></div></div>';
   }
   // расправа над своим: казнить или подбросить наркоту (без крови, уезжает на зону)
   let doom = null;
@@ -486,13 +482,13 @@
     const p = P(), fc = E.frameCost(S);
     if (doom && doom.id === c.id) {
       const txt = doom.kind === 'frame'
-        ? 'Подбросить «' + esc(c.nick) + '» наркоту? Операм ' + fc + ' тыс. Он уедет на зону и в семью не вернётся.' + (c.loy <= 3 ? ' Он неверен и может догадаться: тогда заговорит, розыск +8.' : '')
+        ? 'Подбросить «' + esc(c.nick) + '» наркоту? Операм ' + rubP(fc) + '. Он уедет на зону и в семью не вернётся.' + (c.loy <= 3 ? ' Он неверен и может догадаться: тогда заговорит, розыск +8.' : '')
         : 'Казнить «' + esc(c.nick) + '»? Авторитет +2, розыск +4. Часть семьи затаит обиду: верность −1 у каждого четвёртого.';
       return '<div class="box doom"><p>' + txt + '</p><div class="grid">' + btn(doom.kind === 'frame' ? 'Да, подбросить' : 'Да, казнить', 'doom1', '', false, 'danger') + btn('Отмена', 'doom0', '', false, 'ghost') + '</div></div>';
     }
     return '<h3>Расправа</h3><div class="row doomrow">' +
       btn('Казнить', 'doom', 'data-id="' + c.id + '" data-k="exec"', p.execTurn === S.turn ? 'в этом месяце уже казнили' : false, 'sm danger') +
-      btn('Подбросить наркоту · ' + fc + ' тыс.', 'doom', 'data-id="' + c.id + '" data-k="frame"', p.frameTurn === S.turn ? 'раз в месяц' : p.money < fc ? 'не хватает денег' : false, 'sm') + '</div>';
+      btn('Подбросить наркоту · ' + rubP(fc), 'doom', 'data-id="' + c.id + '" data-k="frame"', p.frameTurn === S.turn ? 'раз в месяц' : p.money < fc ? 'не хватает денег' : false, 'sm') + '</div>';
   }
   const paneDossier = () => questCard() + dossierInner();
   function dossierInner() {
@@ -545,7 +541,7 @@
     const p = P(), L = E.lawLevel(p.heat), y = E.date(S.turn).year, bc = E.bribeCost(S, me);
     const blk = p.heat < 5 ? 'вопросов нет' : p.money < bc ? 'не хватает денег' : p.ap < 1 ? 'нет ходов' : '';
     let h = '<div class="lawhead"><div><h2>Власть</h2><p class="sub">Розыск ' + R(p.heat) + ' из 100 · ' + D.LAW[L].name + ' · связи ' + E.conn(S, me) + ' <button class="info" data-a="lawinfo" aria-label="Что бывает при розыске" title="Что бывает при розыске">i</button></p></div>';
-    h += '<button class="bribe" data-a="bribe"' + (blk ? ' disabled' : '') + '>' + A.icon('money') + '<span><b>Занести наверх</b><small>' + bc + ' тыс. · розыск −12 · 1 ход</small>' + (blk ? '<i>' + blk + '</i>' : '') + '</span></button></div>';
+    h += '<button class="bribe" data-a="bribe"' + (blk ? ' disabled' : '') + '>' + A.icon('money') + '<span><b>Занести наверх</b><small>' + rubP(bc) + ' · розыск −12 · 1 ход</small>' + (blk ? '<i>' + blk + '</i>' : '') + '</span></button></div>';
     h += rulersHTML();
     if (E.lawK(S) > 1) h += '<p class="bad lawk">Новая власть взялась за криминал: розыск растёт на ' + R((E.lawK(S) - 1) * 100) + '% быстрее, облавы чаще, занести наверх дороже.</p>';
     h += '<h3>Люди во власти <span class="muted">каждого можно купить до ' + D.OFFICIAL_MAX + ' раз, покупка тратит ход</span></h3><div class="offs">';
@@ -555,7 +551,7 @@
       let pips = ''; for (let i = 0; i < D.OFFICIAL_MAX; i++) pips += '<u class="' + (i < n ? 'on' : '') + '"></u>';
       h += '<div class="offrow' + (soon ? ' soon' : '') + (n ? ' have' : '') + '"><div class="offwho"><span class="ava">' + A.officialFace(k) + '</span><div><b>' + O.name + '</b><span class="pips">' + pips + '</span><small>' + (n ? 'свои: ' + n + ' из ' + D.OFFICIAL_MAX : 'своих нет') + '</small></div></div>';
       h += '<div class="offwhat"><p>' + esc(O.desc || '') + '.</p><p class="fx"><span class="good">связи +' + O.w + '</span> · <span class="good">розыск −' + O.cool + ' в мес.</span> · содержание ' + O.keep + ' в мес.</p>' +
-        '<button class="btn sm" data-a="hire" data-k="' + k + '"' + (lock ? ' disabled' : '') + '>Купить · ' + c + ' тыс.' + (lock ? '<small>' + lock + '</small>' : '') + '</button></div></div>';
+        '<button class="btn sm" data-a="hire" data-k="' + k + '"' + (lock ? ' disabled' : '') + '>Купить · ' + rubP(c) + (lock ? '<small>' + lock + '</small>' : '') + '</button></div></div>';
     });
     return h + '</div>';
   }
@@ -586,7 +582,7 @@
     D.STATUS.forEach(X => {
       const own = E.has(S, me, X.id), l = own ? null : E.statusLock(S, me, X);
       h += '<div class="box stat' + (own ? ' own' : '') + '"><h3>' + X.name + '</h3><p class="muted">' + X.desc + '.</p><p class="good">' + X.perk + '.</p>' +
-        (own ? '<p class="owned">✓ Твоё</p>' : btn('Купить · $' + X.cost + ' тыс.', 'status', 'data-k="' + X.id + '"', l || false, 'wide')) + '</div>';
+        (own ? '<p class="owned">✓ Твоё</p>' : btn('Купить · ' + usdP(X.cost), 'status', 'data-k="' + X.id + '"', l || false, 'wide')) + '</div>';
     });
     return h + '</div>';
   }
@@ -601,7 +597,7 @@
     const build = own.filter(i => free(i) > 0), up = own.filter(i => !free(i) && ups(i).length), done = own.filter(i => !free(i) && !ups(i).length);
     let h = '<h2>Мои районы <span class="muted">' + own.length + ' из 102</span></h2><p class="sub">Нажми на район в списке или на карте, чтобы открыть его точки. Стройка и улучшения стоят только денег, ходы не тратят.</p>';
     h += distGroup('Есть свободные места', 'можно строить новые точки', build, i => 'свободно ' + free(i));
-    h += distGroup('Можно улучшить', 'все места заняты, но не всё на III уровне', up, i => { const c = Math.min(...ups(i).map(x => E.upgradeCost(S, i, x))); return 'улучшить ' + ups(i).length + ' · от ' + c + ' тыс.'; });
+    h += distGroup('Можно улучшить', 'все места заняты, но не всё на III уровне', up, i => { const c = Math.min(...ups(i).map(x => E.upgradeCost(S, i, x))); return 'улучшить ' + ups(i).length + ' · от ' + rubP(c); });
     h += '<div class="dgroup done"><button class="dgh" data-a="dshow" aria-expanded="' + showDone + '"><h3>Прокачано полностью <span class="muted">' + done.length + ' · ' + pairS(...sumParts(done)) + ' в мес.</span></h3><i>' + (done.length ? (showDone ? 'скрыть' : 'показать') : '') + '</i></button>';
     if (!done.length) h += '<p class="muted">Пока ни одного: все точки района на III уровне — и он попадёт сюда.</p>';
     else if (showDone) h += '<div class="dlist">' + done.map(i => distRow(i, 'готово')).join('') + '</div>';
@@ -650,7 +646,7 @@
   function bizSmall() {
     const p = P(), own = E.owned(S, me), kc = own.length ? null : 'нет районов';
     let b = '<div class="projs">';
-    b += '<div class="box proj"><div class="dpic">' + (A.deal('kidnap') || A.eventScene('street', 'kidnap')) + '<em>свои районы</em></div><h3>Похищение коммерсанта ' + kindTag('b') + '</h3><p>Выкуп 20–50 тыс. (растёт с годами) · шанс ' + E.kidnapOdds(S, me) + '% · розыск +7, при провале +11 и потери. Раз в месяц, 1 ход.</p>' +
+    b += '<div class="box proj"><div class="dpic">' + (A.deal('kidnap') || A.eventScene('street', 'kidnap')) + '<em>свои районы</em></div><h3>Похищение коммерсанта ' + kindTag('b') + '</h3><p>Выкуп ' + rubP(20 * E.era(S)) + '–' + rubP(50 * E.era(S)) + ' · шанс ' + E.kidnapOdds(S, me) + '% · розыск +7, при провале +11 и потери. Раз в месяц, 1 ход.</p>' +
       btn('Похитить коммерсанта', 'kidnap', '', kc || (p.kidnapTurn === S.turn ? 'раз в месяц' : p.men < 4 ? 'нужно 4 бойца' : p.ap < 1), 'wide primary') + '</div>';
     const ents = own.filter(i => D.DISTRICTS[i].ent && !S.d[i].ent);
     b += '<div class="box proj"><div class="dpic">' + (A.deal('raid') || A.eventScene('law', 'raid')) + '<em>предприятия</em></div><h3>Захват предприятий ' + kindTag('w') + '</h3>' + (ents.length ? '<p>На твоих районах можно забрать через суды и реестр:</p><ul class="plain">' + ents.map(i => '<li><button class="link" data-a="goto" data-i="' + i + '">' + esc(D.DISTRICTS[i].ent.name) + '</button> · ' + D.DISTRICTS[i].name + ' · ' + plus(D.DISTRICTS[i].ent.inc) + ' в мес.</li>').join('') + '</ul>' : '<p class="muted">На твоих районах нет незахваченных предприятий. Бери районы с ромбиком на карте.</p>') + '</div></div>';
@@ -664,7 +660,7 @@
     // одним списком: сначала то, что уже работает или доступно, потом остальное по году
     const rank = pr => { const ps = E.projStatus(S, me, pr), st = ps.st.stage || 0; return st === 3 ? 0 : st > 0 ? 1 : ps.lock ? 3 : 2; };
     const list = D.PROJECTS.slice().sort((a, b) => rank(a) - rank(b) || (a.from || 0) - (b.from || 0));
-    return '<p class="sub">Три шага: поездка, переговоры, вход в капитал. Один шаг в месяц.</p><div class="box usdnote"><b>$ ' + u + ' тыс.</b><span>Крупные дела платятся только долларами: рубли за границей и у серьёзных людей не берут.</span>' + btn('В обменник', 'gofx', '', false, 'sm') + '</div>' +
+    return '<p class="sub">Три шага: поездка, переговоры, вход в капитал. Один шаг в месяц.</p><div class="box usdnote"><b>' + usdP(u) + '</b><span>Крупные дела платятся только долларами: рубли за границей и у серьёзных людей не берут.</span>' + btn('В обменник', 'gofx', '', false, 'sm') + '</div>' +
       '<div class="projs">' + list.map(projHTML).join('') + '</div>';
   }
   function projHTML(pr) {
@@ -677,14 +673,14 @@
       else {
         h += '<ol class="steps"><li class="' + (stage > 0 ? 'done' : 'cur') + '">Поездка: ' + pr.where + '</li><li class="' + (stage > 1 ? 'done' : stage === 1 ? 'cur' : '') + '">Переговоры: ' + pr.who + '</li><li class="' + (stage === 2 ? 'cur' : '') + '">' + pr.buyLabel + '</li></ol>';
         if (ps.lock) h += '<p class="muted">' + ps.lock + '</p>';
-        else if (stage === 0) h += btn('Лететь в ' + pr.where + ' · $' + pr.trip + ' тыс.', 'proj', 'data-k="' + pr.id + '"', E.usdOf(p) < pr.trip ? 'нужны доллары: $' + pr.trip + ' тыс. — в обменник' : p.ap < 1, 'wide');
+        else if (stage === 0) h += btn('Лететь в ' + pr.where + ' · ' + usdP(pr.trip), 'proj', 'data-k="' + pr.id + '"', E.usdOf(p) < pr.trip ? 'нужны доллары: ' + usdP(pr.trip) + ' — в обменник' : p.ap < 1, 'wide');
         else if (stage === 1) {
           const ch = E.negChances(S, me), gift = R(pr.buy * 0.2);
           h += '<div class="grid g3">' +
             '<button class="card" data-a="proj" data-k="' + pr.id + '" data-h="share"' + (p.ap < 1 ? ' disabled' : '') + '><b>Взять в долю</b><span>шанс ' + R(ch.share) + '%</span><small>доход −25%</small></button>' +
-            '<button class="card" data-a="proj" data-k="' + pr.id + '" data-h="bribe"' + (p.ap < 1 || E.usdOf(p) < gift ? ' disabled' : '') + '><b>Занести</b><span>шанс ' + R(ch.bribe) + '%</span><small>$' + gift + ' тыс.</small></button>' +
+            '<button class="card" data-a="proj" data-k="' + pr.id + '" data-h="bribe"' + (p.ap < 1 || E.usdOf(p) < gift ? ' disabled' : '') + '><b>Занести</b><span>шанс ' + R(ch.bribe) + '%</span><small>' + usdP(gift) + '</small></button>' +
             '<button class="card atk" data-a="proj" data-k="' + pr.id + '" data-h="force"' + (p.ap < 1 ? ' disabled' : '') + '><b>Надавить</b><span>шанс ' + R(ch.force) + '%</span><small>розыск +6</small></button></div>';
-        } else h += btn(pr.buyLabel + ' · $' + pr.buy + ' тыс.', 'proj', 'data-k="' + pr.id + '"', E.usdOf(p) < pr.buy ? 'нужны доллары: $' + pr.buy + ' тыс. — в обменник' : p.ap < 1, 'wide');
+        } else h += btn(pr.buyLabel + ' · ' + usdP(pr.buy), 'proj', 'data-k="' + pr.id + '"', E.usdOf(p) < pr.buy ? 'нужны доллары: ' + usdP(pr.buy) + ' — в обменник' : p.ap < 1, 'wide');
       }
       h += '</div>';
     }
@@ -747,11 +743,11 @@
     if (E.inTruce(S, me, dealWith)) h += '<p class="good">Мир до ' + E.date(p.truce[dealWith]).label + '.</p>';
     h += '<div class="seg dkinds">' + DEAL_KINDS.map(k => '<button class="' + (k[0] === dealKind ? 'on' : '') + '" data-a="dkind" data-k="' + k[0] + '">' + k[1] + '</button>').join('') + '</div>';
     if (dealKind === 'truce') h += '<label class="field"><span>Срок мира</span><select id="dx">' + [3, 6, 12, 24].map(m => '<option value="' + m + '"' + (m === 12 ? ' selected' : '') + '>' + m + ' мес.</option>').join('') + '</select></label><p class="muted">Пока действует мир, вы не можете нападать на районы друг друга.</p>';
-    else if (dealKind === 'pay' || dealKind === 'ask') h += '<label class="field"><span>Сумма, тыс. $' + (dealKind === 'pay' ? ' (у тебя ' + R(p.money) + ')' : '') + '</span><input id="dx" type="number" inputmode="numeric" min="1" value="50"></label>';
+    else if (dealKind === 'pay' || dealKind === 'ask') h += '<label class="field"><span>Сумма, тысяч $' + (dealKind === 'pay' ? ' (у тебя ' + R(p.money) + ')' : '') + '</span><input id="dx" type="number" inputmode="numeric" min="1" value="50"></label>';
     else {
       const ds = dealDistricts(dealKind, dealWith);
       if (!ds.length) h += '<p class="muted">' + (dealKind === 'sell' ? 'Нет районов на продажу: продать можно не родной район, который граничит с их землёй.' : 'Купить нечего: можно только их не родной район рядом с твоими.') + '</p>';
-      else h += '<label class="field"><span>Район</span><select id="di">' + ds.map(i => '<option value="' + i + '">' + D.DISTRICTS[i].name + ' · ' + D.OKRUGS[D.DISTRICTS[i].ok].short + ' · точек ' + S.d[i].b.length + '</option>').join('') + '</select></label><label class="field"><span>Цена, тыс. $</span><input id="dx" type="number" inputmode="numeric" min="1" value="100"></label>';
+      else h += '<label class="field"><span>Район</span><select id="di">' + ds.map(i => '<option value="' + i + '">' + D.DISTRICTS[i].name + ' · ' + D.OKRUGS[D.DISTRICTS[i].ok].short + ' · точек ' + S.d[i].b.length + '</option>').join('') + '</select></label><label class="field"><span>Цена, тысяч $</span><input id="dx" type="number" inputmode="numeric" min="1" value="100"></label>';
     }
     h += '<div class="grid">' + btn('Предложить', 'dsend', '', dealKind !== 'truce' && dealKind !== 'pay' && dealKind !== 'ask' && !dealDistricts(dealKind, dealWith).length, 'primary') + btn('Закрыть', 'dclose', '', false, 'ghost') + '</div>';
     h += '<p class="muted">Игрок увидит предложение и решит сам. Ходов не тратит.</p>';
@@ -765,9 +761,9 @@
     const f = fd(o.from), x = S.f[o.from];
     let h = '<div class="dhero"><span class="ava big">' + A.bossFace(f) + '</span><div><p class="eyebrow">Предложение</p><h2>' + esc(f.name) + '</h2><p class="sub">' + esc(x.nick || 'игрок') + '</p></div></div>';
     h += '<p class="lead2">' + esc(f.boss) + ' ' + esc(E.offerText(o)) + '.</p>';
-    if (o.kind === 'sell') h += '<p class="muted">Ты платишь ' + o.x + ' тыс. и получаешь ' + D.DISTRICTS[o.i].name + '.</p>';
-    if (o.kind === 'buy') h += '<p class="muted">Ты получаешь ' + o.x + ' тыс. и отдаёшь ' + D.DISTRICTS[o.i].name + '.</p>';
-    if (o.kind === 'ask') h += '<p class="muted">У тебя ' + R(P().money) + ' тыс.</p>';
+    if (o.kind === 'sell') h += '<p class="muted">Ты платишь ' + rubP(o.x) + ' и получаешь ' + D.DISTRICTS[o.i].name + '.</p>';
+    if (o.kind === 'buy') h += '<p class="muted">Ты получаешь ' + rubP(o.x) + ' и отдаёшь ' + D.DISTRICTS[o.i].name + '.</p>';
+    if (o.kind === 'ask') h += '<p class="muted">У тебя ' + rubP(E.cur(P()).rub) + ' и ' + usdP(E.cur(P()).usd) + '</p>';
     if (o.kind === 'truce') h += '<p class="muted">Ни ты, ни они не сможете нападать друг на друга до ' + E.date(S.turn + o.x).label + '.</p>';
     h += '<div class="grid">' + btn('Принять', 'oyes', 'data-k="' + o.id + '"', false, 'primary') + btn('Отказаться', 'ono', 'data-k="' + o.id + '"', false, 'ghost') + '</div>';
     openModal(h, '', key);
@@ -1084,9 +1080,9 @@
     let h = '<div class="evscene">' + A.eventScene(kind, ev.id) + '</div><p class="eyebrow">' + E.date(S.turn).label + (ev.date ? ' · история' : ev.extra === 'law' ? ' · пришли из власти' : ev.extra === 'crew' ? ' · внутри семьи' : '') + '</p>';
     const rp = !ev.extra && p.report;
     if (rp) {
-      h += '<div class="report"><span>За прошлый месяц касса ' + sign(rp.money) + ' тыс. $</span>';
+      h += '<div class="report"><span>За прошлый месяц касса ' + plus(rp.money) + '</span>';
       if (rp.law) h += '<span class="bad">' + esc(rp.law) + '</span>';
-      if (rp.infl) h += '<span class="bad">Инфляция съела ' + rp.infl + ' тыс. рублёвой кассы' + (rp.fx ? ', обмен в доллары: −' + rp.fx : '') + '</span>';
+      if (rp.infl) h += '<span class="bad">Инфляция съела ' + rubP(rp.infl) + ' рублёвой кассы' + (rp.fx ? ', обмен в доллары: −' + rp.fx : '') + '</span>';
       if (rp.lost && rp.lost.length) h += '<span class="bad">Потеряны районы: ' + esc(rp.lost.join(', ')) + '</span>';
       h += '</div>';
     }
@@ -1096,7 +1092,7 @@
     else if (ev.off) h += '<div class="evwho"><span class="ava">' + A.officialFace(ev.off) + '</span><div><b>' + esc(D.OFFICIALS[ev.off].name) + '</b><small>Пришёл не с пустыми руками: с папкой.' + (p.off[ev.off] ? ' Свой такой у тебя уже есть, но этот — чужой.' : '') + '</small></div></div>';
     else if (w) h += '<div class="evwho"><span class="ava">' + A.face(w) + '</span><div><b>' + esc(E.cname(w)) + '</b><small>' + (w.pos ? slotName(w.pos, w.ok) : 'резерв') + ' · сила ' + w.str + ', ум ' + w.wit + ', верность ' + w.loy + (ev.advice ? '. Чем умнее советчик, тем вернее его совет' : '') + '</small></div></div>';
     h += '<p class="lead">' + tx(ev.text) + '</p><div class="opts">';
-    ev.opts.forEach((o, k) => { const os = E.optState(S, me, o); h += '<button class="opt" data-a="opt" data-k="' + k + '"' + (os.lock ? ' disabled' : '') + '><span>' + tx(o.t) + '</span>' + (os.cost ? '<em>' + os.cost + ' тыс.</em>' : '') + (os.lock ? '<small>' + esc(os.lock) + '</small>' : '') + '</button>'; });
+    ev.opts.forEach((o, k) => { const os = E.optState(S, me, o); h += '<button class="opt" data-a="opt" data-k="' + k + '"' + (os.lock ? ' disabled' : '') + '><span>' + tx(o.t) + '</span>' + (os.cost ? '<em>' + rubP(os.cost) + '</em>' : '') + (os.lock ? '<small>' + esc(os.lock) + '</small>' : '') + '</button>'; });
     openModal(h + '</div>', 'event', key);
   }
   const relName = v => (v >= 50 ? 'дружба' : v >= 15 ? 'тепло' : v > -15 ? 'нейтрально' : v > -50 ? 'холодно' : 'вражда') + ' · ' + sign(v);
@@ -1130,7 +1126,7 @@
     h += '<p class="lead">Машины у ' + esc(dd.name) + ', пацаны с битами и стволами. Решать надо сейчас.</p><div class="opts">';
     h += '<button class="opt" data-a="defend" data-k="0" data-h="fight"><span>Вступить в бой: приводишь подмогу, сам командуешь по раундам</span><em>отобьёмся ~' + odds + '%</em></button>';
     h += '<button class="opt" data-a="defend" data-k="0" data-h="auto"><span>' + (cp ? 'Пусть ' + esc(cp.nick) + ' разберётся сам' : 'Пусть пацаны на районе разберутся сами') + '</span><em>~' + oddsA + '%</em></button>';
-    h += '<button class="opt" data-a="defend" data-k="0" data-h="pay"' + (p.money < cost ? ' disabled' : '') + '><span>Откупиться</span><em>' + cost + ' тыс.</em>' + (p.money < cost ? '<small>Не хватает денег</small>' : '') + '</button>';
+    h += '<button class="opt" data-a="defend" data-k="0" data-h="pay"' + (p.money < cost ? ' disabled' : '') + '><span>Откупиться</span><em>' + rubP(cost) + '</em>' + (p.money < cost ? '<small>Не хватает денег</small>' : '') + '</button>';
     h += '<button class="opt" data-a="defend" data-k="0" data-h="give"><span>Сдать район без крови</span><em class="bad">авторитет −4</em></button></div>';
     h += '<p class="muted">Если ничего не решить до конца месяца, бой пройдёт без тебя.</p>';
     openModal(h, 'event', key);
@@ -1151,14 +1147,14 @@
     const card = (kind, title, sub, note, lock, arg) => '<button class="card" data-a="talk" data-k="' + kind + '"' + (arg != null ? ' data-i="' + arg + '"' : '') + (busy || lock ? ' disabled' : '') + '><b>' + title + '</b><span>' + sub + '</span>' + (note ? '<small>' + note + '</small>' : '') + (lock ? '<small class="bad">' + lock + '</small>' : '') + '</button>';
     h += '<div class="grid">';
     const tc = E.truceCost(S, parleyWith);
-    h += card('truce', 'Мир на год', tc + ' тыс. · шанс ' + R(E.truceOdds(S, me, parleyWith)) + '%', 'отношения +15', E.inTruce(S, me, parleyWith) ? 'мир уже есть' : p.money < tc ? 'не хватает денег' : '');
-    h += card('gift', 'Подарок', E.giftCost(S) + ' тыс.', 'отношения +20 без риска', p.money < E.giftCost(S) ? 'не хватает денег' : '');
-    h += card('deal', 'Совместное дело', E.dealCost(S) + ' тыс. · шанс ' + R(E.dealOdds(S, me, parleyWith)) + '%', 'вернётся ×1,8 через 3–6 мес.', rl < -20 ? 'с врагами дел не ведут' : p.money < E.dealCost(S) ? 'не хватает денег' : '');
-    h += card('tribute', 'Потребовать дань', E.tributeSum(S, parleyWith) + ' тыс. · шанс ' + R(E.tributeOdds(S, me, parleyWith)) + '%', 'отказ — вражда', E.tributeOk(S, me, parleyWith) ? '' : 'нужно быть сильнее в 1,3 раза');
+    h += card('truce', 'Мир на год', rubP(tc) + ' · шанс ' + R(E.truceOdds(S, me, parleyWith)) + '%', 'отношения +15', E.inTruce(S, me, parleyWith) ? 'мир уже есть' : p.money < tc ? 'не хватает денег' : '');
+    h += card('gift', 'Подарок', rubP(E.giftCost(S)), 'отношения +20 без риска', p.money < E.giftCost(S) ? 'не хватает денег' : '');
+    h += card('deal', 'Совместное дело', rubP(E.dealCost(S)) + ' · шанс ' + R(E.dealOdds(S, me, parleyWith)) + '%', 'вернётся ×1,8 через 3–6 мес.', rl < -20 ? 'с врагами дел не ведут' : p.money < E.dealCost(S) ? 'не хватает денег' : '');
+    h += card('tribute', 'Потребовать дань', rubP(E.tributeSum(S, parleyWith)) + ' · шанс ' + R(E.tributeOdds(S, me, parleyWith)) + '%', 'отказ — вражда', E.tributeOk(S, me, parleyWith) ? '' : 'нужно быть сильнее в 1,3 раза');
     h += '</div>';
     const ids = E.owned(S, parleyWith).filter(i => E.attackable(S, me, i) && !E.isHome(S, parleyWith, i));
     h += '<h3>Купить район <span class="muted">шанс ' + R(E.buyOdds(S, me, parleyWith)) + '%, деньги берут только при согласии</span></h3>';
-    h += ids.length ? '<div class="grid">' + ids.map(i => { const c = E.buyPrice(S, me, i); return card('buy', esc(D.DISTRICTS[i].name), c + ' тыс. · дань ' + D.DISTRICTS[i].inc, D.DISTRICTS[i].ent ? esc(D.DISTRICTS[i].ent.name) : '', p.money < c ? 'не хватает денег' : '', i); }).join('') + '</div>' : '<p class="muted">У них нет районов на твоей границе, кроме родного.</p>';
+    h += ids.length ? '<div class="grid">' + ids.map(i => { const c = E.buyPrice(S, me, i); return card('buy', esc(D.DISTRICTS[i].name), rubP(c) + ' · дань ' + rubP(D.DISTRICTS[i].inc), D.DISTRICTS[i].ent ? esc(D.DISTRICTS[i].ent.name) : '', p.money < c ? 'не хватает денег' : '', i); }).join('') + '</div>' : '<p class="muted">У них нет районов на твоей границе, кроме родного.</p>';
     openModal(h + '<button class="btn wide ghost" data-a="pclose">Уйти со стрелки</button>', 'event', key);
   }
   function showResult(r) {
@@ -1184,7 +1180,7 @@
     let h = '<p class="eyebrow">' + E.date(S.turn).label + '</p><h2>' + esc(o.title) + '</h2><p class="lead">' + esc(o.text) + '</p>';
     if (WHY[o.title]) h += '<div class="box why"><h3>Почему так вышло</h3><p>' + WHY[o.title] + '</p></div>';
     if (net && !S.done) h += btn('👁 Смотреть за игрой дальше', 'spectate', '', false, 'wide primary') + '<p class="muted">Карта, чат и бригады других игроков — до конца партии.</p>';
-    if (o.stats) h += '<dl class="kv"><dt>Счёт</dt><dd>' + o.score + '</dd><dt>Касса</dt><dd>' + o.stats.money + ' тыс. $</dd><dt>Районы</dt><dd>' + o.stats.districts + '</dd><dt>Авторитет</dt><dd>' + o.stats.rep + '</dd><dt>Связи</dt><dd>' + o.stats.conn + '</dd><dt>Белый доход</dt><dd>' + o.stats.white + '%</dd></dl>';
+    if (o.stats) h += '<dl class="kv"><dt>Счёт</dt><dd>' + o.score + '</dd><dt>Касса</dt><dd>' + usdP(o.stats.money) + '</dd><dt>Районы</dt><dd>' + o.stats.districts + '</dd><dt>Авторитет</dt><dd>' + o.stats.rep + '</dd><dt>Связи</dt><dd>' + o.stats.conn + '</dd><dt>Белый доход</dt><dd>' + o.stats.white + '%</dd></dl>';
     if (net && S.humans.length > 1) {
       h += '<h3>Игроки</h3><table class="tbl">' + S.humans.map(f => { const x = S.f[f]; return '<tr><td><i class="dot" style="background:' + fd(f).color + '"></i>' + who(f) + '</td><td>' + (x.over ? esc(x.over.title) + (x.over.score ? ' · ' + x.over.score : '') : 'ещё играет') + '</td></tr>'; }).join('') + '</table>';
       if (!S.done) h += '<p class="muted">Остальные доигрывают. Итоги обновятся здесь.</p>';
@@ -1201,7 +1197,7 @@
     const p = P(), key = 'heat:' + S.turn; if (modalKey === key) return;
     const ok = E.conn(S, me) >= 8, c = Math.round(300 * E.era(S));
     let h = '<p class="eyebrow">Опасно</p><h2>Розыск ' + Math.round(p.heat) + ' из 100</h2><p class="lead">Тобой занимается ФСБ. Когда розыск дойдёт до <b>100</b>, тебя возьмут — это конец игры (СИЗО «Лефортово»).</p>';
-    h += '<p>' + (ok ? 'Связей во власти ' + E.conn(S, me) + ' — откупиться получится, если в кассе будет ' + c + ' тыс.' : 'Связей во власти ' + E.conn(S, me) + ' из 8 нужных — откупиться не выйдет.') + ' Сейчас розыск меняется на ' + sign(E.heatDelta(S, me)) + ' в месяц.</p>';
+    h += '<p>' + (ok ? 'Связей во власти ' + E.conn(S, me) + ' — откупиться получится, если в кассе будет ' + rubP(c) : 'Связей во власти ' + E.conn(S, me) + ' из 8 нужных — откупиться не выйдет.') + ' Сейчас розыск меняется на ' + sign(E.heatDelta(S, me)) + ' в месяц.</p>';
     h += '<h3>Как сбить</h3><ul class="plain"><li>Купить людей во власти — каждый снижает розыск каждый месяц.</li><li>«Занести наверх» — разово минус розыск.</li><li>Перестать нападать: каждое нападение поднимает розыск.</li><li>Назначить верного юриста, вложиться в благотворительность.</li></ul>';
     h += '<div class="grid">' + btn('Во «Власть»', 'heatgo', '', false, 'primary') + btn('Понятно', 'heatok', '', false, 'ghost') + '</div>';
     openModal(h, 'event', key); haptic('heavy'); if (G.Sfx) G.Sfx.play('siren');
