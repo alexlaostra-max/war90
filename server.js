@@ -310,7 +310,7 @@ const api = {
     const absent = FIDS.filter(f => r.slots[f] === 'off' && !humans.includes(f));
     if (FIDS.length - absent.length < 2) return { err: 'Нужны хотя бы две бригады' };
     Object.keys(r.players).forEach(t => { if (!r.players[t].fid) delete r.players[t]; }); // зрителей нет
-    r.S = E.newGame(humans, crypto.randomBytes(4).readInt32LE(0), nicks, absent, r.diff, r.scen); r.started = true;
+    r.S = E.newGame(humans, crypto.randomBytes(4).readInt32LE(0), nicks, absent, r.diff, r.scen); r.S.online = true; r.started = true;
     sysSay(r, '🎬 Игра началась. ' + (r.timer ? 'На месяц ' + r.timer + ' мин.' : 'Без таймера.'));
     push(r); return { ok: true };
   },

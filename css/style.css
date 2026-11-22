@@ -943,3 +943,9 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 .gchat .gon, .gon2 { font: 12px var(--mono); color: var(--good); }
 .gon2 { margin: 0 0 6px; }
 .gchat .chatlog { max-height: 220px; }
+.modepick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+.modebtn { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; text-align: left; padding: 18px 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--raise); }
+.modebtn b { font: 400 22px var(--display); color: var(--fg); } .modebtn span { font-size: 13px; color: var(--dim); }
+.modebtn:hover { border-color: var(--gold); } .modebtn.on { border-color: var(--crimson); }
+@media (max-width: 560px) { .modepick { grid-template-columns: 1fr; } }
+h2 .gon2 { font-size: 12px; margin-left: 8px; }
