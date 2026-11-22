@@ -599,7 +599,9 @@
   function atkBase(S, fid, i, men, t) {
     const p = S.f[fid], q = squad(p, men), T = ATK[t] || ATK.storm, ar = p.arms || {};
     // чем больше империя, тем злее сопротивление: районы держатся до 1,6 раза крепче против разросшейся бригады
-    let k = T.k || 1, def = districtDef(S, i) * (1 + Math.min(0.6, count(S, fid) * 0.012)), rpgs = 0;
+    let k = T.k || 1, def = districtDef(S, i) * (1 + Math.min(1.2, count(S, fid) * 0.02)), rpgs = 0;
+    // против разросшейся бригады соседи-боты подкидывают обороне людей: самый сильный сосед — четверть своей силы
+    if (p.human && count(S, fid) >= 12) { let ally = 0; GEO.adj[i].forEach(j => { const o = S.d[j].o; if (o && o !== fid && !S.f[o].human && S.f[o].alive) ally = Math.max(ally, power(S.f[o]) * 0.25); }); def += ally * Math.min(1, (count(S, fid) - 10) / 20); }
     if (t === 'snipe') k = 1 + 0.08 * Math.min(5, ar.svd || 0);
     if (t === 'rpg') { rpgs = Math.min(3, ar.rpg || 0); def *= 1 - 0.12 * rpgs; }
     return { q, a: q.power * atkMult(S, fid, i), k, def, rpgs, loss: T.loss || 1 };
