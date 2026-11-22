@@ -736,8 +736,8 @@
     const v = carSale(k, broken); p.money += v;
     return { ok: true, msg: D.CARS[k].name + (broken ? ' ушла на запчасти' : ' продана') + ': +' + v + ' тыс.' };
   }
-  // улучшения привязаны ко времени: II уровень — с 1993-го (павильоны, ремонт по-европейски), III — с 1997-го (сети, торговые центры)
-  const LVL_FROM = { 2: 1993, 3: 1997 };
+  // улучшения привязаны ко времени: II уровень — с 1994-го (павильоны, ремонт по-европейски), III — с 1999-го (сети, торговые центры)
+  const LVL_FROM = { 2: 1994, 3: 1999 };
   const upgradeLock = (S, lv) => { const y = LVL_FROM[lv + 1]; return y && date(S.turn).year < y ? 'до ' + ['', 'I', 'II', 'III'][lv + 1] + ' — с ' + y + ' года' : null; };
   function upgrade(S, fid, i, x) {
     const e = spend(S, fid, 0); if (e) return fail(e);
