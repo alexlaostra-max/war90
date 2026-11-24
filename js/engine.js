@@ -39,9 +39,15 @@
     for (let k = 1; k < RATES.length; k++) { const a = RATES[k - 1], b = RATES[k]; if (mi <= at(b)) return a[2] + (b[2] - a[2]) * (mi - at(a)) / (at(b) - at(a)); }
     return RATES[RATES.length - 1][2];
   }
-  const rubRate = S => { const y = date(S.turn).year, r = rateAt(S.turn); return y >= 1998 ? Math.round(r / 100) / 10 : Math.round(r); };
+  // курс живой: к тренду тех лет добавляется месячное колебание (S.fxn — сейчас, S.fxq — на следующий месяц), рубль бывает и крепче
+  const rateNow = (S, t) => t == null || t === S.turn ? rateAt(S.turn) * Math.exp(S.fxn || 0) : t === S.turn + 1 ? rateAt(t) * Math.exp(S.fxq || 0) : t === S.turn - 1 ? rateAt(t) * Math.exp(S.fxp || 0) : rateAt(t);
+  const showRate = (S, r) => date(S.turn).year >= 1998 ? Math.round(r / 100) / 10 : Math.round(r);
+  const rubRate = S => showRate(S, rateNow(S));
+  // курсы обменника: продаёт доллары дороже, покупает дешевле (разница — комиссия)
+  const fxRates = (S, fid) => { const r = rateNow(S), f = exchangeFee(S, fid); return { buy: showRate(S, r * (1 + f)), sell: showRate(S, r * (1 - f)), mid: showRate(S, r), prev: showRate(S, rateNow(S, S.turn - 1)) }; };
   // сколько рублёвая касса теряет за месяц в долларах (отрицательное — рубль окреп)
-  const inflation = S => Math.max(-0.08, 1 - rateAt(S.turn) / rateAt(S.turn + 1));
+  const inflation = S => Math.max(-0.12, 1 - rateNow(S) / rateNow(S, S.turn + 1));
+  function fxRoll(S) { const g = (rnd(S) + rnd(S) + rnd(S) - 1.5) * 0.09; S.fxq = Math.max(-0.15, Math.min(0.15, 0.55 * (S.fxn || 0) + g)); }
   const exchangeFee = (S, fid) => Math.max(0, 0.03 - owned(S, fid).reduce((a, i) => a + S.d[i].b.filter(b => b === 'exchange').length, 0) * 0.01);
   const cash = p => { const w = Math.min(Math.max(0, p.clean || 0), Math.max(0, p.money)); return { white: Math.round(w), black: Math.round(p.money - w) }; };
   const fdef = id => D.FACTIONS.find(f => f.id === id);
@@ -664,8 +670,8 @@
     const p = S.f[fid], c = cur(p); amt = Math.floor(+amt);
     if (!(amt > 0)) return fail('Сколько менять?');
     const fee = Math.max(0, Math.round(amt * exchangeFee(S, fid)));
-    if (dir === 'buy') { if (amt > c.rub) return fail('Рублей только на ' + c.rub + ' тыс. $'); p.money -= fee; p.usd = c.usd + amt - fee; return { ok: true, msg: 'Купили ' + (amt - fee) + ' тыс. $, комиссия ' + fee + ' тыс.' }; }
-    if (dir === 'sell') { if (amt > c.usd) return fail('Долларов только ' + c.usd + ' тыс.'); p.money -= fee; p.usd = c.usd - amt; return { ok: true, msg: 'Продали ' + amt + ' тыс. $ за рубли, комиссия ' + fee + ' тыс.' }; }
+    if (dir === 'buy') { if (amt > c.rub) return fail('Рублей только на ' + c.rub + ' тыс. $'); p.money -= fee; p.usd = c.usd + amt - fee; return { ok: true, msg: 'Купили ' + (amt - fee) + 'К $ по курсу покупки' }; }
+    if (dir === 'sell') { if (amt > c.usd) return fail('Долларов только ' + c.usd + ' тыс.'); p.money -= fee; p.usd = c.usd - amt; return { ok: true, msg: 'Продали ' + amt + 'К $, получили ' + (amt - fee) + 'К ₽ по курсу продажи' }; }
     return fail('Купить или продать?');
   }
   function setUsd(S, fid, k) {
@@ -1259,6 +1265,7 @@
     if (S.done) return fail('Игра окончена');
     active(S).forEach(h => autoPlay(S, h));
     if (!force && active(S).some(h => S.f[h].event)) return fail('Сначала реши, что делать с событием');
+    fxRoll(S);
     active(S).forEach(h => { if (S.f[h].battle) { if (S.f[h].battle.def) defendEnd(S, h, false, 'Месяц кончился'); else finishBattle(S, h, false, 'Месяц кончился'); } (S.f[h].assaults || []).slice().forEach(x => resolveAssault(S, h, x, 'auto')); snapshot(S, h); S.f[h].event = null; S.f[h].queue = []; humanPhase(S, h); });
     S.hits = {}; S.offers = [];
     D.FACTIONS.forEach(f => { if (!S.f[f.id].human) aiTurn(S, f.id); });
@@ -1266,7 +1273,7 @@
     if (S.turn >= LAST_TURN) active(S).forEach(h => finale(S, h));
     checkDone(S);
     if (S.done) return { ok: true, msg: 'Игра окончена', over: true };
-    S.turn++;
+    S.turn++; S.fxp = S.fxn || 0; S.fxn = S.fxq || 0;
     { const dt = date(S.turn); if (dt.month === 8 && dt.year === 1998) active(S).forEach(h => { const r = cur(S.f[h]).rub; log(S, 'Август 1998-го: в стране пахнет дефолтом. Если рубль рухнет, рублёвая касса (' + r + ' тыс. $) потеряет больше половины. Доллары — в обменнике.', 'bad', h); });
       if (dt.month === 1 && dt.year === 2000) log(S, 'Новый год, новый хозяин в Кремле. Власть закручивает гайки: розыск растёт на 35% быстрее, облавы чаще.', 'big'); if (dt.month === 1 && dt.year === 2003) log(S, 'Вертикаль достроена: розыск растёт на 60% быстрее, чем в девяностые. Пора легализоваться.', 'big'); }
     active(S).forEach(h => { const p = S.f[h], inf = inflow(S, h).total; p.pool = Math.min(pool(S, h) + inf, inf * 3); p.report.lost = p.lostNow || []; p.lostNow = null; p.ap = apMax(S, h); p.ready = false; pickEvent(S, h); });
@@ -1437,5 +1444,5 @@
 
   const ACTIONS = { place, repairAll, scrapAll, exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
-  G.Engine = { LATER_IN, upgradeLock, LVL_FROM, repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine = { fxRates, LATER_IN, upgradeLock, LVL_FROM, repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);
