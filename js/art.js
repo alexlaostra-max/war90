@@ -272,8 +272,21 @@
     return pick(r, ['tracksuit', 'leather', 'leather', 'raspberry', 'sweater', 'tracksuit']);
   }
   // c: человек семьи или { name, nick, age, str, wit, loy, look, role, st, seed }
+  // фото-портреты людей семьи (DATA.FACES): мужские по возрасту, женские — для своих людей-женщин.
+  // Легенды эпохи (отсылки к реальным людям) и безымянные лица остаются рисованными
+  const FEM = { malaya: 'f01', chernysh: 'f02' };
+  function facePhoto(c) {
+    const F = G.DATA && G.DATA.FACES; if (!F || c.seed != null || c.id == null) return null;
+    const LG = c.leg && G.DATA.LEGENDS[c.leg]; let key = null;
+    if (c.leg && FEM[c.leg]) key = FEM[c.leg];
+    else if (LG && (LG.look || {}).fem) return null;
+    else if (c.leg && !LG.join) return null;
+    else { const g = (c.age || 35) < 30 ? 'y' : (c.age || 35) <= 42 ? 'm' : 'o', n = F[g]; if (!n) return null; key = 'm' + g + String(1 + hash((c.name || '') + '|' + (c.nick || '') + '|' + c.id) % n).padStart(2, '0'); }
+    return '<img class="pface" src="img/face-' + key + '.jpg" alt="' + xesc(c.nick || c.name || '') + '" loading="lazy" decoding="async">' + (c.st === 'jail' ? '<i class="fst jail"></i>' : c.st === 'hurt' ? '<i class="fst hurt"></i>' : '');
+  }
   function face(c, opts) {
     opts = opts || {};
+    { const ph = !opts.svg && facePhoto(c); if (ph) return ph; }
     const LG = c.leg && G.DATA && G.DATA.LEGENDS && G.DATA.LEGENDS[c.leg];
     const look = Object.assign({}, (LG && LG.look) || {}, c.look || {}, opts.look || {});
     const r = rng(hash((c.seed != null ? c.seed : '') + '|' + (c.name || '') + '|' + (c.nick || '') + '|' + (c.leg || '')));
@@ -353,7 +366,8 @@
     return svg('0 0 64 64', s, lab.replace(/[<>&"]/g, ''), 'face');
   }
   // глава бригады — тот же генератор с фиксированным сидом
-  const bossFace = f => face({ seed: 'boss-' + f.id, name: f.boss, nick: '', age: 44, str: 7, wit: 7, loy: 8, look: { cloth: f.id === 'cher' ? 'suit' : f.id === 'lub' ? 'tracksuit' : 'raspberry', chain: f.id !== 'cher' } }, { bg: f.color + '40', label: f.boss });
+  const bossFace = f => { const F = (G.DATA.PHOTOS || {})['boss-' + f.id]; return F ? '<img class="pface" src="' + F.src + '" alt="' + xesc(f.boss) + '" loading="lazy" decoding="async">' : bossDraw(f); };
+  const bossDraw = f => face({ seed: 'boss-' + f.id, name: f.boss, nick: '', age: 44, str: 7, wit: 7, loy: 8, look: { cloth: f.id === 'cher' ? 'suit' : f.id === 'lub' ? 'tracksuit' : 'raspberry', chain: f.id !== 'cher' } }, { bg: f.color + '40', label: f.boss });
   const legendFace = (k, opts) => { const L = G.DATA.LEGENDS[k]; return L ? face(Object.assign({ leg: k }, L), opts) : ''; };
   // президент и мэр: портреты для страницы власти
   const rulerFace = (R0, age) => R0.legend ? legendFace(R0.legend, { label: R0.name }) : face({ seed: 'ruler-' + R0.name, name: R0.name, age, str: 5, wit: 7, loy: 5, look: R0.look }, { label: R0.name });
@@ -720,5 +734,19 @@
   };
   const icon = k => '<svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + ICONS[k] + '</svg>';
 
-  G.ART = { eventScene, moneyRain, build, face, bossFace, legendFace, officialFace, rulerFace, vacantFace, arm, vest, car, deal, hash, icon, ICONS };
+  // личные вещи главы (DATA.ELITE): машины рисуются корпусом нужной формы, стволы — в золоте
+  function elite(k) {
+    const X = (G.DATA.ELITE || []).find(x => x.id === k); if (!X) return '';
+    const ph = photo('el-' + k, X.name); if (ph) return ph;
+    const key = 'el' + k; if (cache[key]) return cache[key];
+    if (X.kind === 'car') {
+      const kind = CAR_SHAPES[X.shape] ? X.shape : 'merc', len = CAR_SHAPES[kind].len || 60, s = Math.min(1.6, 100 / len);
+      const bg = R(0, 0, 120, 48, '#1d1a24') + R(0, 38, 120, 10, '#24202b') + R(0, 38, 120, 0.8, '#d8b35a', 'opacity=".5"') + C(60, 8, 26, '#d8b35a', 'opacity=".06"');
+      return (cache[key] = svg('0 0 120 48', bg + carBody(kind, X.col, (120 - len * s) / 2, 40, s), X.name, 'car'));
+    }
+    const gold = '<defs><filter id="gold' + k + '"><feColorMatrix type="matrix" values=".55 .45 .2 0 .12  .45 .38 .15 0 .08  .12 .1 .06 0 0  0 0 0 1 0"/></filter></defs>';
+    return (cache[key] = svg('0 0 120 48', gold + R(0, 0, 120, 48, '#1d1a24') + R(0, 40, 120, 8, '#17141d') + C(60, 24, 30, '#d8b35a', 'opacity=".08"') + '<g transform="translate(0 4)" filter="url(#gold' + k + ')">' + (ARM[X.shape] || ARM.pm)() + '</g>', X.name, 'arm'));
+  }
+
+  G.ART = { elite, eventScene, moneyRain, build, face, bossFace, legendFace, officialFace, rulerFace, vacantFace, arm, vest, car, deal, hash, icon, ICONS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));

@@ -180,10 +180,10 @@
     gunshop: { name: 'Охотничий магазин', cost: 40, inc: 3, kind: 'w', good: ['park', 'highway'], from: 1992, one: true, fx: { gun: 15 }, perk: 'Стволы дешевле на 15%', desc: 'Лицензия на нарезное, а в подсобке армейское' },
     clinic: { name: 'Подпольный врач', cost: 35, inc: 1, kind: 'g', one: true, fx: { med: 15 }, perk: 'Потери в бою −15%, раненые встают быстрее', desc: 'Хирург из Склифа, шьёт без вопросов и без протокола' },
     rest: { name: 'Ресторан', cost: 45, inc: 6, kind: 'w', good: ['center', 'elite', 'tourist'], fx: { talk: 5 }, perk: 'Стрелки и переговоры: шанс договориться +5%', desc: 'Место для стрелок и банкетов' },
-    bordel: { name: 'Бордель', cost: 50, inc: 8, kind: 'b', good: ['station', 'tourist'], from: 1992, heat: 1, one: true, fx: { cool: 1 }, perk: 'Менты отдыхают бесплатно: розыск −1 в месяц', desc: 'Вывеска «Сауна», девочки по вызову, компромат на гостей' },
+    bordel: { name: 'Бордель', cost: 50, inc: 8, kind: 'b', good: ['station', 'tourist'], from: 1992, heat: 1, one: true, fx: { cool: 1 }, perk: 'Менты отдыхают бесплатно: розыск −1 в месяц', desc: 'Сауна с девочками по вызову, потом бордель, потом стрипклуб. Компромат на гостей' },
     flat: { name: 'Квартиры', cost: 30, inc: 2, kind: 'w', good: ['sleep', 'center'], from: 1992, fx: { hide: 10 }, perk: 'Явочные квартиры: при облавах берут на 10% меньше', desc: 'Приватизация жилья у алкашей и стариков' },
     prem: { name: 'Помещения', cost: 70, inc: 6, kind: 'w', good: ['center', 'industry'], from: 1992, fx: { cap: 3 }, perk: 'Общаги и склады: мест в бригаде +3', desc: 'Приватизация первых этажей под аренду' },
-    chop: { name: 'ЧОП', cost: 90, inc: 3, kind: 'w', good: ['industry', 'elite'], from: 1993, def: 8, rec: 1, one: true, perk: 'Легальные стволы: оборона района +8, новобранцев +1 в месяц', desc: 'Охранное агентство с лицензией' },
+    chop: { name: 'ЧОП', cost: 90, inc: 3, kind: 'w', good: ['industry', 'elite'], from: 1993, def: 8, rec: 1, one: true, perk: 'Легальные стволы: оборона района +8, новобранцев +1 в месяц', desc: 'Охрана объектов, потом ЧОП с лицензией, потом личная охрана для серьёзных людей' },
     casino: { name: 'Казино', cost: 130, inc: 18, kind: 'g', good: ['center', 'tourist'], need: ['center', 'elite', 'tourist', 'station'], from: 1993, heat: 1, one: true, fx: { wash: 10 }, perk: 'Отмывка: 10% чёрного дохода становится белым', desc: 'Рулетка и автоматы' },
     // особые точки: строятся только там, где к месту (need — нужна хотя бы одна из особенностей района)
     vokzal: { name: 'Вокзальная крыша', cost: 30, inc: 7, kind: 'b', need: ['station'], heat: 1, one: true, rec: 2, perk: 'Вокзальная шпана: новобранцев +2 в месяц', desc: 'Носильщики, бомбилы, напёрстки и камеры хранения' },
@@ -202,6 +202,12 @@
     tir: { name: 'Тир и шашлычная', cost: 25, inc: 4, kind: 'g', need: ['park'], one: true, fx: { med: 5 }, perk: 'Пацаны пристреляны: потери в бою −5%', desc: 'Тир в парке, шашлык и пиво, бойцы тренируются по ночам' },
     land: { name: 'Земля', cost: 160, inc: 12, kind: 'w', good: ['park', 'highway', 'river'], from: 1993, needConn: 2, fx: { conn: 1 }, perk: 'Свои люди в префектуре: связи +1', desc: 'Приватизация участка. Нужны связи: 2' }
   };
+  // названия по уровням: точка растёт и меняет вывеску
+  Object.assign(BUILDS.kiosk, { lv: ['Ларёк', 'Магазин', 'Торговый центр'] });
+  Object.assign(BUILDS.chop, { lv: ['Охрана', 'ЧОП', 'Личная охрана'] });
+  Object.assign(BUILDS.bordel, { lv: ['Сауна', 'Бордель', 'Стрипклуб'] });
+  Object.assign(BUILDS.gym, { lv: ['Спортзал', 'Спортклуб', 'Фитнес-клуб'] });
+  BUILDS.chop.name = 'Охрана'; BUILDS.bordel.name = 'Сауна';
   // валютные точки: иностранцы, игроки и модники платят долларами, остальные точки — рублями
   ['casino', 'hotel', 'exchange', 'boutique', 'club'].forEach(k => { BUILDS[k].usd = true; });
   // потолки бонусов в процентах
@@ -357,6 +363,30 @@
   // Фото снаряжения, машин и зданий с Викисклада (свободные лицензии). Обрезаны и тонированы под игру; список авторов — img/CREDITS.md
   const W = 'https://commons.wikimedia.org/wiki/File:';
   const PHOTOS = {
+    // главари ОПГ: вымышленные лица, сгенерированы нейросетью
+    'boss-solnc': { src: 'img/boss-solnc.jpg' },
+    'boss-izm': { src: 'img/boss-izm.jpg' },
+    'boss-oreh': { src: 'img/boss-oreh.jpg' },
+    'boss-kopt': { src: 'img/boss-kopt.jpg' },
+    'boss-tag': { src: 'img/boss-tag.jpg' },
+    'boss-lub': { src: 'img/boss-lub.jpg' },
+    'boss-medv': { src: 'img/boss-medv.jpg' },
+    'boss-tush': { src: 'img/boss-tush.jpg' },
+    'boss-cher': { src: 'img/boss-cher.jpg' },
+    'boss-laz': { src: 'img/boss-laz.jpg' },
+    // личные вещи главы: сгенерированы нейросетью (Gemini 2.5 Flash Image через OpenRouter)
+    'el-zil': { src: 'img/el-zil.jpg' },
+    'el-ferrari': { src: 'img/el-ferrari.jpg' },
+    'el-lambo': { src: 'img/el-lambo.jpg' },
+    'el-maybach': { src: 'img/el-maybach.jpg' },
+    'el-bentley': { src: 'img/el-bentley.jpg' },
+    'el-phantom': { src: 'img/el-phantom.jpg' },
+    'el-g55': { src: 'img/el-g55.jpg' },
+    'el-stechkin': { src: 'img/el-stechkin.jpg' },
+    'el-beretta': { src: 'img/el-beretta.jpg' },
+    'el-eagle': { src: 'img/el-eagle.jpg' },
+    'el-akgold': { src: 'img/el-akgold.jpg' },
+    'el-holland': { src: 'img/el-holland.jpg' },
     'arm-obrez': { src: 'img/arm-obrez.jpg', author: 'ATF (США)', license: 'общественное достояние', url: W + 'Shinkosha_short_barrel_shotgun.jpg' },
     'arm-pm': { src: 'img/arm-pm.jpg', author: 'Agazoo', license: 'CC BY-SA 3.0', url: W + 'Makarov_Pistol_Parkerized_and_Painted.jpg' },
     'arm-aks': { src: 'img/arm-aks.jpg', author: 'Vitaly V. Kuzmin', license: 'CC BY-SA 4.0', url: W + 'AKS74U_(noBG).jpg' },
@@ -392,20 +422,22 @@
     'd-gold': { src: 'img/d-gold.jpg', author: 'Adams & Larkin', license: 'общественное достояние', url: W + 'Gold_bars_stacked_in_a_pyramid,_Dawson,_probably_between_1902_and_1910_(AL+CA_1405).jpg' },
     'd-tower': { src: 'img/d-tower.jpg', author: 'Gennady Grachev', license: 'CC BY 2.0', url: W + 'Moscow,_construction_of_Moscow-City_concert_hall_(30590377513).jpg' },
     'd-olymp': { src: 'img/d-olymp.jpg', author: 'Sasha Krotov', license: 'CC BY 3.0', url: W + 'Fisht_Olympic_Stadium_Sochi_March_2013.JPG' },
-    'd-kidnap': { src: 'img/d-kidnap.jpg', author: 'неизвестен', license: 'общественное достояние', url: W + 'StrappedCurrency.jpg' },
+    'd-kidnap': { src: 'img/d-kidnap.jpg' }, // сгенерировано нейросетью
+    'd-raid': { src: 'img/d-raid.jpg' }, // сгенерировано нейросетью
     // уровни II и III точек (если фото уровня нет — берётся фото I уровня)
-    'b-kiosk2': { src: 'img/b-kiosk2.jpg', author: 'Nikita77707', license: 'CC BY-SA 4.0', url: W + 'Торговый_павильон_«Цветы»_(Тюмень)_2.jpg' },
-    'b-kiosk3': { src: 'img/b-kiosk3.jpg', author: 'salech hcelas', license: 'CC BY 3.0', url: W + 'Универсам_-_panoramio_(6).jpg' },
+    'b-kiosk2': { src: 'img/b-kiosk2.jpg', author: 'Дмитрий Скляренко', license: 'CC BY 3.0', url: W + 'Магазин_Продукты_и_Настенька_-_panoramio.jpg' },
+    'b-kiosk3': { src: 'img/b-kiosk3.jpg', author: 'A.Savin', license: 'CC BY-SA 3.0', url: W + 'Golden_Babylon_Rostokino_01.jpg' },
     'b-market2': { src: 'img/b-market2.jpg', author: 'Andrey Butko', license: 'CC BY-SA 3.0', url: W + 'Крытый_рынок_в_Донецке_008.jpg' },
     'b-market3': { src: 'img/b-market3.jpg', author: 'Lev.Borisovitch', license: 'CC BY-SA 4.0', url: W + 'Торговый_центр_"Петровский",_Москва.jpg' },
     'b-gym2': { src: 'img/b-gym2.jpg', author: 'Gennady Grachev from Moscow, Russia', license: 'CC BY 2.0', url: W + 'Moscow,_sports_hall_in_Lefortovsky_Park_(30586164233).jpg' },
-    'b-gym3': { src: 'img/b-gym3.jpg', author: 'Artyom Svetlov', license: 'CC BY 4.0', url: W + 'Moscow_tram_2848_2003-09_1064666918_Durova_Street_Tatra_T3.jpg' },
+    'b-gym3': { src: 'img/b-gym3.jpg', author: 'GymNation', license: 'CC BY-SA 4.0', url: W + 'GymNation_gym_interior_2024.jpg' },
     'b-service2': { src: 'img/b-service2.jpg', author: 'Martin Vorel', license: 'CC BY-SA 4.0', url: W + 'Car_repair_shop.jpg' },
     'b-service3': { src: 'img/b-service3.jpg', author: 'Андрей Москаленко', license: 'CC0', url: W + 'Comtrans_2015_(2).jpg' },
     'b-gunshop3': { src: 'img/b-gunshop3.jpg', author: 'Nishantp10', license: 'CC BY-SA 4.0', url: W + '10_metre_indoor_range_by_Gun_For_Glory_Shooting_Academy_Jabalpur.jpg' },
     'b-clinic2': { src: 'img/b-clinic2.jpg', author: 'Retired electrician', license: 'CC0', url: W + 'Moscow,_Botkin_Hospital_-_Medsi_clinic_Aug_2025_01.jpg' },
     'b-clinic3': { src: 'img/b-clinic3.jpg', author: 'Kemal KOZBAEV', license: 'CC BY-SA 4.0', url: W + 'Голицынская_больница,_Москва.jpg' },
-    'b-bordel2': { src: 'img/b-bordel2.jpg', author: 'Basile Morin', license: 'CC BY-SA 4.0', url: W + 'Sauna_of_the_spa_at_Amantaka_luxury_Resort_&_Hotel_in_Luang_Prabang_Laos.jpg' },
+    'b-bordel2': { src: 'img/b-bordel2.jpg' }, // прислал владелец проекта
+    'b-bordel3': { src: 'img/b-bordel3.jpg', author: 'Paul Sableman', license: 'CC BY 2.0', url: W + 'Magic_City_strip_club.jpg' },
     'b-flat2': { src: 'img/b-flat2.jpg', author: 'пресс-служба Градостроительного комплекса Москвы', license: 'CC BY 4.0', url: W + 'Новостройка_на_Демьяна_Бедного,_17_01.jpg' },
     'b-flat3': { src: 'img/b-flat3.jpg', author: 'Юрий Д.К.', license: 'CC BY 4.0', url: W + '"Symphony_of_the_Embankments"_-_elite_residential_complex_on_Kotelnicheskaya_Embankment.jpg' },
     'b-prem3': { src: 'img/b-prem3.jpg', author: 'Artem Svetlov from Moscow, Russia', license: 'CC BY 2.0', url: W + 'Бизнес-центр_«Вавилова_47а»._Москва,_2005._(14354561785).jpg' },
@@ -423,6 +455,7 @@
     'b-scrap2': { src: 'img/b-scrap2.jpg', author: 'Syced', license: 'CC0', url: W + 'Metal_scrap_in_Aomi.jpg' },
     'b-scrap3': { src: 'img/b-scrap3.jpg', author: 'Lenispolkom', license: 'CC BY-SA 4.0', url: W + 'Юзовский_металлургический_завод.jpg' },
     'b-fuel2': { src: 'img/b-fuel2.jpg', author: 'Nikolai Bulykin', license: 'CC BY-SA 4.0', url: W + 'Алматы,_АЗС_на_Райымбека.jpg' },
+    'b-fuel3': { src: 'img/b-fuel3.jpg' }, // прислал владелец проекта
     'b-port2': { src: 'img/b-port2.jpg', author: 'Sergey Norin from Moscow, Russia', license: 'CC BY 2.0', url: W + 'Moscow,_frozen_South_River_Port_pier,_January_2014.jpg' },
     'b-port3': { src: 'img/b-port3.jpg', author: 'ru:User:Russianname', license: 'CC BY-SA 2.5', url: W + 'Вид_на_Одесский_порт_2.jpg' },
     'b-ritual2': { src: 'img/b-ritual2.jpg', author: 'Andykatib', license: 'CC0', url: W + 'Gillions_funeral_home_Hillside_Road,_5_Jan_2026.jpg' },
@@ -432,6 +465,15 @@
     'b-land3': { src: 'img/b-land3.jpg', author: 'lincoln1403', license: 'CC BY 3.0', url: W + 'Коттеджный_посёлок_-_panoramio_(4).jpg' },
     'b-vokzal2': { src: 'img/b-vokzal2.jpg', author: 'Алексей Задонский', license: 'CC BY-SA 4.0', url: W + 'Ленинградский_вокзал,_Москва.jpg' },
     'b-vokzal3': { src: 'img/b-vokzal3.jpg', author: 'Mike1979 Russia', license: 'CC BY-SA 3.0', url: W + 'Komsomolskaya_Square_Moscow_2023-06-10_4450.jpg' },
+    'b-chop2': { src: 'img/b-chop2.jpg' }, // сгенерировано нейросетью (Gemini 2.5 Flash Image через OpenRouter)
+    'b-chop3': { src: 'img/b-chop3.jpg' }, // прислал владелец проекта
+    'b-rest2': { src: 'img/b-rest2.jpg' }, // сгенерировано нейросетью
+    'b-rest3': { src: 'img/b-rest3.jpg' }, // сгенерировано нейросетью
+    'b-prem2': { src: 'img/b-prem2.jpg' }, // сгенерировано нейросетью
+    'b-casino2': { src: 'img/b-casino2.jpg' }, // сгенерировано нейросетью
+    'b-exchange2': { src: 'img/b-exchange2.jpg' }, // сгенерировано нейросетью
+    'b-club3': { src: 'img/b-club3.jpg' }, // сгенерировано нейросетью
+    'b-dorm3': { src: 'img/b-dorm3.jpg' }, // сгенерировано нейросетью
     // здания точек: по одному фото на тип, кадр 5:3, слегка приглушены и тонированы
     'b-kiosk': { src: 'img/b-kiosk.jpg', author: 'Главархив Москвы', license: 'CC BY 4.0', url: W + 'Kiosks_with_square_of_Kievsky_rail_terminal.jpg' },
     'b-market': { src: 'img/b-market.jpg', author: 'PoetVeches', license: 'CC BY-SA 4.0', url: W + 'Former_soviet_univermag_20200916_008.jpg' },
@@ -440,7 +482,7 @@
     'b-gunshop': { src: 'img/b-gunshop.jpg', author: 'Thayne Tuason', license: 'CC BY-SA 4.0', url: W + 'Gun_section_in_Stans_Merry_Mart_Wenatchee.jpg' },
     'b-clinic': { src: 'img/b-clinic.jpg', author: 'И. А. Озерский', license: 'общественное достояние', url: W + 'В_операционной_47-го_медсанбата_25-й_стрелковой_дивизии_Приморской_армии.jpg' },
     'b-rest': { src: 'img/b-rest.jpg', author: 'Викидим', license: 'CC BY-SA 4.0', url: W + 'Central_House_of_Writers_in_Moscow._Restaurant_interior_06.jpg' },
-    'b-bordel': { src: 'img/b-bordel.jpg', author: 'Klarqa', license: 'CC BY-SA 4.0', url: W + 'Sauna_in_Meremäe,_Setomaa.jpg' },
+    'b-bordel': { src: 'img/b-bordel.jpg', author: 'Basile Morin', license: 'CC BY-SA 4.0', url: W + 'Sauna_of_the_spa_at_Amantaka_luxury_Resort_&_Hotel_in_Luang_Prabang_Laos.jpg' },
     'b-flat': { src: 'img/b-flat.jpg', author: 'Seanzwiki', license: 'CC BY-SA 4.0', url: W + '1-я_Мелитопольская_ул.,_8б(Москва).jpg' },
     'b-prem': { src: 'img/b-prem.jpg', author: 'Gennady Grachev', license: 'CC BY 2.0', url: W + 'Moscow,_Kosmonavta_Volkova_27_storefront_(21237518022).jpg' },
     'b-chop': { src: 'img/b-chop.jpg', author: 'DemieK07', license: 'CC BY-SA 4.0', url: W + 'The_defenders_of_Stara_Zagora_Memorial_Complex_-_Security_booth_01.jpg' },
@@ -478,7 +520,7 @@
       text: 'Район — это дань, места под точки и новые люди. Нападать можно только на соседей: они обведены пунктиром на карте. Штурм быстрее, обход на машинах бережёт людей.',
       how: 'Возьми второй район.' },
     { id: 'capo', go: 'vacant:capo', title: 'Бригадир', $: 15, rep: 2,
-      text: 'Районы сами себя не держат. Бригадир отвечает за округ: держит оборону, собирает дань и сам ставит смотрящих из резерва. Половину дани округа он копит и вкладывает в точки — строит и улучшает без тебя. Один бригадир на каждые шесть районов.',
+      text: 'Районы сами себя не держат. Бригадир отвечает за округ: держит оборону, собирает дань, сам ставит смотрящих из резерва и каждый месяц предлагает, что поставить на районах. Решаешь и платишь ты — строит и улучшает без тебя. Один бригадир на каждые шесть районов.',
       how: 'Поставь бригадира на свой округ.' },
     { id: 'build', go: 'view:map', title: 'Первая точка', $: 10, rep: 1,
       text: 'Дань — мелочь. Деньги делают точки. Смотри, что за район: у вокзала — вокзальная крыша, у реки — причал, в спальнике — квартиры и ларьки. В «своём» месте точка приносит на половину больше.',
@@ -510,13 +552,53 @@
     { id: 'jet', name: 'Частный самолёт', from: 2000, cost: 3500, rep: 5, perk: 'Поездки по крупным делам бесплатно. Авторитет +5', desc: 'Свой борт во Внукове-3, без досмотра и очередей' }
   ];
 
+  // Личное главы: элитные машины и именное оружие для поздней игры. Платятся долларами, дают авторитет один раз
+  // (в пределах потолка) и поднимают сам потолок; у некоторых есть польза: talk — переговоры %, atk — нападения %,
+  // conn — связи, cool — розыск в месяц, armor — глава и бригадиры гибнут реже
+  const ELITE = [
+    { id: 'stechkin', kind: 'arm', shape: 'pm', name: 'Именной «Стечкин»', from: 1992, cost: 30, rep: 1, perk: 'Подарок от генерала: нападения +2%', atk: 2 },
+    { id: 'beretta', kind: 'arm', shape: 'pm', name: 'Беретта с перламутром', from: 1994, cost: 90, rep: 2, perk: 'На стрелке достаёшь — и разговор другой: переговоры +2%', talk: 2 },
+    { id: 'zil', kind: 'car', shape: 'limo', col: '#101012', name: 'ЗИЛ с мигалкой', from: 1994, cost: 350, rep: 3, perk: 'Гаишники отдают честь: розыск −1 в месяц', cool: 1 },
+    { id: 'ferrari', kind: 'car', shape: 'bmw', col: '#b3161e', name: 'Феррари 355', from: 1995, cost: 450, rep: 3, perk: 'Красная, громкая, одна на район. Авторитет +3' },
+    { id: 'eagle', kind: 'arm', shape: 'pm', name: 'Золотой Desert Eagle', from: 1996, cost: 220, rep: 3, perk: 'Нападения +3%', atk: 3 },
+    { id: 'akgold', kind: 'arm', shape: 'aks', name: 'Золотой АКМ', from: 1999, cost: 600, rep: 3, perk: 'Подарок с Кавказа. Нападения +4%', atk: 4 },
+    { id: 'holland', kind: 'arm', shape: 'svd', name: 'Ружьё Holland & Holland', from: 2001, cost: 900, rep: 3, perk: 'Охота с губернаторами: связи +1', conn: 1 },
+    { id: 'lambo', kind: 'car', shape: 'bmw', col: '#d9a521', name: 'Ламборгини Мурсьелаго', from: 2002, cost: 1100, rep: 4, perk: 'Жёлтая молния на Рублёвке. Авторитет +4' },
+    { id: 'maybach', kind: 'car', shape: 'limo', col: '#2a2420', name: 'Майбах 62', from: 2003, cost: 1600, rep: 4, perk: 'Заднее сиденье как кабинет: переговоры +4%', talk: 4 },
+    { id: 'bentley', kind: 'car', shape: 'merc', col: '#1d3a2a', name: 'Бентли Континентал', from: 2003, cost: 1200, rep: 3, perk: 'Английская кожа для жены и для понтов. Переговоры +2%', talk: 2 },
+    { id: 'phantom', kind: 'car', shape: 'limo', col: '#1b1b24', name: 'Роллс-Ройс Фантом', from: 2004, cost: 2400, rep: 5, perk: 'Выше только Кремль: переговоры +5%, связи +1', talk: 5, conn: 1 },
+    { id: 'g55', kind: 'car', shape: 'gelik', col: '#0f1012', name: 'Гелик AMG, броня B7', from: 2004, cost: 2000, rep: 3, perk: 'Держит автоматную очередь: глава и бригадиры гибнут и ранятся вдвое реже', armor: true }
+  ];
+  // Мелкие дела по России и СНГ: один ход, результат сразу. Требования: авторитет, бойцы, деньги на дорогу и подготовку.
+  // gain — сколько можно взять (тыс. $, растёт с годами), usd — платят долларами, wait — через сколько месяцев можно снова
+  const JOBS = [
+    { id: 'truck', name: 'Дань с дальнобойщиков', where: 'трасса «Дон», Воронеж', from: 1992, rep: 10, men: 6, cost: 5, gain: [14, 30], heat: 3, wait: 3, text: 'Пост на трассе: каждая фура с юга платит за спокойную дорогу' },
+    { id: 'riga', name: 'Иномарки из Риги', where: 'Рига', from: 1992, rep: 15, men: 4, cost: 12, gain: [26, 48], heat: 2, wait: 4, cars: 1, text: 'Пригнать пару «бочек» через литовскую границу. Одна машина остаётся бригаде' },
+    { id: 'kazan', name: 'Разборка в Казани', where: 'Казань', from: 1992, rep: 20, men: 10, cost: 10, gain: [20, 40], heat: 4, wait: 5, repWin: 2, text: 'Казанские просят помочь против «моталок». Платят деньгами и уважением' },
+    { id: 'tbilisi', name: 'Вино и мандарины', where: 'Тбилиси', from: 1993, rep: 15, men: 4, cost: 20, gain: [38, 70], heat: 1, wait: 4, text: 'Вагон мандаринов к Новому году и цистерна «Хванчкары» мимо таможни' },
+    { id: 'sochi', name: 'Пляжи Сочи', where: 'Сочи', from: 1993, rep: 20, men: 8, cost: 20, gain: [40, 80], heat: 2, wait: 6, text: 'Шезлонги, шашлычные и катера: летом весь берег платит тому, кто приехал первым' },
+    { id: 'tolyatti', name: 'Долг в Тольятти', where: 'Тольятти', from: 1994, rep: 20, men: 6, cost: 10, gain: [30, 60], heat: 4, wait: 4, text: 'Дилер с автозавода задолжал за партию «девяток». Надо приехать и напомнить' },
+    { id: 'minsk', name: 'Сигареты через Минск', where: 'Минск', from: 1995, rep: 25, men: 5, cost: 25, gain: [50, 90], heat: 2, wait: 4, text: 'Фура «Мальборо» без акцизных марок через белорусскую таможню' },
+    { id: 'baku', name: 'Икра из Баку', where: 'Баку', from: 1995, rep: 30, men: 4, cost: 30, gain: [60, 120], heat: 3, wait: 5, usd: true, text: 'Чёрная икра браконьеров с Каспия: в Москве за неё платят долларами' },
+    { id: 'odessa', name: 'Контрабанда через Одессу', where: 'Одесса', from: 1996, rep: 35, men: 6, cost: 40, gain: [80, 150], heat: 4, wait: 5, usd: true, text: 'Контейнер в порту: по бумагам игрушки, по факту электроника и спирт' },
+    { id: 'kiev', name: 'Газовый долг в Киеве', where: 'Киев', from: 1997, rep: 40, men: 8, cost: 60, gain: [120, 220], heat: 3, wait: 6, usd: true, text: 'Посредник должен за транзит. Вопрос решают не в суде' },
+    { id: 'tashkent', name: 'Хлопок из Ташкента', where: 'Ташкент', from: 1998, rep: 40, men: 6, cost: 80, gain: [140, 260], heat: 2, wait: 6, usd: true, text: 'Эшелон хлопка уходит в Европу по «правильному» курсу. Нужна охрана в пути' },
+    { id: 'almaty', name: 'Нефтяной подряд в Алма-Ате', where: 'Алма-Ата', from: 1999, rep: 45, men: 8, cost: 100, gain: [180, 330], heat: 2, wait: 6, usd: true, text: 'Охрана вышек и «консалтинг» для нефтяников Казахстана' },
+    { id: 'piter', name: 'Таможня в Питере', where: 'Санкт-Петербург', from: 2000, rep: 50, men: 10, cost: 130, gain: [230, 420], heat: 4, wait: 6, usd: true, text: 'Свой человек в морском порту: контейнеры проходят без досмотра' },
+    { id: 'vlad', name: 'Японские праворульки', where: 'Владивосток', from: 2001, rep: 45, men: 6, cost: 90, gain: [170, 300], heat: 2, wait: 5, cars: 2, text: 'Паром из Ниигаты: «Крузаки» и «Марки» по цене «Жигулей». Две машины остаются бригаде' }
+  ];
+
+  // фото-портреты людей семьи: сколько мужских в каждой возрастной группе (до 30, 30–42, старше), img/face-m{группа}{номер}.jpg.
+  // Сгенерированы нейросетью, люди вымышленные
+  const FACES = { y: 17, m: 20, o: 13 };
+
   // Достижения: условия проверяет движок (engine.js, ACHC); концовки — отдельная группа, их отмечает интерфейс
   const ACH = [
     ['first_blood', 'Первая кровь', 'Взять первый чужой район', 'Улица'], ['okrug', 'Хозяин округа', 'Взять округ целиком', 'Улица'], ['ten', 'Десятка', 'Держать 10 районов', 'Улица'],
     ['quarter', 'Четверть Москвы', 'Держать 26 районов', 'Улица'], ['center', 'Садовое кольцо', 'Взять весь Центральный округ', 'Улица'], ['kapotnya', 'Пахнет нефтью', 'Взять Капотню', 'Улица'],
     ['luzhniki', 'Лужники', 'Взять Хамовники', 'Улица'], ['army100', 'Сотня', 'Сто бойцов в бригаде', 'Улица'], ['armory', 'Склад оружия', 'Сто стволов', 'Улица'],
     ['rpg', 'Тяжёлая артиллерия', 'Купить гранатомёт', 'Улица'], ['merc', 'Шестисотый', 'Шестисотый в гараже', 'Улица'], ['fleet', 'Автопарк', 'Десять машин на ходу', 'Улица'],
-    ['grand', 'Первый миллион', 'Касса от миллиона долларов', 'Деньги'], ['ten_m', 'Десять миллионов', 'Касса от десяти миллионов долларов', 'Деньги'], ['white50', 'Легализация', 'Белого дохода не меньше половины', 'Деньги'],
+    ['grand', 'Первый миллион', 'Касса от миллиона долларов', 'Деньги'], ['nelokh', 'Я не лох', 'Капитал от миллиарда долларов: касса, бизнес и личное', 'Деньги'], ['ten_m', 'Десять миллионов', 'Касса от десяти миллионов долларов', 'Деньги'], ['white50', 'Легализация', 'Белого дохода не меньше половины', 'Деньги'],
     ['dollars', 'Всё в баксах', 'Встретить дефолт, держа 80% кассы в долларах', 'Деньги'], ['default_survivor', 'Пережил дефолт', 'Осенью 1998-го в кассе больше миллиона', 'Деньги'],
     ['first_point', 'Первая точка', 'Построить точку на районе', 'Бизнес'], ['points20', 'Империя ларьков', 'Двадцать точек', 'Бизнес'], ['lvl3', 'На максималку', 'Точка третьего уровня', 'Бизнес'],
     ['specials5', 'Знаток Москвы', 'Пять разных особых точек', 'Бизнес'], ['first_deal', 'Крупный игрок', 'Запустить крупное дело', 'Бизнес'], ['deals5', 'Олигархат', 'Пять крупных дел сразу', 'Бизнес'],
@@ -531,9 +613,9 @@
   // Сценарии старта: дата, сколько районов и сил у игрока и ботов
   const SCENARIOS = {
     s91: { name: 'Декабрь 1991', desc: 'Один район, восемь пацанов, вся эпоха впереди' },
-    s95: { name: 'Январь 1995', desc: 'Три района, 22 бойца, 250 тыс. Боты тоже подросли', turn: 37, extra: 2, money: 250, men: 22, guns: 20, cars: 4, rep: 30, botExtra: 2, botMen: 14 },
-    s00: { name: 'Январь 2000', desc: 'Шесть районов, 40 бойцов, 900 тыс. и новая жёсткая власть', turn: 97, extra: 5, money: 900, men: 40, guns: 40, cars: 8, rep: 45, botExtra: 4, botMen: 26 }
+    s95: { name: 'Январь 1995', desc: 'Три района, 22 бойца, 250К $. Боты тоже подросли', turn: 37, extra: 2, money: 250, men: 22, guns: 20, cars: 4, rep: 30, botExtra: 2, botMen: 14 },
+    s00: { name: 'Январь 2000', desc: 'Шесть районов, 40 бойцов, 900К $ и новая жёсткая власть', turn: 97, extra: 5, money: 900, men: 40, guns: 40, cars: 8, rep: 45, botExtra: 4, botMen: 26 }
   };
 
-  G.DATA = { ACH, ENDINGS, SCENARIOS, STATUS, QUESTS, PHOTOS, RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };
+  G.DATA = { FACES, ELITE, JOBS, ACH, ENDINGS, SCENARIOS, STATUS, QUESTS, PHOTOS, RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };
 })(typeof window !== 'undefined' ? (window.W90 = window.W90 || {}) : (globalThis.W90 = globalThis.W90 || {}));

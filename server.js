@@ -93,6 +93,25 @@ function listRooms() {
 }
 function maybeEndTurn(r) { if (E.allReady(r.S)) E.endTurn(r.S, false); }
 
+// ---------- общий чат и счётчик онлайна (меню и лобби) ----------
+// клиент раз в несколько секунд спрашивает /api/global со своей меткой: так считаем, сколько людей сейчас в игре
+const GCHAT_FILE = path.join(path.dirname(STORE), 'gchat.json'), GCHAT_KEEP = 100, GCHAT_GAP = 2000, SEEN_MS = 75e3; // клиент отмечается раз в 6 с в меню и раз в 25 с в игре; фоновые вкладки браузер тормозит до раза в минуту
+let gchat = []; try { gchat = JSON.parse(fs.readFileSync(GCHAT_FILE, 'utf8')); } catch (e) { /* пусто */ }
+const seen = new Map(), gLast = new Map();
+let gSaveT = null;
+const gSave = () => { if (gSaveT) return; gSaveT = setTimeout(() => { gSaveT = null; fs.mkdir(path.dirname(GCHAT_FILE), { recursive: true }, () => fs.writeFile(GCHAT_FILE, JSON.stringify(gchat), () => {})); }, 2000); };
+function onlineCount() { const now = Date.now(); let n = 0; seen.forEach((t, k) => { if (now - t < SEEN_MS) n++; else seen.delete(k); }); let s = 0; streams.forEach(m => m.forEach(set => { if (set.size) s++; })); return Math.max(n, s); }
+function globalFor(cid, since) { if (/^[\w-]{6,40}$/.test(cid || '')) seen.set(cid, Date.now()); const t = +since || 0; return { online: onlineCount(), me: cid ? crypto.createHash('sha1').update(String(cid)).digest('hex').slice(0, 8) : null, chat: gchat.filter(m => m.t > t).slice(-50) }; }
+function gsay(b) {
+  const cid = String(b.cid || ''); if (!/^[\w-]{6,40}$/.test(cid)) return { err: 'Нет метки' };
+  const text = clean(b.text, 300).replace(/\s+/g, ' '), nick = clean(b.nick, 20) || 'Безымянный'; if (!text) return { err: 'Пустое сообщение' };
+  const now = Date.now(); if (now - (gLast.get(cid) || 0) < GCHAT_GAP) return { err: 'Не так часто' };
+  gLast.set(cid, now); seen.set(cid, now);
+  const m = { id: now.toString(36) + id(2), t: now, n: nick, c: crypto.createHash('sha1').update(cid).digest('hex').slice(0, 8), x: text };
+  gchat.push(m); if (gchat.length > GCHAT_KEEP) gchat.splice(0, gchat.length - GCHAT_KEEP); gSave();
+  return { ok: true, m };
+}
+
 // ---------- рекорды ----------
 const SCORES = path.join(path.dirname(STORE), 'scores.json');
 let scores = []; try { scores = JSON.parse(fs.readFileSync(SCORES, 'utf8')); } catch (e) { /* пусто */ }
@@ -291,7 +310,7 @@ const api = {
     const absent = FIDS.filter(f => r.slots[f] === 'off' && !humans.includes(f));
     if (FIDS.length - absent.length < 2) return { err: 'Нужны хотя бы две бригады' };
     Object.keys(r.players).forEach(t => { if (!r.players[t].fid) delete r.players[t]; }); // зрителей нет
-    r.S = E.newGame(humans, crypto.randomBytes(4).readInt32LE(0), nicks, absent, r.diff, r.scen); r.started = true;
+    r.S = E.newGame(humans, crypto.randomBytes(4).readInt32LE(0), nicks, absent, r.diff, r.scen); r.S.online = true; r.started = true;
     sysSay(r, '🎬 Игра началась. ' + (r.timer ? 'На месяц ' + r.timer + ' мин.' : 'Без таймера.'));
     push(r); return { ok: true };
   },
@@ -342,6 +361,7 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/api/rooms' && req.method === 'GET') return send(res, 200, { rooms: listRooms() });
   if (url.pathname === '/api/version' && req.method === 'GET') return send(res, 200, { v: VER });
+  if (url.pathname === '/api/global' && req.method === 'GET') return send(res, 200, globalFor(url.searchParams.get('cid'), url.searchParams.get('since')));
   if (url.pathname === '/api/scores' && req.method === 'GET') return send(res, 200, { scores: scores.slice(0, 50) });
   if (url.pathname === '/api/stream' && req.method === 'GET') {
     const r = rooms.get(url.searchParams.get('room')), token = url.searchParams.get('token');
@@ -366,13 +386,14 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/api/') && req.method === 'POST') {
     const name = url.pathname.slice(5); let body = '';
     const big = name === 'csave';
-    if (!Object.prototype.hasOwnProperty.call(api, name) && !['score', 'csave', 'cload'].includes(name)) return send(res, 404, { err: 'Нет такого метода' });
+    if (!Object.prototype.hasOwnProperty.call(api, name) && !['score', 'csave', 'cload', 'gsay'].includes(name)) return send(res, 404, { err: 'Нет такого метода' });
     req.on('data', c => { body += c; if (body.length > (big ? 3e6 : 10000)) req.destroy(); });
     req.on('end', () => {
       let b; try { b = JSON.parse(body || '{}'); } catch (e) { return send(res, 400, { err: 'Плохой запрос' }); }
       if (!b || typeof b !== 'object') return send(res, 400, { err: 'Плохой запрос' });
       if (name === 'create') return send(res, 200, api.create(b));
       if (name === 'score') return send(res, 200, addScore(b));
+      if (name === 'gsay') return send(res, 200, gsay(b));
       if (name === 'csave') return cloudSave(b, r => send(res, 200, r));
       if (name === 'cload') return cloudLoad(b, r => send(res, 200, r));
       const r = rooms.get(b.room); if (!r) return send(res, 200, { err: 'Комната не найдена' });
