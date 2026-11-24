@@ -871,10 +871,3 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 .opt em.gain { color: var(--good); }
 
 .voicerow { gap: 8px; align-items: center; margin-top: 10px; } .voicerow .voicebtn { margin: 0; } .voicesel { flex: 1; min-width: 0; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; font: inherit; font-size: 13px; }
-
-.fxpair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin: 4px 0; }
-.fxpair div { display: flex; flex-direction: column; align-items: center; padding: 6px; border: 1px solid #3a3446; border-radius: 6px; }
-.fxpair small { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; }
-.fxpair b { font: 400 24px var(--mono); color: #ff9a3c; text-shadow: 0 0 10px rgba(255, 140, 40, .45); }
-.fxpair div + div b { color: #7fe0a0; text-shadow: 0 0 10px rgba(90, 220, 140, .35); }
-.fxpair i { font-style: normal; font-size: 11px; color: var(--dim); }
