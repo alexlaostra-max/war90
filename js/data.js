@@ -364,6 +364,32 @@
   const W = 'https://commons.wikimedia.org/wiki/File:';
   const PHOTOS = {
     // сгенерировано нейросетью (Gemini 2.5 Flash Image через OpenRouter) вместо фото с Викисклада
+    'b-bordel3': { src: 'img/b-bordel3.jpg' },
+    'b-kiosk2': { src: 'img/b-kiosk2.jpg' },
+    'b-market2': { src: 'img/b-market2.jpg' },
+    'b-clinic3': { src: 'img/b-clinic3.jpg' },
+    'b-hotel3': { src: 'img/b-hotel3.jpg' },
+    'b-warehouse3': { src: 'img/b-warehouse3.jpg' },
+    'b-tir3': { src: 'img/b-tir3.jpg' },
+    'd-seaport': { src: 'img/d-seaport.jpg' },
+    'd-club': { src: 'img/d-club.jpg' },
+    'car-bmw': { src: 'img/car-bmw.jpg' },
+    'car-jeep': { src: 'img/car-jeep.jpg' },
+    'car-merc': { src: 'img/car-merc.jpg' },
+    'car-gelik': { src: 'img/car-gelik.jpg' },
+    'car-uaz': { src: 'img/car-uaz.jpg' },
+    'car-w220': { src: 'img/car-w220.jpg' },
+    'car-lc100': { src: 'img/car-lc100.jpg' },
+    'car-x5': { src: 'img/car-x5.jpg' },
+    'car-escalade': { src: 'img/car-escalade.jpg' },
+    'car-rr': { src: 'img/car-rr.jpg' },
+    'car-cayenne': { src: 'img/car-cayenne.jpg' },
+    'car-e65': { src: 'img/car-e65.jpg' },
+    'arm-pm': { src: 'img/arm-pm.jpg' },
+    'arm-obrez': { src: 'img/arm-obrez.jpg' },
+    'arm-aks': { src: 'img/arm-aks.jpg' },
+    'arm-svd': { src: 'img/arm-svd.jpg' },
+    'arm-rpg': { src: 'img/arm-rpg.jpg' },
     'b-bordel': { src: 'img/b-bordel.jpg' },
     'b-boutique': { src: 'img/b-boutique.jpg' },
     'b-boutique2': { src: 'img/b-boutique2.jpg' },
@@ -470,36 +496,13 @@
     'el-eagle': { src: 'img/el-eagle.jpg' },
     'el-akgold': { src: 'img/el-akgold.jpg' },
     'el-holland': { src: 'img/el-holland.jpg' },
-    'arm-obrez': { src: 'img/arm-obrez.jpg', author: 'ATF (США)', license: 'общественное достояние', url: W + 'Shinkosha_short_barrel_shotgun.jpg' },
-    'arm-pm': { src: 'img/arm-pm.jpg', author: 'Agazoo', license: 'CC BY-SA 3.0', url: W + 'Makarov_Pistol_Parkerized_and_Painted.jpg' },
-    'arm-aks': { src: 'img/arm-aks.jpg', author: 'Vitaly V. Kuzmin', license: 'CC BY-SA 4.0', url: W + 'AKS74U_(noBG).jpg' },
-    'arm-svd': { src: 'img/arm-svd.jpg', author: 'Hokos', license: 'CC BY-SA 4.0', url: W + 'SVD_Dragunov.jpg' },
-    'arm-rpg': { src: 'img/arm-rpg.jpg', author: 'Michal Maňas', license: 'CC BY 2.5', url: W + 'RPG-7_detached.jpg' },
-    'car-gelik': { src: 'img/car-gelik.jpg', author: 'Alexander Migl', license: 'CC BY-SA 4.0', url: W + 'Mercedes-Benz_W463_Cabriolet_300_GE_1X7A0244.jpg' },
-    'car-w220': { src: 'img/car-w220.jpg', author: 'nakhon100', license: 'CC BY 2.0', url: W + 'Mercedes-Benz_S600_L_W220_(12373237945).jpg' },
-    'car-lc100': { src: 'img/car-lc100.jpg', author: 'Dinkun Chen', license: 'CC BY-SA 4.0', url: W + 'TOYOTA_LAND_CRUISER_(J100)_China.jpg' },
     vest: { src: 'img/vest.jpg' }, // прислал владелец проекта
-    'car-x5': { src: 'img/car-x5.jpg', author: 'Dinkun Chen', license: 'CC BY-SA 4.0', url: W + 'BMW_X5_(E53)_China_(2).jpg' },
-    'car-escalade': { src: 'img/car-escalade.jpg', author: 'IFCAR', license: 'общественное достояние', url: W + 'Cadillac-Escalade.jpg' },
-    'car-rr': { src: 'img/car-rr.jpg', author: 'OSX', license: 'общественное достояние', url: W + '2002_Land_Rover_Range_Rover_(L322_MY03)_Vogue_wagon_(2015-07-03)_01.jpg' },
-    'car-cayenne': { src: 'img/car-cayenne.jpg', author: 'OWS Photography', license: 'CC BY 4.0', url: W + 'Porsche_Cayenne_S_(955)_Washington_DC_Metro_Area,_USA.jpg' },
-    'car-e65': { src: 'img/car-e65.jpg', author: 'Dinkun Chen', license: 'CC BY-SA 4.0', url: W + 'BMW_7_SERIES_(E65)_China.jpg' },
-    'car-uaz': { src: 'img/car-uaz.jpg', author: 'Nikolai Bulykin', license: 'CC BY-SA 4.0', url: W + 'Бишкек,_УАЗ-452_на_Турусбекова.jpg' },
     // крупные дела и похищение: кадр 5:2
-    'd-seaport': { src: 'img/d-seaport.jpg', author: 'bibikoff', license: 'общественное достояние', url: W + 'Port_Novorossiysk.JPG' },
-    'd-club': { src: 'img/d-club.jpg', author: 'Maarten', license: 'CC BY 2.0', url: W + 'Lokomotiv_-_Spartak_(19).jpg' },
     'd-kidnap': { src: 'img/d-kidnap.jpg' }, // сгенерировано нейросетью
     'd-raid': { src: 'img/d-raid.jpg' }, // сгенерировано нейросетью
     // уровни II и III точек (если фото уровня нет — берётся фото I уровня)
-    'b-kiosk2': { src: 'img/b-kiosk2.jpg', author: 'Дмитрий Скляренко', license: 'CC BY 3.0', url: W + 'Магазин_Продукты_и_Настенька_-_panoramio.jpg' },
-    'b-market2': { src: 'img/b-market2.jpg', author: 'Andrey Butko', license: 'CC BY-SA 3.0', url: W + 'Крытый_рынок_в_Донецке_008.jpg' },
-    'b-clinic3': { src: 'img/b-clinic3.jpg', author: 'Kemal KOZBAEV', license: 'CC BY-SA 4.0', url: W + 'Голицынская_больница,_Москва.jpg' },
     'b-bordel2': { src: 'img/b-bordel2.jpg' }, // прислал владелец проекта
-    'b-bordel3': { src: 'img/b-bordel3.jpg', author: 'Paul Sableman', license: 'CC BY 2.0', url: W + 'Magic_City_strip_club.jpg' },
-    'b-hotel3': { src: 'img/b-hotel3.jpg', author: 'Andreas Plousios', license: 'CC BY-SA 4.0', url: W + 'Гостиница_Украина_3.jpg' },
-    'b-warehouse3': { src: 'img/b-warehouse3.jpg', author: 'salnikovkirill', license: 'CC BY 3.0', url: W + 'Tomilino,_Moscow_Oblast,_Russia_-_panoramio_(14).jpg' },
     'b-fuel3': { src: 'img/b-fuel3.jpg' }, // прислал владелец проекта
-    'b-tir3': { src: 'img/b-tir3.jpg', author: 'B20180', license: 'CC BY-SA 3.0', url: W + '50_metre_rifle_three_positions_in_Thailand.jpg' },
     'b-chop2': { src: 'img/b-chop2.jpg' }, // сгенерировано нейросетью (Gemini 2.5 Flash Image через OpenRouter)
     'b-chop3': { src: 'img/b-chop3.jpg' }, // прислал владелец проекта
     'b-rest2': { src: 'img/b-rest2.jpg' }, // сгенерировано нейросетью
@@ -510,9 +513,6 @@
     'b-club3': { src: 'img/b-club3.jpg' }, // сгенерировано нейросетью
     'b-dorm3': { src: 'img/b-dorm3.jpg' }, // сгенерировано нейросетью
     // здания точек: по одному фото на тип, кадр 5:3, слегка приглушены и тонированы
-    'car-bmw': { src: 'img/car-bmw.jpg', author: 'Elveres', license: 'CC BY-SA 4.0', url: W + '1991_BMW_E34.jpg' },
-    'car-jeep': { src: 'img/car-jeep.jpg', author: 'IFCAR', license: 'общественное достояние', url: W + '1993-1995_Jeep_Grand_Cherokee_--_03-30-2012.JPG' },
-    'car-merc': { src: 'img/car-merc.jpg', author: 'Alexxx1979', license: 'CC BY-SA 4.0', url: W + 'Moscow._Museum_of_The_Special_Purpose_Garage._Mercedes-Benz_S600_Pullman_Guard_(W140)_P4111702_2600.jpg' }
   };
 
   // «Путь наверх»: наставник объясняет, зачем нужна каждая должность и механика. $ — награда (умножается на эпоху)
