@@ -863,12 +863,22 @@ ul.plain { padding-left: 18px; margin: 0 0 12px; } ul.plain li { margin: 0 0 4px
 /* ночная карта Москвы */
 #stage:has(#mapview:not([hidden])) { background: #09080c; }
 #town { stroke: none; }
-#river { fill: none; stroke: #2f5a85; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: .75; pointer-events: none; }
+#river { fill: none; stroke: #3f86d0; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: .85; pointer-events: none; filter: url(#glow); }
 #lights { pointer-events: none; }
-.cell { fill: #1a1620; fill-opacity: .35; stroke: #3a3242; stroke-width: .7; }
-.cell.foe { fill-opacity: .32; }
-.cell.mine { fill-opacity: .45; }
-.cell:hover { fill-opacity: .7; }
+#city { pointer-events: none; }
+/* карта чуть положена «на стол»: вид на город под углом, как с вертолёта */
+#map { transform: perspective(1200px) rotateX(20deg); transform-origin: 50% 55%; }
+@media (max-width: 860px) { #map { transform: perspective(900px) rotateX(14deg); } }
+@media (prefers-reduced-motion: reduce) { #map { transform: none; } }
+#roads { pointer-events: none; }
+#roads .rd { fill: none; stroke: #ffae4a; stroke-linecap: round; stroke-linejoin: round; }
+#roads .hw { stroke-width: 1.8; opacity: .32; }
+#roads .ttk { stroke-width: 2.2; opacity: .42; }
+#roads .sad { stroke-width: 2; opacity: .5; }
+.cell { fill: #0d0b10; fill-opacity: .18; stroke: rgba(255, 236, 200, .16); stroke-width: .7; }
+.cell.foe { fill-opacity: .34; }
+.cell.mine { fill-opacity: .42; }
+.cell:hover { fill-opacity: .5; }
 .cell.target { stroke: #f0a73c; stroke-width: 1.2; stroke-dasharray: 3 2.5; }
 .cell.sel { stroke: #fff3d6; stroke-width: 2.4; fill-opacity: .7; }
 #okb line { stroke: #f0a73c; stroke-width: 2.4; opacity: .95; filter: url(#glow); }

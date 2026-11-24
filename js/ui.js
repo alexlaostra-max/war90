@@ -104,15 +104,25 @@
     for (let k = 0; k < 1400; k++) { const px = b[0] + rnd() * b[2], py = b[1] + rnd() * b[3], r = rnd(); out += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="' + (r < 0.85 ? 0.7 : 1.3) + '" fill="' + (r < 0.6 ? '#f3c97a' : r < 0.9 ? '#e8a35a' : '#fff3d6') + '" opacity="' + (0.15 + rnd() * 0.45).toFixed(2) + '"/>'; }
     return out;
   }
+  // Садовое кольцо, ТТК и вылетные магистрали: от Кремля по реальным направлениям до МКАД
+  function mapRoads() {
+    const c = GXY(37.618, 55.754), km = 23.4;
+    const ring = (rx, ry, wob, seed) => { let d = ''; for (let a = 0; a <= 72; a++) { const t = a / 72 * Math.PI * 2, w = 1 + wob * Math.sin(t * 3 + seed) + wob * 0.6 * Math.cos(t * 5 + seed * 2); d += (a ? 'L' : 'M') + (c[0] + Math.sin(t) * rx * km * w).toFixed(1) + ' ' + (c[1] - Math.cos(t) * ry * km * w).toFixed(1); } return d + 'Z'; };
+    // азимуты: Дмитровка, Ленинградка, Волоколамка, Кутузовский, Мичуринский, Ленинский, Варшавка, Каширка, Волгоградка, Рязанка, Энтузиастов, Щёлковское, Ярославка
+    const rad = [345, 318, 298, 268, 245, 218, 192, 168, 140, 122, 97, 68, 22].map(b => { const t = b * Math.PI / 180, x0 = c[0] + Math.sin(t) * 2.2 * km, y0 = c[1] - Math.cos(t) * 2.2 * km; return 'M' + x0.toFixed(1) + ' ' + y0.toFixed(1) + 'L' + (c[0] + Math.sin(t) * 30 * km).toFixed(1) + ' ' + (c[1] - Math.cos(t) * 30 * km).toFixed(1); }).join('');
+    return '<g id="roads"><path class="rd hw" d="' + rad + '"/><path class="rd ttk" d="' + ring(4.6, 4.9, 0.06, 1) + '"/><path class="rd sad" d="' + ring(2.1, 2.2, 0.04, 2) + '"/></g>';
+  }
   function buildMap() {
     const pth = c => 'M' + c.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L') + 'Z';
     const kr = GXY(37.6175, 55.7515), riv = 'M' + RIVER.map(p => GXY(p[0], p[1]).map(v => v.toFixed(1)).join(' ')).join('L');
     let h = '<defs><clipPath id="mkad"><path d="' + pth(GEO.hull) + '"/></clipPath><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
       '<radialGradient id="night" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#2a2230"/><stop offset="1" stop-color="#0d0b10"/></radialGradient></defs>' +
       '<path id="town" d="' + pth(GEO.hull) + '" fill="url(#night)"/>' +
+      // ночная Москва сверху (сшита из снимков нейросети) и поверх неё — настоящие кольца и вылетные шоссе
+      '<g clip-path="url(#mkad)"><image id="city" href="img/map-city.jpg" x="70" y="45" width="745" height="915" preserveAspectRatio="none"/>' + mapRoads() + '</g>' +
       '<g id="cells">' + GEO.cells.map((c, i) => '<path class="cell" data-i="' + i + '" d="' + pth(c) + '"></path>').join('') + '</g><g id="okb">';
     GEO.borders.forEach(b => { if (D.DISTRICTS[b.i].ok !== D.DISTRICTS[b.j].ok) h += '<line x1="' + b.a[0].toFixed(1) + '" y1="' + b.a[1].toFixed(1) + '" x2="' + b.b[0].toFixed(1) + '" y2="' + b.b[1].toFixed(1) + '"></line>'; });
-    h += '</g><g id="lights" clip-path="url(#mkad)">' + cityLights() + '</g><path id="river" clip-path="url(#mkad)" d="' + riv + '"/><path id="rim" d="' + pth(GEO.hull) + '"></path><g id="kremlin" transform="translate(' + kr[0].toFixed(1) + ' ' + kr[1].toFixed(1) + ')"><circle r="11" fill="#f0a73c" opacity=".22" filter="url(#glow)"/><path d="M-6 3h12v-5l-2 -1.5v-3l-1.5 -1v-4l-1 -2.5l-1 2.5v4l-1.5 1v3l-2 1.5z" fill="#f6c46a"/><path d="M0 -12.5l.6 1.6h1.6l-1.3 1 .5 1.6-1.4-1-1.4 1 .5-1.6-1.3-1h1.6z" fill="#ff5a4d"/></g><g id="dots"></g><g id="marks">';
+    h += '</g><path id="river" clip-path="url(#mkad)" d="' + riv + '"/><path id="rim" d="' + pth(GEO.hull) + '"></path><g id="kremlin" transform="translate(' + kr[0].toFixed(1) + ' ' + kr[1].toFixed(1) + ')"><circle r="11" fill="#f0a73c" opacity=".22" filter="url(#glow)"/><path d="M-6 3h12v-5l-2 -1.5v-3l-1.5 -1v-4l-1 -2.5l-1 2.5v4l-1.5 1v3l-2 1.5z" fill="#f6c46a"/><path d="M0 -12.5l.6 1.6h1.6l-1.3 1 .5 1.6-1.4-1-1.4 1 .5-1.6-1.3-1h1.6z" fill="#ff5a4d"/></g><g id="dots"></g><g id="marks">';
     D.DISTRICTS.forEach((d, i) => { const c = GEO.centers[i]; if (d.ent) h += '<rect class="ent" data-m="' + i + '" x="' + (c[0] - 2.6).toFixed(1) + '" y="' + (c[1] - 10.5).toFixed(1) + '" width="5.2" height="5.2" transform="rotate(45 ' + c[0].toFixed(1) + ' ' + (c[1] - 7.9).toFixed(1) + ')"></rect>'; });
     h += '</g><g id="oklab">';
     Object.keys(D.OKRUGS).forEach(ok => { const ids = E.okrugIds(ok), x = ids.reduce((s, i) => s + GEO.centers[i][0], 0) / ids.length, y = ids.reduce((s, i) => s + GEO.centers[i][1], 0) / ids.length; const nm = D.OKRUGS[ok].name.replace(' округ', '').split('-'); h += '<text x="' + x.toFixed(1) + '" y="' + (y - (nm.length > 1 ? 6 : 0)).toFixed(1) + '">' + nm.map((t, k) => '<tspan x="' + x.toFixed(1) + '" dy="' + (k ? 13 : 0) + '">' + t + (k < nm.length - 1 ? '-' : '') + '</tspan>').join('') + '<tspan x="' + x.toFixed(1) + '" dy="13">АО</tspan></text>'; });
