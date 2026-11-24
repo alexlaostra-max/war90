@@ -376,7 +376,8 @@
   const bossDraw = f => face({ seed: 'boss-' + f.id, name: f.boss, nick: '', age: 44, str: 7, wit: 7, loy: 8, look: { cloth: f.id === 'cher' ? 'suit' : f.id === 'lub' ? 'tracksuit' : 'raspberry', chain: f.id !== 'cher' } }, { bg: f.color + '40', label: f.boss });
   const legendFace = (k, opts) => { const L = G.DATA.LEGENDS[k]; return L ? face(Object.assign({ leg: k }, L), opts) : ''; };
   // президент и мэр: портреты для страницы власти
-  const rulerFace = (R0, age) => R0.legend ? legendFace(R0.legend, { label: R0.name }) : face({ seed: 'ruler-' + R0.name, name: R0.name, age, str: 5, wit: 7, loy: 5, look: R0.look }, { label: R0.name });
+  const RULER_PH = { 'Борис Ельцов': 'ruler-eltsov', 'Владимир Путилин': 'ruler-putilin', 'Гавриил Попков': 'ruler-popkov' };
+  const rulerFace = (R0, age) => RULER_PH[R0.name] ? ownPhoto(RULER_PH[R0.name], R0.name) : R0.legend ? legendFace(R0.legend, { label: R0.name }) : face({ seed: 'ruler-' + R0.name, name: R0.name, age, str: 5, wit: 7, loy: 5, look: R0.look }, { label: R0.name });
   const OFF_ROLE = { uch: ['cop', 52], uvd: ['cop', 44], prok: ['suit', 47], dep: ['suit', 56], fsb: ['general', 58] };
   const officialFace = k => PORTRAITS.has('off-' + k) ? ownPhoto('off-' + k, G.DATA.OFFICIALS[k].name) : face({ seed: 'off-' + k, name: G.DATA.OFFICIALS[k].name, age: OFF_ROLE[k][1], str: 5, wit: 7, loy: 5, role: OFF_ROLE[k][0], look: k === 'dep' ? { glasses: 1, hair: 'side' } : {} }, { label: G.DATA.OFFICIALS[k].name });
   const vacantFace = () => svg('0 0 64 64', R(0, 0, 64, 64, '#211c29') + C(32, 26, 11, '#3a3446') + P('M10 64Q10 44 32 42Q54 44 54 64Z', '#3a3446') + T(32, 31, '?', 14, '#5a5466'), 'Вакантно', 'face');
