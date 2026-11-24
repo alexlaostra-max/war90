@@ -74,7 +74,13 @@
     const B = Math.floor(M / 1000), m = M % 1000; return s + B + ' млрд' + (m ? ' ' + m + 'М' : '');
   }
   // знак валюты: всё, что зарабатывается и тратится в Москве, — рубли; доллары — обменник, крупные дела, статус и личное
-  const fm = v => fmtK(v) + ' ₽', fu = v => fmtK(v) + ' $';
+  // рубли честные: игровая сумма (тыс. $ по стоимости) × курс месяца. RK — рублей за одну игровую единицу,
+  // выставляется при каждом вызове движка с состоянием игры (см. обёртку внизу)
+  let RK = 1000;
+  const rubPerUsd = S => realRub(S, fxMid(S, S.turn));
+  const setRK = S => { if (S && S.f && typeof S.turn === 'number') RK = 1000 * rubPerUsd(S); };
+  const fmR = r => fmtK(r / 1000);
+  const fm = v => fmR(v * RK) + ' ₽', fu = v => fmtK(v) + ' $';
   const cash = p => { const w = Math.min(Math.max(0, p.clean || 0), Math.max(0, p.money)); return { white: Math.round(w), black: Math.round(p.money - w) }; };
   const fdef = id => D.FACTIONS.find(f => f.id === id);
   // to — кому видна запись (бригада); без to видят все
@@ -1790,4 +1796,7 @@
   const ACTIONS = { attackGo, train, propose, buyElite, job, place, repairAll, scrapAll, exchange, execute, frame, offer, answer, defend, setUsd, buyStatus, retire, quest, repairCar, sellCar, battle, parley, promote, assign, unassign, dismiss, recruit, buyGuns, buyVests, buyCar, attack, build, upgrade, kidnap, raid, hire, bribe, truce, projStep, cashOut, choose };
   Object.keys(ACTIONS).forEach(n => { const f = ACTIONS[n]; ACTIONS[n] = (S, fid, ...a) => { const evId = S.f[fid] && S.f[fid].event, r = f(S, fid, ...a); if (r && r.ok) { track(S, fid, n, a, evId, r); checkAch(S, fid); } return r; }; });
   G.Engine = { atWar, WAR_LEN, hitCost, hitOdds, hitLock, fu, gunHeat, priceK, wealthK, fxChange, fmtK, fm, fxQuote, fxBoard, fxLiq, fxBought, fxBooths, FX_SPREAD, repCap, repParts, ATK, atkLock, attackOdds, strikeMax, squad, surrOdds, XP_NEED, LV_MAX, trainCost, trainLock, eliteHas, eliteFx, eliteLock, jobGain, jobCost, jobOdds, jobLock, capital, realRub, LATER_IN, upgradeLock, LVL_FROM, repairAllCost, scrapAllValue, usdOf, kidnapOdds, rubRate, setAuto, autoPlay, offerText, offerCheck, frameCost, OFFER_KINDS, defendOdds, buyOffCost, assaultValid, checkAch, cur, inflation, exchangeFee, has, statusLock, retireLock, scoreOf, questNow, questDone, lawK, cash, repairCost, carSale, pointGood, traitNames, TACTICS, BATTLE_ROUNDS, BREAK, tacticLock, flankOdds, talkOdds, rel, giftCost, dealCost, dealOdds, buyPrice, buyOdds, tributeOk, tributeOdds, tributeSum, parleyCheck, watcherOf, watchKey, watchDist, promoteCost, DIFF, dif, isHome, migrate, armedValue, mobility, seatsOf, armCost, vestCost, carCost, carTalk, armorK, vestK, evText, evWho, addLegend, ARM_ORDER, CAR_ORDER, fx, fxp, gunPack, carPrice, crew, post, capoOf, capoMax, benchMax, cname, truceOdds, consBonus, atkMult, inflow, pool, recruitPrice, MAX_LVL, pointLvl, upgradeCost, ACTIONS, strike, SHARES, HEATS, KINDS, newGame, date, era, power, owned, count, defFactor, okrugIds, okrugHeld, okrugsHeld, conn, apMax, menCap, lawLevel, districtDef, attackable, inTruce, buildCost, officialCost, gunPrice, CAR_PRICE, pointInc, income, heatDelta, projIncome, projStatus, negChances, winOdds, raidOdds, bribeCost, truceCost, canBuild, currentEvent, optState, LAST_TURN, active, allReady, setReady, endTurn, viewFor };
+  G.Engine.rubPerUsd = rubPerUsd; G.Engine.fmR = fmR;
+  // любой вызов движка с состоянием игры сначала ставит курс месяца для сообщений в рублях
+  Object.keys(G.Engine).forEach(n => { const f = G.Engine[n]; if (typeof f === 'function' && n !== 'fmtK' && n !== 'fmR') G.Engine[n] = function (S) { setRK(S); return f.apply(this, arguments); }; });
 })(typeof window !== 'undefined' ? window.W90 : globalThis.W90);

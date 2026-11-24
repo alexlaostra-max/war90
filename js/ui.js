@@ -182,7 +182,7 @@
     const st = (k, l, v, x, cls) => '<button class="st s-' + k + ' ' + (cls || '') + '" data-go="' + GO[k] + '" title="' + l + '">' + A.icon(k) + '<div><span>' + l + '</span><b>' + v + '</b>' + (x ? '<i>' + x + '</i>' : '') + '</div></button>';
     let pips = ''; for (let i = 0; i < E.apMax(S, me); i++) pips += '<u class="' + (i < p.ap ? 'on' : '') + '"></u>';
     $('#stats').innerHTML =
-      st('rub', 'Рубли', kfmt(Math.max(0, cc.rub) * 1000), plus(inc.total - inc.usd) + '/мес · дешевеют с курсом', p.money < 0 ? 'bad' : '') +
+      st('rub', 'Рубли', kfmt(Math.max(0, cc.rub) * rk()), plus(inc.total - inc.usd) + '/мес · дешевеют с курсом', p.money < 0 ? 'bad' : '') +
       st('usd', 'Доллары', kfmt(cc.usd * 1000), (inc.usd ? plus(inc.usd, true) + '/мес · ' : '') + 'на крупные дела и статус') +
       st('men', 'Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('gun', 'Стволы', p.guns) + st('car', 'Тачки', p.cars) +
       st('conn', 'Связи', E.conn(S, me)) +
@@ -205,10 +205,11 @@
   // только целые: 950К, 2М 500К, 1 млрд 200М (v — в штуках, как раньше: тыс. × 1000)
   const kfmt = v => E.fmtK(v / 1000).replace(/^−/, '');
   const usdS = v => (v < 0 ? '−' : '') + kfmt(v * 1000) + ' $';
-  // суммы в игровых тысячах: «15К ₽», «9К $» — без пересчёта по курсу
-  const rubS = v => (v < 0 ? '−' : '') + kfmt(v * 1000) + ' ₽';
+  // рубли честные: игровая сумма × курс месяца (в 90-е — миллионы, после деноминации 1998 — тысячи)
+  const rk = () => (S ? E.rubPerUsd(S) : 1) * 1000;
+  const rubS = v => (v < 0 ? '−' : '') + kfmt(Math.abs(v) * rk()) + ' ₽';
   const money = (v, usd) => usd ? usdS(v) : rubS(v);
-  const rubP = c => kfmt(Math.max(0, c) * 1000) + ' ₽', usdP = c => kfmt(Math.max(0, c) * 1000) + ' $';
+  const rubP = c => kfmt(Math.max(0, c) * rk()) + ' ₽', usdP = c => kfmt(Math.max(0, c) * 1000) + ' $';
   const plus = (v, usd) => (v > 0 ? '+' : '') + money(v, usd);
   // кнопка: lock-строка делает её неактивной, но нажать можно — сверху всплывёт, почему нельзя
   const offAttr = lock => ' aria-disabled="true" data-lock="' + esc(lock) + '"';
@@ -355,7 +356,7 @@
   const bigRub = v => E.fmtK(v / 1000);
   function fxCalc() {
     const r = $('#fxr'), box = $('#fxcalc'); if (!r || !box) return;
-    const v = +r.value, q = E.fxQuote(S, me, fxDir, v), rub = x => kfmt(x * 1000) + ' ₽';
+    const v = +r.value, q = E.fxQuote(S, me, fxDir, v), rub = x => rubP(x);
     box.innerHTML = fxDir === 'buy'
       ? '<span>Отдаёшь <b>' + rub(v) + '</b><small>&nbsp;</small></span><i>→</i><span>Получишь <b class="good">' + usdP(q.get) + '</b><small>менялы берут ' + q.pct + '%' + (q.pct > E.FX_SPREAD * 100 + 0.5 ? ' — много скупаешь' : '') + '</small></span>'
       : '<span>Отдаёшь <b class="good">' + usdP(v) + '</b><small>&nbsp;</small></span><i>→</i><span>Получишь <b>' + rub(q.get) + '</b><small>по курсу покупки</small></span>';
@@ -873,7 +874,7 @@
     if (E.inTruce(S, me, dealWith)) h += '<p class="good">Мир до ' + E.date(p.truce[dealWith]).label + '.</p>';
     h += '<div class="seg dkinds">' + DEAL_KINDS.map(k => '<button class="' + (k[0] === dealKind ? 'on' : '') + '" data-a="dkind" data-k="' + k[0] + '">' + k[1] + '</button>').join('') + '</div>';
     if (dealKind === 'truce') h += '<label class="field"><span>Срок мира</span><select id="dx">' + [3, 6, 12, 24].map(m => '<option value="' + m + '"' + (m === 12 ? ' selected' : '') + '>' + m + ' мес.</option>').join('') + '</select></label><p class="muted">Пока действует мир, вы не можете нападать на районы друг друга.</p>';
-    else if (dealKind === 'pay' || dealKind === 'ask') h += '<label class="field"><span>Сумма в тысячах ₽' + (dealKind === 'pay' ? ' (у тебя ' + rubP(p.money) + ')' : '') + '</span><input id="dx" type="number" inputmode="numeric" min="1" value="50"></label>';
+    else if (dealKind === 'pay' || dealKind === 'ask') h += '<label class="field"><span>Сумма, тыс. $ рублями по курсу (1 = ' + rubP(1) + ')' + (dealKind === 'pay' ? ' · у тебя ' + rubP(p.money) : '') + '</span><input id="dx" type="number" inputmode="numeric" min="1" value="50"></label>';
     else {
       const ds = dealDistricts(dealKind, dealWith);
       if (!ds.length) h += '<p class="muted">' + (dealKind === 'sell' ? 'Нет районов на продажу: продать можно не родной район, который граничит с их землёй.' : 'Купить нечего: можно только их не родной район рядом с твоими.') + '</p>';
