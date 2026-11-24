@@ -277,10 +277,12 @@
   const FEM = { malaya: 'f01', chernysh: 'f02' };
   // портрет-фото: у легенд и людей во власти свои снимки (img/leg-*.jpg, img/off-*.jpg)
   const ownPhoto = (file, alt, c) => '<img class="pface" src="img/' + file + '.jpg" alt="' + xesc(alt || '') + '" loading="lazy" decoding="async">' + (c && c.st === 'jail' ? '<i class="fst jail"></i>' : c && c.st === 'hurt' ? '<i class="fst hurt"></i>' : '');
-  const PORTRAITS = new Set([]);
+  const PORTRAITS = new Set(['leg-bab', 'leg-bordur', 'leg-cap', 'leg-chernysh', 'leg-dagir', 'leg-gen', 'leg-glob', 'leg-hasan', 'leg-ildar', 'leg-lobster', 'leg-mak', 'leg-malaya', 'leg-mavr', 'leg-medved', 'leg-osya', 'leg-otar', 'leg-pyatigor', 'leg-silv', 'leg-tai', 'leg-voron', 'leg-yap', 'off-dep', 'off-fsb', 'off-prok', 'off-uch', 'off-uvd']);
   function facePhoto(c) {
     if (c.leg && PORTRAITS.has('leg-' + c.leg)) return ownPhoto('leg-' + c.leg, c.nick || c.name, c);
-    const F = G.DATA && G.DATA.FACES; if (!F || c.seed != null || c.id == null) return null;
+    const F = G.DATA && G.DATA.FACES;
+    if (F && c.leg && c.id == null && !((G.DATA.LEGENDS[c.leg] || {}).look || {}).fem) { const g = (c.age || 35) < 30 ? 'y' : (c.age || 35) <= 42 ? 'm' : 'o', n = F[g]; if (n) return ownPhoto('face-m' + g + String(1 + hash(c.leg) % n).padStart(2, '0'), c.nick || c.name, c); }
+    if (!F || c.seed != null || c.id == null) return null;
     const LG = c.leg && G.DATA.LEGENDS[c.leg]; let key = null;
     if (c.leg && FEM[c.leg]) key = FEM[c.leg];
     else if (LG && (LG.look || {}).fem) return null;
