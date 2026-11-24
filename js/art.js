@@ -690,7 +690,17 @@
       return h + '<g class="an-rain">' + rain + '</g><g class="an-rain an-d2">' + rain + '</g>';
     }
   };
+  // поверх фото — живые слои: мигалки, снег и помехи, дым под лампой, дождь
+  const EVFX = {
+    law: () => '<i class="evl evl-r"></i><i class="evl evl-b"></i>',
+    history: () => { let sn = ''; const r = rng(77); for (let i = 0; i < 40; i++) sn += C(r() * 240, r() * 80, r() < 0.3 ? 0.7 : 0.4, '#fff', 'opacity=".75"'); return '<svg class="evfx" viewBox="0 0 240 80" preserveAspectRatio="none"><g class="an-snow">' + sn + '</g><g class="an-snow an-d2">' + sn + '</g></svg><i class="evtv"></i>'; },
+    crew: () => '<i class="evlamp"></i><i class="evsmoke"></i><i class="evsmoke s2"></i>',
+    street: () => { let rain = ''; const r = rng(91); for (let i = 0; i < 70; i++) { const rx = r() * 260, ry = r() * 80; rain += L(rx, ry, rx - 2, ry + 6, '#cfdcea', 0.4, 'opacity=".4"'); } return '<svg class="evfx" viewBox="0 0 240 80" preserveAspectRatio="none"><g class="an-rain">' + rain + '</g><g class="an-rain an-d2">' + rain + '</g></svg>'; }
+  };
   function eventScene(kind, seed) {
+    if (!EVFX[kind]) kind = 'street';
+    const n = 1 + (hash(String(seed || kind)) % 2);
+    if (G.DATA.PHOTOS && G.DATA.PHOTOS['ev-' + kind + n]) return '<div class="evph ev-' + kind + '"><img src="' + G.DATA.PHOTOS['ev-' + kind + n].src + '" alt="" decoding="async">' + EVFX[kind]() + '</div>';
     const fn = EVS[kind] || EVS.street;
     return '<svg class="art evsc" viewBox="0 0 240 80" preserveAspectRatio="xMidYMax slice" aria-hidden="true">' + fn(rng(hash(seed || kind))) + '</svg>';
   }

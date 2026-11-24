@@ -512,6 +512,15 @@
     'b-exchange2': { src: 'img/b-exchange2.jpg' }, // сгенерировано нейросетью
     'b-club3': { src: 'img/b-club3.jpg' }, // сгенерировано нейросетью
     'b-dorm3': { src: 'img/b-dorm3.jpg' }, // сгенерировано нейросетью
+    // шапки событий: по два ночных кадра на вид (сгенерировано нейросетью)
+    'ev-law1': { src: 'img/ev-law1.jpg' },
+    'ev-law2': { src: 'img/ev-law2.jpg' },
+    'ev-history1': { src: 'img/ev-history1.jpg' },
+    'ev-history2': { src: 'img/ev-history2.jpg' },
+    'ev-crew1': { src: 'img/ev-crew1.jpg' },
+    'ev-crew2': { src: 'img/ev-crew2.jpg' },
+    'ev-street1': { src: 'img/ev-street1.jpg' },
+    'ev-street2': { src: 'img/ev-street2.jpg' },
     // здания точек: по одному фото на тип, кадр 5:3, слегка приглушены и тонированы
   };
 
