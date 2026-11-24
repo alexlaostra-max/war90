@@ -275,7 +275,11 @@
   // фото-портреты людей семьи (DATA.FACES): мужские по возрасту, женские — для своих людей-женщин.
   // Легенды эпохи (отсылки к реальным людям) и безымянные лица остаются рисованными
   const FEM = { malaya: 'f01', chernysh: 'f02' };
+  // портрет-фото: у легенд и людей во власти свои снимки (img/leg-*.jpg, img/off-*.jpg)
+  const ownPhoto = (file, alt, c) => '<img class="pface" src="img/' + file + '.jpg" alt="' + xesc(alt || '') + '" loading="lazy" decoding="async">' + (c && c.st === 'jail' ? '<i class="fst jail"></i>' : c && c.st === 'hurt' ? '<i class="fst hurt"></i>' : '');
+  const PORTRAITS = new Set([]);
   function facePhoto(c) {
+    if (c.leg && PORTRAITS.has('leg-' + c.leg)) return ownPhoto('leg-' + c.leg, c.nick || c.name, c);
     const F = G.DATA && G.DATA.FACES; if (!F || c.seed != null || c.id == null) return null;
     const LG = c.leg && G.DATA.LEGENDS[c.leg]; let key = null;
     if (c.leg && FEM[c.leg]) key = FEM[c.leg];
@@ -372,7 +376,7 @@
   // президент и мэр: портреты для страницы власти
   const rulerFace = (R0, age) => R0.legend ? legendFace(R0.legend, { label: R0.name }) : face({ seed: 'ruler-' + R0.name, name: R0.name, age, str: 5, wit: 7, loy: 5, look: R0.look }, { label: R0.name });
   const OFF_ROLE = { uch: ['cop', 52], uvd: ['cop', 44], prok: ['suit', 47], dep: ['suit', 56], fsb: ['general', 58] };
-  const officialFace = k => face({ seed: 'off-' + k, name: G.DATA.OFFICIALS[k].name, age: OFF_ROLE[k][1], str: 5, wit: 7, loy: 5, role: OFF_ROLE[k][0], look: k === 'dep' ? { glasses: 1, hair: 'side' } : {} }, { label: G.DATA.OFFICIALS[k].name });
+  const officialFace = k => PORTRAITS.has('off-' + k) ? ownPhoto('off-' + k, G.DATA.OFFICIALS[k].name) : face({ seed: 'off-' + k, name: G.DATA.OFFICIALS[k].name, age: OFF_ROLE[k][1], str: 5, wit: 7, loy: 5, role: OFF_ROLE[k][0], look: k === 'dep' ? { glasses: 1, hair: 'side' } : {} }, { label: G.DATA.OFFICIALS[k].name });
   const vacantFace = () => svg('0 0 64 64', R(0, 0, 64, 64, '#211c29') + C(32, 26, 11, '#3a3446') + P('M10 64Q10 44 32 42Q54 44 54 64Z', '#3a3446') + T(32, 31, '?', 14, '#5a5466'), 'Вакантно', 'face');
 
   // ---------- арсенал ----------
