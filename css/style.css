@@ -118,7 +118,7 @@ main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1
 .card em { position: absolute; right: 8px; top: 8px; font: normal 11px var(--body); color: var(--dim); }
 .card.atk:hover:not(:disabled) { border-color: var(--crimson-hi); }
 .tag { font: 10px var(--body); padding: 1px 5px; border-radius: 2px; border: 1px solid; align-self: flex-start; text-transform: uppercase; letter-spacing: .05em; vertical-align: middle; }
-.tag.w { color: var(--fg); } .tag.g { color: var(--dim); } .tag.b { color: var(--crimson-hi); }
+.tag.w { color: var(--fg); } .tag.usd { color: var(--gold); } .tag.b { color: var(--crimson-hi); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; } .chips span { background: var(--raise); padding: 2px 8px; border-radius: 3px; font-size: 13px; }
 .tbl { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
 .tbl td, .tbl th { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: left; }
@@ -327,10 +327,8 @@ svg.art.face { aspect-ratio: 1; }
 .lvb { position: absolute; left: 6px; top: 6px; font: 400 13px var(--body); color: var(--bg); background: var(--gold); padding: 0 6px; border-radius: 2px; }
 .pinfo { padding: 7px 10px 4px; display: flex; flex-direction: column; gap: 1px; }
 .pinfo span { font: 13px var(--body); }
-.pmax { margin: 0; padding: 4px 10px 9px; }
 .btn.pup { margin: 4px 8px 8px; flex-direction: row; gap: 8px; text-align: left; padding: 5px 8px; }
 .btn.pup small { display: block; font-size: 11px; color: var(--good); }
-.pnext { width: 52px; flex: none; border-radius: 2px; overflow: hidden; opacity: .9; }
 .card.bcard { padding: 0 0 8px; overflow: hidden; }
 .card.bcard > :not(svg) { margin-left: 10px; margin-right: 10px; }
 .card.bcard svg { margin-bottom: 6px; }
@@ -743,7 +741,6 @@ svg.art.face { aspect-ratio: 1; }
 .photo.bph.l1 img { filter: saturate(.55) brightness(.82) contrast(1.05); }
 .photo.bph.l2 img { filter: saturate(.8) brightness(.93); }
 .photo.bph.l3 img { filter: saturate(1.1) contrast(1.05); }
-.pnext .photo.bph { width: 100%; display: block; border-radius: 0; }
 /* непрочитанное в чате: красный кружок с «!» над значком */
 .unread { min-width: 17px; height: 17px; padding: 0; border-radius: 50%; font: 900 12px/17px var(--body); box-shadow: 0 0 0 2px #191713; }
 #tabbar .unread { top: 0; right: calc(50% - 20px); }
@@ -991,19 +988,12 @@ h2 .gon2 { font-size: 12px; margin-left: 8px; }
 .bcard > .btn { margin-top: auto; width: 100%; }
 .bcard.locked { opacity: .62; }
 .bcard.locked > .btn { opacity: 1; }
-.pupbox { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 10px 10px; padding-top: 8px; border-top: 1px solid var(--line); }
-.pupbox .pnext { width: 52px; height: 32px; flex: none; overflow: hidden; border-radius: 3px; }
-.pupbox .pnext > * { width: 100%; height: 100%; }
-.pupbox .pnext img { width: 100%; height: 100%; object-fit: cover; }
-.pupbox .pupi { flex: 1 1 120px; display: flex; flex-direction: column; min-width: 0; font-size: 13px; }
-.pupbox .pupi small { color: var(--dim); font-size: 11px; }
-.pupbox > .btn { flex: 1 1 100%; }
 /* карточки стройки: одинаковые строки, кнопка внизу */
 .card.bcard { padding: 0 0 10px; gap: 3px; text-align: left; }
 .card.bcard > .bimg { position: relative; margin: 0 0 4px; aspect-ratio: 5 / 3; overflow: hidden; }
 .card.bcard .bimg > figure, .card.bcard .bimg > svg, .card.bcard .bimg img { width: 100%; height: 100%; margin: 0; display: block; object-fit: cover; }
-.card.bcard .bt { font: 700 14px var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card.bcard .bchain { font: 11px var(--body); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 15px; }
+.card.bcard .bt { font: 700 14px var(--body); overflow-wrap: anywhere; }
+.card.bcard .bchain { font: 11px/1.4 var(--body); color: var(--dim); overflow-wrap: anywhere; }
 .card.bcard .brow2 { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .card.bcard .brow2 .tag { margin: 0; }
 .card.bcard .binc { font: 12px var(--body); color: var(--good); white-space: nowrap; }
@@ -1091,7 +1081,7 @@ input, select, textarea { background: #151410; color: var(--fg); border-color: #
 a { color: #e0c38c; }
 :focus-visible { outline: 2px solid #e8c784; outline-offset: 3px; }
 .ph img, .bimg img, .pface { filter: saturate(.55) sepia(.12); }
-.district-photo { display: block; width: calc(100% + 40px); max-width: none; height: 170px; object-fit: cover; margin: -20px -20px 18px; filter: saturate(.4) sepia(.2); border-bottom: 1px solid var(--gold); }
+.district-photo { display: block; width: calc(100% + 40px); max-width: none; height: auto; background: var(--bg); margin: -20px -20px 18px; filter: saturate(.4) sepia(.2); border-bottom: 1px solid var(--gold); }
 
 /* Оперативная карта сохраняет настоящие районы и геометрию игры. */
 #stage:has(#mapview:not([hidden])) { background: radial-gradient(ellipse, #514c36, #26271e); }
@@ -1185,7 +1175,7 @@ a { color: #e0c38c; }
   #pane h2 { font-size: 18px; }
   #page { padding: 18px; }
   #org { padding: 12px; }
-  .district-photo { width: calc(100% + 24px); height: 100px; margin: -12px -12px 12px; }
+  .district-photo { width: calc(100% + 24px); margin: -12px -12px 12px; }
   #legend { font-size: 10px; padding: 5px 8px; gap: 6px; }
   #legend b { display: none; }
   #zoom button { width: 32px; height: 32px; }
@@ -1348,7 +1338,6 @@ summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
   .ctier { grid-template-columns: repeat(auto-fit, minmax(75px, 1fr)); gap: 5px; }
   .dhero { min-height: 140px; padding: 60px 10px 10px; }
   .dhero h2 { font-size: 17px; }
-  .district-photo { height: 65px; }
   .quest { padding: 8px; margin-bottom: 10px; }
   .quest .qhead small { display: none; }
   .quest .qhead .ava { width: 32px; height: 32px; }
@@ -1419,6 +1408,16 @@ summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
   .event-actions .voicerow .btn { min-height: 24px; padding: 3px 6px; }
   .online-create > .btn { min-height: 36px; margin-top: 4px; }
 }
+.cash-wallet { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.cash-wallet > div { min-width: 0; padding: 8px 5px; text-align: center; background: var(--raise); border: 1px solid var(--line); }
+.cash-wallet dt { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; font-size: 12px; }
+.cash-wallet .ico { width: 15px; height: 15px; color: var(--gold); }
+.cash-wallet dd { margin-top: 4px; overflow-wrap: anywhere; }
+.wash-panel h3 { margin-top: 0; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; }
+.wash-panel p { margin-bottom: 3px; }
+.wash-panel small { color: var(--dim); }
+.point-upgrade { align-self: stretch; margin: 4px 10px; }
+.pinfo > .tag { align-self: flex-start; }
 .cash-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .cash-overview > div { min-width: 0; padding: 8px 10px; background: var(--raise); border-bottom: 1px solid var(--line); }
 .cash-overview dt { font-size: 11px; }
@@ -1560,7 +1559,7 @@ summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
   .cnode b { font-size: 11px; }
   .cnode.vacant { min-height: 80px; }
   .dhero { min-height: 210px; padding: 100px 12px 12px; }
-  .district-photo { width: calc(100% + 24px); height: 100px; margin: -12px -12px 12px; }
+  .district-photo { width: calc(100% + 24px); margin: -12px -12px 12px; }
   .cash-overview, #pane .cash-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cash-overview > div { padding: 8px; }
   .cash-overview dd { font-size: 14px; }
@@ -1720,3 +1719,7 @@ summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 #stats .st > div { min-width: 0; }
 #stats .st > div > span { overflow: hidden; text-overflow: ellipsis; }
 #stats .st b { overflow-wrap: anywhere; }
+
+#sheethead .xclose { margin-left: auto; }
+.ptile .point-demolish { margin: auto 10px 10px; }
+.demolish-actions { flex-wrap: wrap; gap: 8px; }

@@ -244,15 +244,16 @@
   };
   const LVL = ['', 'I', 'II', 'III'];
   const cache = {};
-  // точка: настоящее фото (если есть), уровень — тонировкой; без подписи там, где фото внутри кнопки
+  // Иллюстрация и название соответствуют уровню точки.
   function build(k, lvl, nocap) {
     lvl = Math.max(1, Math.min(3, lvl || 1));
-    const PH = G.DATA.PHOTOS || {}, F = (lvl > 1 && PH['b-' + k + lvl]) || PH['b-' + k];
-    if (F) { const nm = (G.DATA.BUILDS[k] || {}).name || k; return '<figure class="photo bph l' + lvl + '"><img src="' + F.src + '" alt="' + xesc(nm) + '" loading="lazy" decoding="async"' + (F.pos ? ' style="object-position:' + F.pos + '"' : '') + '>' + (!nocap && F.url ? '<figcaption><a href="' + xesc(F.url) + '" target="_blank" rel="noopener noreferrer">Фото: ' + xesc(F.author) + ', ' + xesc(F.license) + '</a></figcaption>' : '') + '</figure>'; }
+    const PH = G.DATA.PHOTOS || {}, F = PH['b-' + k + (lvl > 1 ? lvl : '')];
+    const name = G.DATA.BUILDS[k]?.lv[lvl - 1] || k;
+    if (F) { return '<figure class="photo bph l' + lvl + '"><img src="' + F.src + '" alt="' + xesc(name) + '" loading="lazy" decoding="async"' + (F.pos ? ' style="object-position:' + F.pos + '"' : '') + '>' + (!nocap && F.url ? '<figcaption><a href="' + xesc(F.url) + '" target="_blank" rel="noopener noreferrer">Фото: ' + xesc(F.author) + ', ' + xesc(F.license) + '</a></figcaption>' : '') + '</figure>'; }
     const key = k + lvl; if (cache[key]) return cache[key];
-    const B = (G.DATA.BUILDS[k] || {}).name || k, fn = BUILD[k];
+    const fn = BUILD[k];
     const body = fn ? fn(lvl) : '';
-    return (cache[key] = svg('0 0 120 72', scene(hash(k) + lvl * 13, body, lvl), B + ', уровень ' + LVL[lvl], 'bld'));
+    return (cache[key] = svg('0 0 120 72', scene(hash(k) + lvl * 13, body, lvl), name + ', уровень ' + LVL[lvl], 'bld'));
   }
 
   // ---------- портреты ----------
