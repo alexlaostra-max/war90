@@ -628,9 +628,9 @@
   const ENDINGS = ['Хозяин Москвы', 'Губернатор', 'Сенатор', 'Олигарх', 'Беглец', 'Смотрящий', 'Авторитетный предприниматель', 'Тихий пенсионер', 'Вынесли из Москвы', 'СИЗО «Лефортово»', 'Убит на стрелке', 'Казначей в бегах с общаком', 'Москва досталась другому'];
   // Сценарии старта: дата, сколько районов и сил у игрока и ботов
   const SCENARIOS = {
-    s91: { name: 'Декабрь 1991', desc: 'Один район, восемь пацанов, вся эпоха впереди' },
-    s95: { name: 'Январь 1995', desc: 'Три района, 22 бойца, 250К $. Боты тоже подросли', turn: 37, extra: 2, money: 250, men: 22, guns: 20, cars: 4, rep: 30, botExtra: 2, botMen: 14 },
-    s00: { name: 'Январь 2000', desc: 'Шесть районов, 40 бойцов, 900К $ и новая жёсткая власть', turn: 97, extra: 5, money: 900, men: 40, guns: 40, cars: 8, rep: 45, botExtra: 4, botMen: 26 }
+    s91: { name: 'Декабрь 1991', desc: '1 район · 8 бойцов' },
+    s95: { name: 'Январь 1995', desc: '3 района · 22 бойца · 250К $ · боты сильнее', turn: 37, extra: 2, money: 250, men: 22, guns: 20, cars: 4, rep: 30, botExtra: 2, botMen: 14 },
+    s00: { name: 'Январь 2000', desc: '6 районов · 40 бойцов · 900К $ · жёсткая власть', turn: 97, extra: 5, money: 900, men: 40, guns: 40, cars: 8, rep: 45, botExtra: 4, botMen: 26 }
   };
 
   G.DATA = { FACES, ELITE, JOBS, ACH, ENDINGS, SCENARIOS, STATUS, QUESTS, PHOTOS, RULERS, TRAITS, FX_CAP, POSTS, NAMES, SURNAMES, NICKS, BIOS, OKRUGS, DISTRICTS, FACTIONS, BUILDS, OFFICIALS, OFFICIAL_MAX, LAW, PROJECTS, ARMS, VEST, CARS, LEGENDS };

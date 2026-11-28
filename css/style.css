@@ -1308,3 +1308,238 @@ input[type=checkbox], input[type=radio] { accent-color: #a54e56; }
   .seg button { padding: 8px; min-height: 38px; }
   .node.boss { min-height: 210px; }
 }
+
+/* Короткие правила и раскрываемые пояснения. */
+.home-help { margin-top: 12px; font-size: 13px; color: var(--dim); }
+summary { cursor: pointer; color: var(--gold); }
+summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.tip > summary { font-weight: 700; font-size: 14px; }
+.tip[open] > summary, .rules[open] > summary { margin-bottom: 10px; }
+.brief { margin: 8px 0; padding-left: 18px; }
+.brief li { margin-bottom: 5px; }
+.quest-help { margin-top: 6px; font-size: 12px; }
+.rule-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin: 12px 0; }
+.rule-metrics > span { display: flex; flex-direction: column; gap: 4px; padding: 10px; background: var(--raise); border-left: 3px solid var(--gold); font-size: 12px; }
+.rule-metrics b { font: 22px var(--mono); color: var(--gold); }
+
+/* На телефоне меню занимает один экран, настройки и портреты стоят рядом. */
+@media (orientation: landscape) and (max-height: 600px) {
+  .sheet.home { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); grid-template-rows: auto 1fr; gap: 12px 24px; padding: max(12px, var(--safe-top, 0px)) max(20px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
+  .sheet.home > * { max-width: none; min-width: 0; }
+  .sheet.home .start-heading { grid-column: 1; align-self: end; padding-top: 12px; }
+  .sheet.home h1 { font-size: clamp(30px, 5.6vw, 52px); margin: 12px 0 0; }
+  .sheet.home .eyebrow { font-size: 10px; padding-bottom: 8px; }
+  .sheet.home .home-copy { grid-column: 1; align-self: start; }
+  .sheet.home .lead { font-size: 17px; margin-top: 0; }
+  .sheet.home .intro { max-width: none; font-size: 12px; }
+  .sheet.home .home-actions { grid-column: 2; grid-row: 1 / 3; display: grid; grid-template-columns: 1fr auto; align-content: center; gap: 8px; }
+  .home-actions > .modepick, .home-actions > .acct, .home-actions > .btn.wide { grid-column: 1 / -1; }
+  .sheet.home .modepick { margin: 0; gap: 8px; }
+  .sheet.home .modebtn { padding: 8px 12px; min-height: 56px; }
+  .sheet.home .modebtn b { font-size: 16px; }
+  .sheet.home .modebtn span { font-size: 12px; }
+  .sheet.home .modebtn em { font-size: 10px; margin: 0; }
+  .sheet.home .acct { margin: 0; padding: 6px 8px; }
+  .sheet.home .acct .btn { min-height: 36px; }
+  .sheet.home .home-actions > .btn.wide { margin: 0; min-height: 44px; font-size: 12px; }
+  .sheet.home .home-actions > .btn.ghost { min-height: 36px; padding: 6px; font-size: 11px; }
+  .sheet.home .home-help { margin: 0; align-self: center; font-size: 11px; max-width: 112px; }
+  .sheet.home .home-help[open] { grid-column: 1 / -1; max-width: none; }
+  .sheet.setup { display: grid; position: relative; grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 8px 16px; width: 100%; height: 100dvh; padding: max(12px, var(--safe-top, 0px)) max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .sheet.setup .start-heading { grid-column: 1; }
+  .sheet.setup .start-heading h1 { font-size: 24px; margin: 4px 0 0; }
+  .sheet.setup .eyebrow { margin: 0; font-size: 9px; }
+  .sheet.setup > .back { position: absolute; top: 10px; right: 16px; margin: 0; min-height: 32px; padding: 5px 9px; }
+  .setup-options { grid-column: 1; grid-row: 2; min-height: 0; }
+  .setup-options h2 { font-size: 16px; }
+  .setup-options .seg { margin: 6px 0 0; padding: 2px; }
+  .setup-options .seg > span { flex-basis: 100%; padding: 3px 4px; font-size: 9px; }
+  .setup-options .seg button { padding: 6px 4px; min-height: 36px; font-size: 11px; }
+  .setup-options .seg small { margin: 0; padding: 4px; font-size: 10px; line-height: 1.25; }
+  .setup-options > .btn { font-size: 11px; min-height: 40px; padding: 6px; margin-top: 6px; }
+  .faction-picker { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; min-height: 0; padding-top: 2px; }
+  .faction-picker h3 { margin: 0 80px 8px 0; font-size: 14px; min-height: 26px; }
+  .faction-picker > .muted { display: none; }
+  .faction-picker .factions { flex: 1; min-height: 0; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+  .factions.f5 .faction-card { height: auto; min-height: 0; }
+  .faction-caption { padding: 28px 4px 4px; }
+  .faction-caption > span { display: none; }
+  .faction-select { min-height: 44px; padding: 4px; font-size: 11px; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
+  #org { padding: 8px; }
+  .node.boss { min-height: 80px; padding: 16px 10px 8px; width: 100%; }
+  .node.boss .bossdate { display: none; }
+  .node.boss .bossline { font-size: 10px; }
+  .tier.units { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  .unit { width: auto; min-height: 60px; padding: 6px; gap: 3px; flex-direction: column; }
+  .unit .ico { width: 18px; height: 18px; }
+  .unit .role { font-size: 8px; letter-spacing: 0; }
+  .unit b { font-size: 11px; white-space: normal; }
+  .unit small { display: none; }
+  .tlabel { margin: 6px 0 4px; }
+  .cnode:not(.vacant) { min-height: 110px; padding: 50px 6px 6px; }
+  .cnode.vacant { padding: 6px 2px; }
+  .cnode.vacant .ava { display: none; }
+  .cnode b { font-size: 11px; }
+  .ctier { grid-template-columns: repeat(auto-fit, minmax(75px, 1fr)); gap: 5px; }
+  .dhero { min-height: 140px; padding: 60px 10px 10px; }
+  .dhero h2 { font-size: 17px; }
+  .district-photo { height: 65px; }
+  .quest { padding: 8px; margin-bottom: 10px; }
+  .quest .qhead small { display: none; }
+  .quest .qhead .ava { width: 32px; height: 32px; }
+  .quest .row { gap: 4px; }
+  .quest .row .btn { min-height: 36px; padding: 5px 6px; font-size: 10px; }
+  .tip { padding: 8px 10px; margin-bottom: 10px; }
+  #app input:not([type=range]), #modal input:not([type=range]), #app select, #modal select { font-size: 16px; }
+  .sheet.event-choice { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 12px; width: 100%; max-width: 1000px; height: 100%; padding: 12px; }
+  .event-copy { min-height: 0; overflow-y: auto; }
+  .event-copy .evscene { height: 75px; margin: -12px -12px 8px; }
+  .event-copy h2 { font-size: 19px; }
+  .event-copy .lead { font-size: 13px; line-height: 1.35; }
+  .event-copy .eyebrow { font-size: 10px; }
+  .event-actions { min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+  .event-actions .opts { display: grid; grid-auto-rows: minmax(44px, auto); gap: 5px; margin: auto 0; }
+  .event-actions .opt { padding: 7px 8px; font-size: 12px; }
+  .event-actions .opt span { min-width: 0; flex: 1 1 65%; }
+  .event-actions .voicerow { margin: 0; }
+  .event-actions .voicebtn { min-height: 28px; padding: 4px 8px; font-size: 10px; }
+}
+@media (orientation: landscape) and (max-width: 650px) {
+  .sheet.setup { grid-template-columns: 180px minmax(0, 1fr); gap: 8px; padding-inline: max(10px, env(safe-area-inset-left)); }
+  .sheet.home { column-gap: 16px; padding-inline: max(12px, env(safe-area-inset-left)); }
+  .sheet.home .modebtn span { display: none; }
+}
+.online-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.online-create > .rules { margin-top: 8px; font-size: 12px; }
+@media (orientation: landscape) and (max-height: 600px) {
+  .sheet.online { display: flex; position: relative; flex-direction: column; width: 100%; height: 100dvh; padding: max(10px, var(--safe-top, 0px)) max(16px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .sheet.online .start-heading { display: flex; gap: 12px; align-items: baseline; padding-right: 80px; }
+  .sheet.online .start-heading h1 { font-size: 20px; margin: 0; }
+  .sheet.online > h2 { font-size: 16px; margin: 4px 0 8px; }
+  .sheet.online > .back { position: absolute; right: 16px; top: 10px; margin: 0; min-height: 32px; padding: 5px 9px; }
+  .sheet.online #online { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .online-create, .online-social { min-width: 0; min-height: 0; overflow-y: auto; }
+  .online-fields { gap: 8px; }
+  .online-fields .field { margin: 0; font-size: 11px; }
+  .online-create .seg { margin-top: 6px; }
+  .online-create .seg > span { min-width: 65px; padding: 4px; font-size: 9px; }
+  .online-create .seg button { padding: 5px; font-size: 11px; min-height: 36px; }
+  .online-create .seg small { padding: 4px; margin: 0; font-size: 10px; }
+  .online-create > .btn { margin-top: 6px; min-height: 40px; }
+  .online-social > h3 { margin-top: 0; font-size: 13px; }
+  .online-social .gchat { margin-top: 8px; padding: 8px; }
+  .online-social .gchat .chatlog { max-height: 70px; }
+  .online-social .gchat .chatin .btn { padding: 6px; font-size: 11px; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  #modal { padding: 8px; }
+  .setup-options .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .setup-options .seg > span, .setup-options .seg small { grid-column: 1 / -1; }
+  .setup-options .seg button { padding-inline: 2px; }
+  .tlabel { padding: 6px 0 4px; margin: 0; }
+  .tlabel::before { display: none; }
+  .node.boss { min-height: 64px; padding: 6px; }
+  .event-actions .opt em { font-size: 10px; }
+  .sheet.online .start-heading { display: none; }
+  .sheet.online > h2 { margin: 0 80px 8px 0; min-height: 28px; }
+  .online-create .seg { display: grid; grid-template-columns: 55px repeat(3, minmax(0, 1fr)); padding: 2px; }
+  .online-create .seg > span { min-width: 0; }
+  .online-create .seg small { grid-column: 1 / -1; line-height: 1.15; padding: 3px; }
+  .online-create .seg button { min-width: 0; padding: 4px 2px; }
+  .online-create > .rules { margin-top: 4px; font-size: 11px; }
+}
+@media (orientation: landscape) and (max-height: 340px) {
+  .event-actions .opts { grid-auto-rows: minmax(40px, auto); gap: 4px; }
+  .event-actions .opt { padding: 5px 6px; }
+  .event-actions .voicerow .btn { min-height: 24px; padding: 3px 6px; }
+  .online-create > .btn { min-height: 36px; margin-top: 4px; }
+}
+.cash-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.cash-overview > div { min-width: 0; padding: 8px 10px; background: var(--raise); border-bottom: 1px solid var(--line); }
+.cash-overview dt { font-size: 11px; }
+.cash-overview dd { margin-top: 3px; font: 17px var(--mono); overflow-wrap: anywhere; }
+.cash-overview dd .muted { display: block; font: 10px var(--body); }
+#pane .cash-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (orientation: landscape) and (max-height: 600px) {
+  #page { padding: 12px; }
+  #page .inner > h2 { padding-bottom: 8px; margin-bottom: 8px; }
+  .cash-overview { gap: 5px; }
+  .cash-overview > div { padding: 5px 8px; }
+  .cash-overview dt { font-size: 10px; }
+  .cash-overview dd { font-size: 14px; }
+  .exchange-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 14px; align-items: start; }
+  .exchange-display .fx { margin: 0 0 6px; }
+  .exchange-display .fxw { padding: 6px; }
+  .exchange-display .fxw b { font-size: 18px; }
+  .exchange-display .fxw small { font-size: 10px; }
+  .exchange-display .booth { margin: 0; padding: 8px; }
+  .exchange-display .bsign { margin-bottom: 4px; }
+  .exchange-display .bsign b { font-size: 15px; }
+  .exchange-display .bsign small { display: none; }
+  .exchange-display .led { font-size: 22px; }
+  .exchange-display .bpaper { margin-top: 4px; padding: 4px; font-size: 10px; }
+  .exchange-display .bmove { margin: 4px 0 0; }
+  .exchange-actions .fxdir { margin-top: 0; }
+  .exchange-actions .fxcalc { padding: 6px; margin: 6px 0; }
+  .exchange-actions .fxcalc b { font-size: 14px; }
+  .exchange-actions .btn.wide { min-height: 40px; margin-top: 6px; font-size: 12px; }
+  .exchange-actions .usdwhy { padding: 6px 8px; margin-top: 6px; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  .faction-select { font-family: var(--body); font-weight: 700; text-wrap: balance; }
+  .online-social > .rules { font-size: 11px; margin-bottom: 6px; }
+}
+.cash-heading { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--gold); padding-bottom: 8px; margin-bottom: 8px; }
+@media (orientation: landscape) and (max-height: 340px) {
+  .sheet.setup { padding-top: max(8px, var(--safe-top, 0px)); padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .sheet.setup .start-heading h1 { font-size: 20px; }
+  .setup-options > .btn { min-height: 36px; margin-top: 4px; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  .exchange-actions .fxcalc span { font-size: 10px; }
+  .exchange-actions .fxcalc small { font-size: 10px; }
+  .exchange-display .fxw small { display: none; }
+}
+#app button, #modal button { overflow-wrap: normal; word-break: normal; hyphens: none; text-wrap: balance; }
+.faction-select, .seg button { white-space: nowrap; }
+@media (orientation: landscape) and (max-height: 340px) {
+  .setup-options .seg small { padding: 3px; line-height: 1.1; }
+}
+#modal .opt { flex-direction: column; }
+#modal .opt > span { flex: none; width: 100%; }
+.market-note { padding: 6px 10px; font-size: 12px; }
+@media (orientation: landscape) and (max-height: 600px) {
+  .exchange-display > h2 { font-size: 18px; line-height: 1.15; padding-bottom: 4px; margin: 0 0 6px; border-bottom: 1px solid var(--gold); }
+  .exchange-display > .sub { font-size: 11px; line-height: 1.2; margin: 4px 0 8px; }
+  .exchange-display .fxw { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 5px; }
+  .exchange-display .fxw > span { font-size: 9px; }
+  .exchange-display .bsign { padding: 4px; border-bottom-width: 2px; }
+  .exchange-display .bsign b { font-size: 13px; }
+  .exchange-display .bboard { padding: 4px; margin: 4px 0 0; }
+  .exchange-display .brow.bh span { font-size: 9px; letter-spacing: 0; }
+  .exchange-display .led { font-size: 18px; }
+  .exchange-display .bcur { font-size: 12px; gap: 4px; }
+  .exchange-display .market-note { padding: 4px 0 0; font-size: 10px; }
+}
+@media (orientation: landscape) and (max-height: 340px) {
+  #app { padding-block: 4px; gap: 4px; }
+  #top { min-height: 40px; padding-bottom: 4px; }
+  #stats .st b { font-size: 12px; white-space: nowrap; }
+  #stats .st span { font-size: 8px; }
+  #menu button { padding: 6px 8px; font-size: 11px; }
+  #music, #mnext, #sfx, #end { min-height: 32px; }
+}
+#modal .faction-select, #modal .seg button, #app .seg button { white-space: nowrap; text-wrap: nowrap; }
+#app button, #modal button { align-items: center; justify-content: center; }
+@media (orientation: landscape) and (max-width: 650px) and (max-height: 600px) {
+  .faction-picker .factions { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); }
+}
+@media (orientation: landscape) and (max-height: 340px) {
+  .exchange-actions .fxdir { margin-bottom: 4px; }
+  .exchange-actions .seg button { min-height: 32px; padding: 5px; }
+  .exchange-actions .fxslide input[type=range] { height: 24px; margin-block: 0; }
+  .exchange-actions .fxticks { font-size: 11px; line-height: 1.2; }
+  .exchange-actions .fxcalc { padding: 4px 6px; margin: 4px 0; }
+  .exchange-actions .fxcalc span { line-height: 1.1; }
+  .exchange-actions .btn.wide { min-height: 36px; padding: 6px; margin-top: 4px; }
+}
