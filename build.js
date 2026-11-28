@@ -3,24 +3,24 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const rd = f => fs.readFileSync(path.join(__dirname, f), 'utf8');
 const JS = ['data', 'events', 'geo', 'engine', 'art', 'net', 'music', 'sfx', 'ui'];
-const FONTS = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans:wght@400;700&family=Russo+One&display=swap">';
-const PWA = '<link rel="manifest" href="manifest.webmanifest">\n<meta name="theme-color" content="#15121a">\n<link rel="icon" href="icons/icon-192.png">\n<link rel="apple-touch-icon" href="icons/apple-180.png">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="Передел">';
+const PWA = '<link rel="manifest" href="manifest.webmanifest">\n<meta name="theme-color" content="#141311">\n<link rel="icon" href="icons/icon-192.png">\n<link rel="apple-touch-icon" href="icons/apple-180.png">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="Передел">';
 // Telegram Mini App: скрипт Телеграма грузится, только если игру открыли из Телеграма
 const TG = '<script>if (/tgWebApp/.test(location.hash + location.search)) document.write(\'<script src="https://telegram.org/js/telegram-web-app.js"><\\/script>\');</script>';
 const SW_REG = '<script>if (\'serviceWorker\' in navigator && location.protocol === \'https:\') navigator.serviceWorker.register(\'sw.js\');</script>';
 const body = rd('src/body.html');
+const artifactCSS = rd('css/style.css').replace(/\.\.\/(img\/[\w.-]+\.png|fonts\/[\w.-]+\.ttf)/g, (_, file) => 'data:' + (file.endsWith('.ttf') ? 'font/ttf' : 'image/png') + ';base64,' + fs.readFileSync(path.join(__dirname, file)).toString('base64'));
 // версия игры: хэш кода и стилей. Сервер сравнивает её с открытой у игрока и просит переподключиться после обновления
 const appVer = crypto.createHash('sha1').update(body).update(rd('css/style.css')).update(JS.map(f => rd('js/' + f + '.js')).join('')).digest('hex').slice(0, 10);
 
 fs.writeFileSync(path.join(__dirname, 'index.html'),
-  '<!doctype html>\n<html lang="ru">\n<head>\n<meta charset="utf-8">\n<meta name="app-ver" content="' + appVer + '">\n<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">\n<title>Передел</title>\n' + PWA + '\n' + TG + '\n' + FONTS +
+  '<!doctype html>\n<html lang="ru">\n<head>\n<meta charset="utf-8">\n<meta name="app-ver" content="' + appVer + '">\n<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">\n<title>Передел</title>\n' + PWA + '\n' + TG + '\n' +
   '\n<link rel="stylesheet" href="css/style.css?v=' + appVer + '">\n<style>body{margin:0}[hidden]{display:none!important}</style>\n</head>\n<body>\n' + body +
   JS.map(f => '<script src="js/' + f + '.js?v=' + appVer + '"></script>').join('\n') + '\n' + SW_REG + '\n</body>\n</html>\n');
 
 fs.writeFileSync(path.join(__dirname, 'manifest.webmanifest'), JSON.stringify({
   name: 'Передел', short_name: 'Передел', description: 'Стратегия про Москву 1991–2007',
-  lang: 'ru', start_url: './', scope: './', display: 'standalone', orientation: 'any',
-  background_color: '#15121a', theme_color: '#15121a',
+  lang: 'ru', start_url: './', scope: './', display: 'standalone', orientation: 'landscape',
+  background_color: '#141311', theme_color: '#141311',
   icons: [
     { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
     { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -30,8 +30,9 @@ fs.writeFileSync(path.join(__dirname, 'manifest.webmanifest'), JSON.stringify({
 
 // сервис-воркер: версия — хэш всех файлов игры, чтобы после обновления кэш сменился сам
 const files = ['index.html', 'css/style.css', 'manifest.webmanifest'].concat(JS.map(f => 'js/' + f + '.js'),
-  fs.readdirSync(path.join(__dirname, 'img')).filter(f => /\.jpg$/.test(f)).map(f => 'img/' + f),
+  fs.readdirSync(path.join(__dirname, 'img')).filter(f => /\.(jpg|png)$/.test(f)).map(f => 'img/' + f),
   fs.readdirSync(path.join(__dirname, 'icons')).filter(f => /\.png$/.test(f)).map(f => 'icons/' + f));
+files.push(...fs.readdirSync(path.join(__dirname, 'fonts')).filter(f => /\.ttf$/.test(f)).map(f => 'fonts/' + f));
 const ver = crypto.createHash('sha1'); files.forEach(f => ver.update(fs.readFileSync(path.join(__dirname, f))));
 fs.writeFileSync(path.join(__dirname, 'sw.js'), `/* Сервис-воркер «Передела»: собирается build.js. Игра работает без сети, обновления подтягиваются при следующем запуске. */
 const CACHE = 'peredel-${ver.digest('hex').slice(0, 10)}';
@@ -48,6 +49,6 @@ self.addEventListener('fetch', e => {
 
 fs.mkdirSync(path.join(__dirname, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(__dirname, 'dist/artifact.html'),
-  '<title>Передел</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n' + FONTS + '\n<style>\n' + rd('css/style.css') + '</style>\n' + body +
-  '<script>\n' + JS.map(f => rd('js/' + f + '.js')).join('\n').replace(/img\/[\w.-]+\.jpg/g, f => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, f)).toString('base64')) + '</script>\n');
+  '<!doctype html>\n<html lang="ru"><head><meta charset="utf-8"><title>Передел</title>\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n' + '\n<style>\n' + artifactCSS + '\nbody{margin:0}[hidden]{display:none!important}</style></head><body>\n' + body +
+  '<script>\n' + JS.map(f => rd('js/' + f + '.js')).join('\n').replace(/img\/[\w.-]+\.jpg/g, f => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, f)).toString('base64')) + '</script></body></html>\n');
 console.log('ok');

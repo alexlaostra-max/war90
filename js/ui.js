@@ -4,13 +4,13 @@
   const SAVE = 'war90.save.v4';
   let S = null, me = null, sel = null, section = 'gang', confirmNew = false;
   // телефон: подробности (досье, район) выезжают поверх экрана отдельной панелью
-  const mobile = () => matchMedia('(max-width: 860px)').matches;
+  const mobile = () => matchMedia('(max-width: 600px) and (orientation: portrait)').matches;
   // Telegram Mini App: на весь экран, цвета игры, «Назад» Телеграма закрывает панели, ник из профиля
   const TG_BOT = 'peredelmskbot';
   const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
   const tgUser = () => (TG && TG.initDataUnsafe && TG.initDataUnsafe.user) || null;
   if (TG) {
-    try { TG.ready(); TG.expand(); TG.setHeaderColor('#15121a'); TG.setBackgroundColor('#15121a'); if (TG.disableVerticalSwipes) TG.disableVerticalSwipes(); } catch (e) { /* старый клиент */ }
+    try { TG.ready(); TG.expand(); TG.setHeaderColor('#141311'); TG.setBackgroundColor('#141311'); if (TG.disableVerticalSwipes) TG.disableVerticalSwipes(); } catch (e) { /* старый клиент */ }
     document.documentElement.classList.add('tg');
     TG.BackButton.onClick(() => { if (sheet) { sheet = false; render(); } else if (modalKey === 'records' || modalKey === 'lawinfo') { closeModal(); if (S) render(); else showStart(); } });
   }
@@ -182,7 +182,7 @@
   // ---------- шапка ----------
   function renderTop() {
     const p = P(), inc = E.income(S, me), L = E.lawLevel(p.heat), cap = E.menCap(S, me);
-    $('#date').textContent = ''; // месяц и год — в карточке главы
+    $('#date').textContent = E.date(S.turn).label;
     // показатель шапки: значок, подпись, число, пояснение
     // нажатие ведёт туда, где этим показателем управляют
     // рубли — настоящими рублями по курсу (68М, 2,4млрд), доллары — в тыс. $
@@ -312,7 +312,7 @@
     if (sel == null) return spectating && P().over ? watchPane() : paneDist();
     const d = S.d[sel], dd = D.DISTRICTS[sel], p = P(), mine = d.o === me, c = E.conn(S, me);
     const ids = E.okrugIds(dd.ok), have = ids.filter(i => S.d[i].o === me).length;
-    let h = '<button class="btn sm ghost back" data-a="dlist">← Все мои районы · ' + E.count(S, me) + '</button><h2>' + esc(dd.name) + '</h2><p class="sub">' + D.OKRUGS[dd.ok].name + ' · у тебя ' + have + ' из ' + ids.length + '</p>' + traitChips(dd);
+    let h = '<img class="district-photo" src="img/b-kiosk2.jpg" alt="Улица Москвы девяностых"><button class="btn sm ghost back" data-a="dlist">← Все мои районы · ' + E.count(S, me) + '</button><h2>' + esc(dd.name) + '</h2><p class="sub">' + D.OKRUGS[dd.ok].name + ' · у тебя ' + have + ' из ' + ids.length + '</p>' + traitChips(dd);
     if (mine) h += tipHTML('mine');
     h += '<dl class="kv"><dt>Хозяин</dt><dd>' + (mine ? 'Ты' : d.o ? '<i class="dot" style="background:' + fd(d.o).color + '"></i>' + who(d.o) : 'Местная шпана') + '</dd><dt>Оборона</dt><dd>' + E.districtDef(S, sel) + '</dd>' + (mine ? (() => { const cp = E.crew(S, me).find(x => x.pos === 'capo' && x.ok === dd.ok); return '<dt>Бригадир</dt><dd>' + (cp ? '<button class="link" data-a="person" data-id="' + cp.id + '">' + esc(E.cname(cp)) + '</button>' : '<button class="link" data-a="slot" data-pos="capo" data-ok="' + dd.ok + '">нет, назначить</button>') + '</dd>'; })() : '') + '<dt>Дань</dt><dd>' + money(dd.inc) + ' в мес.</dd>' + (dd.m ? '<dt>Рынок</dt><dd>есть</dd>' : '') + '</dl>';
     if (dd.ent) {
@@ -963,7 +963,7 @@
     if (net && section === 'log') chatSeen();
     const un = v => v === 'log' && net && net.unread ? '<i class="unread" title="Непрочитанных: ' + net.unread + '" aria-label="Непрочитанных сообщений: ' + net.unread + '">!</i>' : '';
     const vname = v => net && v[0] === 'log' ? 'Чат' : v[1], tab = v => net && v === 'log' ? ['chat', 'Чат'] : TABS[v];
-    $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '">' + vname(v) + un(v[0]) + '</button>').join('');
+    $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + vname(v) + un(v[0]) + '</button>').join('');
     $('#tabbar').innerHTML = VIEWS.filter(v => v[0] !== 'log' || net).map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(tab(v[0])[0]) + '<span>' + tab(v[0])[1] + '</span>' + un(v[0]) + '</button>').join('');
     if (section !== 'gang' && section !== 'map') sheet = false;
     $('#main').classList.toggle('msheet', sheet);
@@ -1209,7 +1209,7 @@
   const closable = key => /^(records|lawinfo|parley:|deal:|atk:)/.test(key || '');
   function openModal(html, cls, key) {
     const x = closable(key) ? '<i class="grab mgrab" aria-hidden="true"></i><button class="xclose mclose" data-a="mclose" aria-label="Закрыть">×</button>' : '';
-    modal.innerHTML = '<div class="sheet ' + (cls || '') + (x ? ' closable' : '') + '">' + x + html + '</div>'; modal.hidden = false; modalKey = key || '';
+    modal.innerHTML = '<div class="sheet ' + (cls || '') + (x ? ' closable' : '') + '">' + x + html + '</div>'; modal.hidden = false; modalKey = key || ''; modal.dataset.screen = key || '';
   }
   function dismissModal() {
     const k = modalKey;
@@ -1239,7 +1239,7 @@
     };
     modal.addEventListener('touchend', end); modal.addEventListener('touchcancel', end);
   })();
-  function closeModal() { modal.hidden = true; modal.innerHTML = ''; modalKey = ''; }
+  function closeModal() { modal.hidden = true; modal.innerHTML = ''; modalKey = ''; delete modal.dataset.screen; }
 
   // ---------- озвучка событий: строгий мужской голос (синтез речи в браузере) ----------
   const VOICE_KEY = 'war90.voice';
@@ -1513,14 +1513,14 @@
   let startMode = null;
   function showStart() {
     const sv = load(), back = '<button class="btn sm ghost back" data-a="smode" data-k="">← Назад</button>';
-    let h = '<p class="eyebrow">Москва · декабрь 1991 — декабрь 2007</p><h1>Передел</h1>';
+    let h = '<p class="eyebrow">Москва · 1991–2007</p><h1>Передел</h1>';
     if (!startMode) {
-      h += '<p class="lead">Страны больше нет. У тебя один район и восемь пацанов. Через шестнадцать лет криминал станет частью власти. Реши, будешь ли ты среди тех, кто дожил.</p>' + acctHTML();
+      h += '<p class="lead">Город делят. Решай, что будет твоим.</p><p class="intro">Один район. Восемь пацанов. Шестнадцать лет, чтобы стать хозяином Москвы.</p>';
       if (sv) h += '<button class="btn primary wide" data-a="continue">Продолжить: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
-      h += '<div class="modepick"><button class="modebtn" data-a="smode" data-k="solo"><b>Одиночная игра</b><span>Ты против девяти бригад ботов. Работает и без интернета</span></button>' +
-        '<button class="modebtn on" data-a="smode" data-k="online"><b>Онлайн</b><span>Комнаты с живыми игроками, общий чат</span><em class="gon2" id="gonline2">' + (GC.online ? 'Сейчас в игре: ' + GC.online : '') + '</em></button></div>';
-      h += '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button><p class="muted">Ход — один месяц. В начале месяца случается событие с пятью решениями. Потом у тебя три хода: нападай на соседние районы, похищай, покупай людей во власти, веди крупный бизнес.</p>' + installHTML();
-      openModal(h, 'start', 'start');
+      h += '<div class="modepick"><button class="modebtn on" data-a="smode" data-k="solo"><b>Одиночная игра</b><span>Ты против девяти бригад ботов. Работает и без интернета</span></button>' +
+        '<button class="modebtn" data-a="smode" data-k="online"><b>Онлайн</b><span>Комнаты с живыми игроками, общий чат</span><em class="gon2" id="gonline2">' + (GC.online ? 'Сейчас в игре: ' + GC.online : '') + '</em></button></div>';
+      h += acctHTML() + '<button class="btn ghost sm" data-a="records">Рекорды и достижения</button><p class="muted">Ход — один месяц. В начале месяца случается событие с пятью решениями. Потом у тебя три хода: нападай на соседние районы, похищай, покупай людей во власти, веди крупный бизнес.</p>' + installHTML();
+      openModal(h, 'start home', 'start');
       Net.rooms().then(list => { if (list && !GC.t) gcPoll(); });
       return;
     }
@@ -1528,7 +1528,7 @@
       h += back + '<h2>Одиночная игра</h2>' + diffHTML() + scenHTML();
       if (sv) h += '<button class="btn wide" data-a="continue">Продолжить сохранённую: ' + fd(sv.humans[0]).name + ', ' + E.date(sv.turn).label + '</button>';
       h += '<h3>Выбери группировку</h3><p class="muted">Нажми — и игра начнётся. Остальных ведут боты выбранной сложности.</p><div class="factions f5">';
-      D.FACTIONS.forEach(f => { const d = D.DISTRICTS.find(x => x.name === f.home); h += '<button class="fac" data-a="start" data-k="' + f.id + '"><span class="ava">' + A.bossFace(f) + '</span><i style="background:' + f.color + '"></i><b>' + f.name + '</b><span>' + f.home + ', ' + D.OKRUGS[d.ok].short + '</span><small>' + esc(f.perk) + '</small></button>'; });
+      D.FACTIONS.forEach(f => { const d = D.DISTRICTS.find(x => x.name === f.home); h += '<article class="fac faction-card"><span class="ava">' + A.bossFace(f) + '</span><div class="faction-caption"><span>' + f.home + ' · ' + D.OKRUGS[d.ok].short + '</span><button class="btn faction-select" data-a="start" data-k="' + f.id + '">' + f.name + '</button></div></article>'; });
       openModal(h + '</div>', 'start', 'start');
       return;
     }
@@ -1686,11 +1686,11 @@
     h += '<h3>Бригады</h3><p class="muted">Займи бригаду. Свободные ведёт бот' + (L.host ? '; ты можешь убрать любую из игры.' : '; создатель комнаты может убрать любую из игры.') + '</p><div class="factions">';
     D.FACTIONS.forEach(f => {
       const pl = L.players.find(p => p.fid === f.id), mode = pl ? 'human' : L.slots[f.id], d = D.DISTRICTS.find(x => x.name === f.home);
-      h += '<div class="fac slot ' + mode + (my === f.id ? ' mine' : '') + '"><i style="background:' + f.color + '"></i><b>' + f.name + '</b><span>' + f.home + ', ' + D.OKRUGS[d.ok].short + '</span><small>' + esc(f.perk) + '</small>';
+      h += '<div class="fac slot ' + mode + (my === f.id ? ' mine' : '') + '"><span class="ava">' + A.bossFace(f) + '</span><b>' + f.name + '</b><span>' + f.home + ', ' + D.OKRUGS[d.ok].short + '</span><small>' + esc(f.perk) + '</small>';
       h += '<em>' + (pl ? 'Человек: ' + esc(pl.nick) : mode === 'off' ? 'Вне игры' : 'Бот') + '</em><div class="row">';
       if (my === f.id) h += '<button class="btn sm" data-a="pick">Освободить</button>';
       else if (!pl) {
-        h += '<button class="btn sm" data-a="pick" data-k="' + f.id + '">Занять</button>';
+        h += '<button class="btn sm" data-a="pick" data-k="' + f.id + '">' + f.name + '</button>';
         if (L.host) h += '<button class="btn sm" data-a="slot" data-k="' + f.id + '" data-m="' + (mode === 'off' ? 'bot' : 'off') + '">' + (mode === 'off' ? 'Вернуть бота' : 'Убрать') + '</button>';
       }
       h += '</div></div>';
@@ -1718,7 +1718,5 @@
     showStart();
     if (m) Net.rooms().then(l => { if (l) Net.post('join', { room: m[1], nick: savedNick() }).then(r => r.room ? enterRoom(r.room, r.token) : toast(r.err, true)); });
   }
-  const hot = window.claude && window.claude.hot;
-  if (hot && hot.snapshot) hot.snapshot(() => (net ? {} : { S, sel }));
-  if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
+  boot();
 })();

@@ -354,7 +354,7 @@ const api = {
   }
 };
 
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.jpg': 'image/jpeg', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.jpg': 'image/jpeg', '.png': 'image/png', '.ttf': 'font/ttf', '.webmanifest': 'application/manifest+json' };
 function send(res, code, obj) { const s = JSON.stringify(obj); res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(s); }
 
 const server = http.createServer((req, res) => {
@@ -404,7 +404,7 @@ const server = http.createServer((req, res) => {
   }
   // статика
   let p = url.pathname === '/' ? '/index.html' : url.pathname;
-  if (!/^\/(index\.html|sw\.js|manifest\.webmanifest|css\/[\w.-]+\.css|js\/[\w.-]+\.js|img\/[\w.-]+\.jpg|icons\/[\w.-]+\.png)$/.test(p)) { res.writeHead(404); return res.end('not found'); }
+  if (!/^\/(index\.html|sw\.js|manifest\.webmanifest|css\/[\w.-]+\.css|js\/[\w.-]+\.js|img\/[\w.-]+\.(?:jpg|png)|fonts\/[\w.-]+\.ttf|icons\/[\w.-]+\.png)$/.test(p)) { res.writeHead(404); return res.end('not found'); }
   fs.readFile(path.join(__dirname, p), (err, buf) => { if (err) { res.writeHead(404); return res.end('not found'); } res.writeHead(200, { 'Content-Type': MIME[path.extname(p)], 'Cache-Control': p.startsWith('/img/') || p.startsWith('/icons/') ? 'public, max-age=604800' : 'no-cache' }); res.end(buf); });
 });
 
