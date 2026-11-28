@@ -260,7 +260,7 @@
       const attrs = 'data-i="' + i + '" data-x="' + x + '" data-rev="' + rev + '"';
       const up = lv >= E.MAX_LVL ? '<button class="btn sm point-upgrade" disabled>Максимальный уровень</button>'
         : '<button class="btn sm primary point-upgrade' + (lock ? ' off' : '') + '" data-a="upgrade" ' + attrs + (lock ? offAttr(lock) : '') + '>' +
-          (y ? lock : 'Улучшить · ' + rubP(c)) + '</button>';
+          (y ? 'Улучшение<small>с ' + y + ' года</small>' : 'Улучшить<small>' + rubP(c) + '</small>') + '</button>';
       return '<div class="ptile"><div class="pimg">' + A.build(b, lv) + '<b class="lvb">' + ROMAN[lv] + '</b></div><div class="pinfo"><b>' + bname(b, lv) + '</b><span class="good">' + plus(inc * lv, B.usd) + ' в мес.' + (E.pointGood(b, i) ? ' · место +50%' : '') + '</span>' + kindTag(B.usd ? 'usd' : B.kind) + (B.kind === 'w' ? '<small>К отмывке +' + (2 * lv) + ' п.п.</small>' : '') + (B.perk ? '<small class="perk">' + esc(perkAt(B, lv)) + '</small>' : '') + '</div>' + up +
         '<button class="btn sm ghost point-demolish" data-a="demolishopen" data-i="' + i + '" data-x="' + x + '" data-rev="' + rev + '">Снести</button></div>';
     }).join('') + '</div>';

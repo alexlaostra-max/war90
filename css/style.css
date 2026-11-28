@@ -1416,7 +1416,8 @@ summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .wash-panel h3 { margin-top: 0; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; }
 .wash-panel p { margin-bottom: 3px; }
 .wash-panel small { color: var(--dim); }
-.point-upgrade { align-self: stretch; margin: 4px 10px; }
+.ptile .point-upgrade { align-self: stretch; justify-content: center; margin: auto 10px 4px; }
+.ptile .point-upgrade small { color: inherit; }
 .pinfo > .tag { align-self: flex-start; }
 .cash-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .cash-overview > div { min-width: 0; padding: 8px 10px; background: var(--raise); border-bottom: 1px solid var(--line); }
@@ -1721,5 +1722,5 @@ summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 #stats .st b { overflow-wrap: anywhere; }
 
 #sheethead .xclose { margin-left: auto; }
-.ptile .point-demolish { margin: auto 10px 10px; }
+.ptile .point-demolish { margin: 0 10px 10px; }
 .demolish-actions { flex-wrap: wrap; gap: 8px; }
