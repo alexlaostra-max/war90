@@ -44,7 +44,7 @@
   const rs = document.documentElement.style;
   function fitChoiceLabels() {
     const context = document.createElement('canvas').getContext('2d');
-    document.querySelectorAll('.faction-select, .seg button, #menu button, #end').forEach(button => {
+    document.querySelectorAll('.faction-select, .fac.slot .btn, .seg button, #menu button, #tabbar span, #end').forEach(button => {
       button.style.removeProperty('font-size');
       const style = getComputedStyle(button);
       context.font = style.font;
@@ -700,9 +700,9 @@
   // статус: большие разовые покупки для поздней игры
   function statusHTML() {
     let h = '<p class="sub">Разовые покупки с постоянным эффектом. Ходов не тратят.</p><div class="stgrid">';
-    D.STATUS.forEach(X => {
+    D.STATUS.forEach((X, index) => {
       const own = E.has(S, me, X.id), l = own ? null : E.statusLock(S, me, X);
-      h += '<div class="box stat' + (own ? ' own' : '') + '"><h3>' + X.name + '</h3><p class="muted">' + X.desc + '.</p><p class="good">' + X.perk + '.</p>' +
+      h += '<div class="box stat' + (own ? ' own' : '') + '"><div class="status-photo" role="img" aria-label="' + esc(X.name) + '" style="background-position:' + (index % 3 * 50) + '% ' + (Math.floor(index / 3) * 100) + '%"></div><h3>' + X.name + '</h3><p class="muted">' + X.desc + '.</p><p class="good">' + X.perk + '.</p>' +
         (own ? '<p class="owned">✓ Твоё</p>' : btn('Купить · ' + usdP(X.cost), 'status', 'data-k="' + X.id + '"', l || false, 'wide')) + '</div>';
     });
     return h + '</div>';
@@ -979,7 +979,7 @@
     const un = v => v === 'log' && net && net.unread ? '<i class="unread" title="Непрочитанных: ' + net.unread + '" aria-label="Непрочитанных сообщений: ' + net.unread + '">!</i>' : '';
     const vname = v => net && v[0] === 'log' ? 'Чат' : v[1], tab = v => net && v === 'log' ? ['chat', 'Чат'] : TABS[v];
     $('#menu').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + vname(v) + un(v[0]) + '</button>').join('');
-    $('#tabbar').innerHTML = VIEWS.filter(v => v[0] !== 'log' || net).map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(tab(v[0])[0]) + '<span>' + tab(v[0])[1] + '</span>' + un(v[0]) + '</button>').join('');
+    $('#tabbar').innerHTML = VIEWS.map(v => '<button class="' + (v[0] === section ? 'on' : '') + '" data-view="' + v[0] + '"' + (v[0] === section ? ' aria-current="page"' : '') + '>' + A.icon(tab(v[0])[0]) + '<span>' + tab(v[0])[1] + '</span>' + un(v[0]) + '</button>').join('');
     if (section !== 'gang' && section !== 'map') sheet = false;
     $('#main').classList.toggle('msheet', sheet);
     $('#sheettitle').textContent = section === 'map' ? (sel == null ? 'Мои районы' : D.DISTRICTS[sel].name) : focus && focus.view ? { boss: 'Общак', men: 'Бойцы', arms: 'Арсенал', cars: 'Гараж', estate: 'Недвижимость' }[focus.view] : 'Досье';
@@ -1315,14 +1315,14 @@
   }
   const relName = v => (v >= 50 ? 'дружба' : v >= 15 ? 'тепло' : v > -15 ? 'нейтрально' : v > -50 ? 'холодно' : 'вражда') + ' · ' + sign(v);
   const relCls = v => v >= 15 ? 'good' : v <= -15 ? 'bad' : 'muted';
-  const shpana = i => A.face({ seed: 'shpana' + i, name: 'Местная шпана', age: 22, str: 6, wit: 3, loy: 5, look: { cloth: 'tracksuit' } }, { label: 'Местная шпана' });
+  const shpana = () => '<img class="pface" src="img/portrait-local.jpg" alt="Местная шпана" decoding="async">';
   function showBattle() {
     const p = P(), B = p.battle; if (!B) return;
     const key = 'battle:' + B.round + ':' + B.i; if (modalKey === key) return;
     const dd = D.DISTRICTS[B.i], foe = B.foe && S.f[B.foe] ? fd(B.foe) : null, l = E.crew(S, me).find(c => c.st === 'ok' && ((c.pos === 'capo' && c.ok === dd.ok) || c.pos === 'right'));
     const bar = (v, v0, cls, brk) => '<div class="bbar ' + cls + '"><em style="width:' + Math.max(0, Math.min(100, v / v0 * 100)) + '%"></em>' + (brk ? '<s style="left:' + E.BREAK * 100 + '%"></s>' : '') + '</div>';
     let h = '<p class="eyebrow">' + (B.def ? 'Оборона' : E.KINDS[B.lvl]) + ' · раунд ' + (B.round + 1) + ' из ' + E.BATTLE_ROUNDS + '</p><h2>' + (B.def ? 'Отбиваемся: ' : 'Перестрелка: ') + esc(dd.name) + '</h2>';
-    h += '<div class="vs"><div><span class="ava">' + (l ? A.face(l) : A.bossFace(fd(me))) + '</span><b>' + (l ? esc(E.cname(l)) : 'Ты лично') + '</b><small>ведёт ' + B.men + ' бойцов</small>' + bar(B.a, B.a0, 'our', true) + '<small>силы ' + R(Math.max(0, B.a)) + ' из ' + R(B.a0) + '</small></div><i>×</i><div><span class="ava">' + (foe ? A.bossFace(foe) : shpana(B.i)) + '</span><b>' + (foe ? esc(foe.name) : 'Местная шпана') + '</b><small>' + (foe ? esc(foe.boss) : 'держат дворы') + '</small>' + bar(B.d, B.d0, 'their') + '<small>' + (B.def ? 'натиск ' : 'оборона ') + R(Math.max(0, B.d)) + ' из ' + R(B.d0) + '</small></div></div>';
+    h += '<div class="vs"><div><span class="ava">' + (l ? A.face(l) : A.bossFace(fd(me))) + '</span><b>' + (l ? esc(E.cname(l)) : 'Ты лично') + '</b><small>ведёт ' + B.men + ' бойцов</small>' + bar(B.a, B.a0, 'our', true) + '<small>силы ' + R(Math.max(0, B.a)) + ' из ' + R(B.a0) + '</small></div><i>×</i><div><span class="ava">' + (foe ? A.bossFace(foe) : shpana()) + '</span><b>' + (foe ? esc(foe.name) : 'Местная шпана') + '</b><small>' + (foe ? esc(foe.boss) : 'держат дворы') + '</small>' + bar(B.d, B.d0, 'their') + '<small>' + (B.def ? 'натиск ' : 'оборона ') + R(Math.max(0, B.d)) + ' из ' + R(B.d0) + '</small></div></div>';
     h += '<p class="muted">' + (B.def ? 'Отобьёмся, если их натиск упадёт до нуля или продержимся ' + E.BATTLE_ROUNDS + ' раундов. Если наших сил останется меньше черты, бойцы дрогнут и район уйдёт.' : 'Район наш, когда оборона упадёт до нуля. Если наших сил останется меньше черты, бойцы дрогнут. На всё ' + E.BATTLE_ROUNDS + ' раундов.') + '</p>';
     h += '<p class="units">Урон за раунд: наш <b>' + R(Math.max(0, B.a) * 0.32) + '</b>, их <b>' + R(Math.max(0, B.d) * 0.28) + '</b> · броня: наша <b>' + R((B.armU || 0) * 100) + '%</b>, их <b>' + R((B.armT || 0) * 100) + '%</b> · кубики 2d6: ×0.71…×1.29, ⚅⚅ — в упор ×1.5, ⚀⚀ — осечка ×0.5</p>';
     const die = n => '⚀⚁⚂⚃⚄⚅'[n - 1];
@@ -1351,7 +1351,7 @@
     atk.men = Math.max(3, Math.min(atk.men || Math.round(mx * 0.65), mx));
     const q = E.squad(p, atk.men), def = E.districtDef(S, i), odds = atkOdds(), heat = R(3 + 8 * atk.men / Math.max(1, p.men)) + (dd.ok === 'CAO' ? 2 : 0);
     let h = '<p class="eyebrow">Нападение · ' + E.date(S.turn).label + ' · 1 ход</p><h2>' + esc(dd.name) + '</h2>';
-    h += '<div class="vs"><div><span class="ava">' + A.bossFace(fd(me)) + '</span><b>Твои</b><small id="atkpow">сила отряда ' + R(q.power) + '</small></div><i>×</i><div><span class="ava">' + (foe ? A.bossFace(foe) : shpana(i)) + '</span><b>' + (foe ? esc(foe.name) : 'Местная шпана') + '</b><small>оборона ' + R(def) + '</small></div></div>';
+    h += '<div class="vs"><div><span class="ava">' + A.bossFace(fd(me)) + '</span><b>Твои</b><small id="atkpow">сила отряда ' + R(q.power) + '</small></div><i>×</i><div><span class="ava">' + (foe ? A.bossFace(foe) : shpana()) + '</span><b>' + (foe ? esc(foe.name) : 'Местная шпана') + '</b><small>оборона ' + R(def) + '</small></div></div>';
     h += '<h3>Сколько везти <span class="muted">из ' + p.men + ', в машины и своим ходом — до ' + mx + '</span></h3><div class="qty big"><input id="atkmen" type="range" min="3" max="' + mx + '" step="1" value="' + atk.men + '" aria-label="Сколько бойцов"><b id="atkn">' + atk.men + '</b></div>';
     h += '<p class="muted" id="atkkit">со стволами ' + (q.men - q.bare) + ', без ствола ' + q.bare + ', в брониках ' + q.vests + '</p>';
     h += '<h3>Как брать</h3><div class="tacts">' + Object.keys(E.ATK).map(t => { const T = E.ATK[t], l = E.atkLock(S, me, t); return '<button class="card' + (atk.t === t ? ' on' : '') + (l ? ' off' : '') + '" data-a="atktac" data-k="' + t + '"' + (l ? offAttr('Нельзя: ' + l) : '') + '><b>' + T.name + '</b><span>' + esc(T.desc) + '</span>' + (t === 'snipe' ? '<small>СВД: ' + ((p.arms || {}).svd || 0) + '</small>' : t === 'rpg' ? '<small>РПГ: ' + ((p.arms || {}).rpg || 0) + '</small>' : '') + '</button>'; }).join('') + '</div>';

@@ -8,7 +8,7 @@ const PWA = '<link rel="manifest" href="manifest.webmanifest">\n<meta name="them
 const TG = '<script>if (/tgWebApp/.test(location.hash + location.search)) document.write(\'<script src="https://telegram.org/js/telegram-web-app.js"><\\/script>\');</script>';
 const SW_REG = '<script>if (\'serviceWorker\' in navigator && location.protocol === \'https:\') navigator.serviceWorker.register(\'sw.js\');</script>';
 const body = rd('src/body.html');
-const artifactCSS = rd('css/style.css').replace(/\.\.\/(img\/[\w.-]+\.png|fonts\/[\w.-]+\.ttf)/g, (_, file) => 'data:' + (file.endsWith('.ttf') ? 'font/ttf' : 'image/png') + ';base64,' + fs.readFileSync(path.join(__dirname, file)).toString('base64'));
+const artifactCSS = rd('css/style.css').replace(/\.\.\/(img\/[\w.-]+\.(?:jpg|png)|fonts\/[\w.-]+\.ttf)/g, (_, file) => 'data:' + (file.endsWith('.ttf') ? 'font/ttf' : file.endsWith('.jpg') ? 'image/jpeg' : 'image/png') + ';base64,' + fs.readFileSync(path.join(__dirname, file)).toString('base64'));
 // версия игры: хэш кода и стилей. Сервер сравнивает её с открытой у игрока и просит переподключиться после обновления
 const appVer = crypto.createHash('sha1').update(body).update(rd('css/style.css')).update(JS.map(f => rd('js/' + f + '.js')).join('')).digest('hex').slice(0, 10);
 
@@ -19,7 +19,7 @@ fs.writeFileSync(path.join(__dirname, 'index.html'),
 
 fs.writeFileSync(path.join(__dirname, 'manifest.webmanifest'), JSON.stringify({
   name: 'Передел', short_name: 'Передел', description: 'Стратегия про Москву 1991–2007',
-  lang: 'ru', start_url: './', scope: './', display: 'standalone', orientation: 'landscape',
+  lang: 'ru', start_url: './', scope: './', display: 'standalone', orientation: 'any',
   background_color: '#141311', theme_color: '#141311',
   icons: [
     { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -50,5 +50,5 @@ self.addEventListener('fetch', e => {
 fs.mkdirSync(path.join(__dirname, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(__dirname, 'dist/artifact.html'),
   '<!doctype html>\n<html lang="ru"><head><meta charset="utf-8"><title>Передел</title>\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n' + '\n<style>\n' + artifactCSS + '\nbody{margin:0}[hidden]{display:none!important}</style></head><body>\n' + body +
-  '<script>\n' + JS.map(f => rd('js/' + f + '.js')).join('\n').replace(/img\/[\w.-]+\.jpg/g, f => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, f)).toString('base64')) + '</script></body></html>\n');
+  '<script>\n' + JS.map(f => rd('js/' + f + '.js')).join('\n').replace(/img\/[\w.-]+\.(?:jpg|png)/g, f => 'data:' + (f.endsWith('.png') ? 'image/png' : 'image/jpeg') + ';base64,' + fs.readFileSync(path.join(__dirname, f)).toString('base64')) + '</script></body></html>\n');
 console.log('ok');
