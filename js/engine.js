@@ -174,6 +174,8 @@
     owned(S, fid).forEach(i => S.d[i].b.forEach((b, x) => { const r = (D.BUILDS[b].rec || 0) * pointLvl(S.d[i], x); if (b === 'gym') gyms += r; else other += r; }));
     rows.push(['Спортзалы', gyms], ['Другие точки', other], ['Районы', Math.floor(n / 3)], ['Авторитет', Math.floor(S.f[fid].rep / 20)]);
     if (fid === 'oreh') rows.push(['Ореховские качалки', 2]);
+    const recruiter = post(S, fid, 'recruiter');
+    if (recruiter) rows.push([D.POSTS.recruiter.name, Math.floor(recruiter.wit / 3)]);
     return { rows, total: rows.reduce((s, r) => s + r[1], 0) };
   }
   const pool = (S, fid) => S.f[fid].pool == null ? inflow(S, fid).total : S.f[fid].pool;
@@ -969,7 +971,11 @@
     return { ok: true, msg: 'Куплено: ' + X.name + '. ' + X.perk };
   }
   // машины ломаются: сломанная не возит бойцов, пока её не починят; автосервисы берегут парк
-  const repairCost = (S, fid, k) => Math.max(2, Math.round(D.CARS[k].price * 0.3 * (1 - fxp(S, fid, 'car')) * priceK(S, fid)));
+  const repairCost = (S, fid, k) => {
+    const mechanic = post(S, fid, 'mechanic');
+    const discount = mechanic ? mechanic.wit * 0.02 : 0;
+    return Math.max(2, Math.round(D.CARS[k].price * 0.3 * (1 - fxp(S, fid, 'car')) * (1 - discount) * priceK(S, fid)));
+  };
   // продают дешевле, чем покупают, с учётом скидок автосервисов: перепродажа никогда не в плюс
   const carSale = (S, fid, k, broken) => Math.max(1, Math.floor(carCost(S, fid, k) * (broken ? 0.15 : 0.5)));
   function carWear(S, fid) {
@@ -1785,7 +1791,7 @@
     const n = Math.min(pool(S, fid), menCap(S, fid) - p.men, Math.floor(p.money * 0.3 / Math.max(1, recruitPrice(S, fid)))); if (n > 0) recruit(S, fid, n);
     const bare = p.men - p.guns; if (bare > 0) buyGuns(S, fid, 'pm', Math.min(bare, Math.floor(p.money * 0.2 / Math.max(1, gunPrice(S, fid)))));
     const bench = () => crew(S, fid).filter(c => !c.pos && c.st === 'ok');
-    ['right', 'treas', 'cons', 'lawyer'].forEach(pos => { if (post(S, fid, pos)) return; const b = bench().filter(c => c.loy > 3).sort((x, y) => (pos === 'right' ? y.str - x.str : y.wit - x.wit))[0]; if (b) assign(S, fid, b.id, pos); });
+    ['right', 'treas', 'cons', 'lawyer', 'recruiter', 'mechanic'].forEach(pos => { if (post(S, fid, pos)) return; const b = bench().filter(c => c.loy > 3).sort((x, y) => (pos === 'right' ? y.str - x.str : y.wit - x.wit))[0]; if (b) assign(S, fid, b.id, pos); });
     Object.keys(D.OKRUGS).forEach(ok => { if (capoOf(S, fid, ok) || !owned(S, fid).some(i => D.DISTRICTS[i].ok === ok)) return; const b = bench().sort((x, y) => y.str - x.str)[0]; if (b) assign(S, fid, b.id, 'capo', ok); });
     { const r = cur(p).rub; if (r > 5 && inflation(S) > 0.02) exchange(S, fid, 'buy', r); }
     const own = owned(S, fid), bi = own.length ? bestInvest(S, fid, own, Math.floor(p.money * 0.35), 0) : null;

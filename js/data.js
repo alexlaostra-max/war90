@@ -144,11 +144,31 @@
 
   function hash(s) { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973; return h; }
 
+  // Иллюстрации по игровым ID, в том же порядке, что RAW.
+  const DISTRICT_IMAGES = [
+    'img/district-000.jpg', 'img/district-001.jpg', 'img/district-002.jpg', 'img/district-003.jpg', 'img/district-004.jpg', 'img/district-005.jpg',
+    'img/district-006.jpg', 'img/district-007.jpg', 'img/district-008.jpg', 'img/district-009.jpg', 'img/district-010.jpg', 'img/district-011.jpg',
+    'img/district-012.jpg', 'img/district-013.jpg', 'img/district-014.jpg', 'img/district-015.jpg', 'img/district-016.jpg', 'img/district-017.jpg',
+    'img/district-018.jpg', 'img/district-019.jpg', 'img/district-020.jpg', 'img/district-021.jpg', 'img/district-022.jpg', 'img/district-023.jpg',
+    'img/district-024.jpg', 'img/district-025.jpg', 'img/district-026.jpg', 'img/district-027.jpg', 'img/district-028.jpg', 'img/district-029.jpg',
+    'img/district-030.jpg', 'img/district-031.jpg', 'img/district-032.jpg', 'img/district-033.jpg', 'img/district-034.jpg', 'img/district-035.jpg',
+    'img/district-036.jpg', 'img/district-037.jpg', 'img/district-038.jpg', 'img/district-039.jpg', 'img/district-040.jpg', 'img/district-041.jpg',
+    'img/district-042.jpg', 'img/district-043.jpg', 'img/district-044.jpg', 'img/district-045.jpg', 'img/district-046.jpg', 'img/district-047.jpg',
+    'img/district-048.jpg', 'img/district-049.jpg', 'img/district-050.jpg', 'img/district-051.jpg', 'img/district-052.jpg', 'img/district-053.jpg',
+    'img/district-054.jpg', 'img/district-055.jpg', 'img/district-056.jpg', 'img/district-057.jpg', 'img/district-058.jpg', 'img/district-059.jpg',
+    'img/district-060.jpg', 'img/district-061.jpg', 'img/district-062.jpg', 'img/district-063.jpg', 'img/district-064.jpg', 'img/district-065.jpg',
+    'img/district-066.jpg', 'img/district-067.jpg', 'img/district-068.jpg', 'img/district-069.jpg', 'img/district-070.jpg', 'img/district-071.jpg',
+    'img/district-072.jpg', 'img/district-073.jpg', 'img/district-074.jpg', 'img/district-075.jpg', 'img/district-076.jpg', 'img/district-077.jpg',
+    'img/district-078.jpg', 'img/district-079.jpg', 'img/district-080.jpg', 'img/district-081.jpg', 'img/district-082.jpg', 'img/district-083.jpg',
+    'img/district-084.jpg', 'img/district-085.jpg', 'img/district-086.jpg', 'img/district-087.jpg', 'img/district-088.jpg', 'img/district-089.jpg',
+    'img/district-090.jpg', 'img/district-091.jpg', 'img/district-092.jpg', 'img/district-093.jpg', 'img/district-094.jpg', 'img/district-095.jpg',
+    'img/district-096.jpg', 'img/district-097.jpg', 'img/district-098.jpg', 'img/district-099.jpg', 'img/district-100.jpg', 'img/district-101.jpg'
+  ];
   const DISTRICTS = RAW.map((r, i) => {
     const center = r[1] === 'CAO';
     const e = ENT[r[0]];
     return {
-      id: i, name: r[0], ok: r[1], lat: r[2], lon: r[3], m: !!r[4], t: (DT[r[0]] || 'sleep').split(' '),
+      id: i, name: r[0], image: DISTRICT_IMAGES[i], ok: r[1], lat: r[2], lon: r[3], m: !!r[4], t: (DT[r[0]] || 'sleep').split(' '),
       inc: (center ? 7 : 3) + hash(r[0]) % 3,
       slots: center ? 5 : 4,
       ent: e ? { name: e[0], men: e[1], conn: e[2], cost: e[3], inc: e[4] } : null
@@ -219,6 +239,8 @@
     cons: { name: 'Советник', alt: 'консильери', one: true, desc: 'Ум: +3% к переговорам и стрелкам, взятки наверх дешевле на 3% за единицу' },
     treas: { name: 'Казначей', alt: 'держит общак', one: true, desc: 'Ум: +2% к доходу за единицу. Неверный казначей подворовывает' },
     lawyer: { name: 'Юрист', alt: 'адвокат бригады', one: true, desc: 'Ум: задержанных отпускают на 3% чаще, сроки короче на 4%, при обысках изымают на 5% меньше за единицу. Неверный юрист (верность 3 и ниже) сливает дела следствию: розыск +2 в месяц' },
+    recruiter: { name: 'Вербовщик', alt: 'пополняет бригаду', one: true, desc: 'К началу месяца приводит одного новобранца за каждые 3 единицы ума' },
+    mechanic: { name: 'Механик', alt: 'отвечает за гараж', one: true, desc: 'Ремонт машин дешевле на 2% за единицу ума. Минимальная цена сохраняется' },
     capo: { name: 'Бригадир', alt: 'капо', desc: 'Держит округ. Сила: оборона районов округа +2, дань +5%, нападения в округе +3% за единицу' },
     watch: { name: 'Смотрящий', alt: 'держит один район', desc: 'Сила: оборона района +3 и дань +3% за единицу. Ум: доход точек района +4% за единицу. Ненадёжный (верность 3 и ниже) утаивает половину дани' }
   };
@@ -360,8 +382,7 @@
     ]
   };
 
-  // Фото снаряжения, машин и зданий с Викисклада (свободные лицензии). Обрезаны и тонированы под игру; список авторов — img/CREDITS.md
-  const W = 'https://commons.wikimedia.org/wiki/File:';
+  // Иллюстрации снаряжения, машин и зданий. Источники указаны в img/CREDITS.md.
   const PHOTOS = {
     // сгенерировано нейросетью (Gemini 2.5 Flash Image через OpenRouter) вместо фото с Викисклада
     'b-bordel3': { src: 'img/b-bordel3.jpg' },
@@ -496,15 +517,15 @@
     'el-eagle': { src: 'img/el-eagle.jpg' },
     'el-akgold': { src: 'img/el-akgold.jpg' },
     'el-holland': { src: 'img/el-holland.jpg' },
-    vest: { src: 'img/vest.jpg' }, // прислал владелец проекта
+    vest: { src: 'img/vest-illustration.jpg' },
     // крупные дела и похищение: кадр 5:2
     'd-kidnap': { src: 'img/d-kidnap.jpg' }, // сгенерировано нейросетью
     'd-raid': { src: 'img/d-raid.jpg' }, // сгенерировано нейросетью
     // уровни II и III точек (если фото уровня нет — берётся фото I уровня)
-    'b-bordel2': { src: 'img/b-bordel2.jpg' }, // прислал владелец проекта
-    'b-fuel3': { src: 'img/b-fuel3.jpg' }, // прислал владелец проекта
+    'b-bordel2': { src: 'img/b-bordel2-illustration.jpg' },
+    'b-fuel3': { src: 'img/b-fuel3-illustration.jpg' },
     'b-chop2': { src: 'img/b-chop2.jpg' }, // сгенерировано нейросетью (Gemini 2.5 Flash Image через OpenRouter)
-    'b-chop3': { src: 'img/b-chop3.jpg' }, // прислал владелец проекта
+    'b-chop3': { src: 'img/b-chop3-illustration.jpg' },
     'b-rest2': { src: 'img/b-rest2.jpg' }, // сгенерировано нейросетью
     'b-rest3': { src: 'img/b-rest3.jpg' }, // сгенерировано нейросетью
     'b-prem2': { src: 'img/b-prem2.jpg' }, // сгенерировано нейросетью

@@ -11,7 +11,7 @@
   const P = (d, f, ex) => '<path d="' + d + '" fill="' + f + '"' + (ex ? ' ' + ex : '') + '/>';
   const C = (x, y, r, f, ex) => '<circle cx="' + f1(x) + '" cy="' + f1(y) + '" r="' + f1(r) + '" fill="' + f + '"' + (ex ? ' ' + ex : '') + '/>';
   const L = (x1, y1, x2, y2, s, w, ex) => '<line x1="' + f1(x1) + '" y1="' + f1(y1) + '" x2="' + f1(x2) + '" y2="' + f1(y2) + '" stroke="' + s + '" stroke-width="' + (w || 1) + '"' + (ex ? ' ' + ex : '') + '/>';
-  const T = (x, y, s, size, f, ex) => '<text x="' + f1(x) + '" y="' + f1(y) + '" font-size="' + size + '" fill="' + f + '" text-anchor="middle" font-family="Russo One, Arial Black, sans-serif"' + (ex ? ' ' + ex : '') + '>' + s + '</text>';
+  const T = (x, y, s, size, f, ex) => '<text x="' + f1(x) + '" y="' + f1(y) + '" font-size="' + size + '" fill="' + f + '" text-anchor="middle" font-family="PT Sans, sans-serif"' + (ex ? ' ' + ex : '') + '>' + s + '</text>';
   // неон: широкий полупрозрачный ореол и яркая надпись поверх
   const NEON = (x, y, s, size, col) => T(x, y, s, size, 'none', 'stroke="' + col + '" stroke-width="2.4" stroke-opacity=".28" stroke-linejoin="round"') + T(x, y, s, size, col);
   const svg = (vb, body, label, cls) => '<svg class="art ' + (cls || '') + '" viewBox="' + vb + '" preserveAspectRatio="xMidYMid slice" role="img" aria-label="' + label + '"><title>' + label + '</title>' + body + '</svg>';
@@ -717,39 +717,29 @@
     return (cache[key] = svg('0 0 240 96', fn(), pr ? pr.name + ': ' + pr.where : id, 'deal'));
   }
 
-  // ---------- значки шапки: 24×24, цвет берут из CSS (currentColor) ----------
-  const STAR = (() => { let d = ''; for (let i = 0; i < 16; i++) { const a = Math.PI * i / 8 - Math.PI / 2, r = i % 2 ? 4.4 : 11; d += (i ? 'L' : 'M') + f1(12 + r * Math.cos(a)) + ' ' + f1(12 + r * Math.sin(a)); } return d + 'Z'; })();
+  // Контурные значки интерфейса в общей сетке 24×24.
   const ICONS = {
-    // пачка долларов
-    money: '<rect x="5" y="4" width="17" height="10" rx="1.2" opacity=".45"/><path fill-rule="evenodd" d="M3.2 8h16.6c.7 0 1.2.5 1.2 1.2v8.6c0 .7-.5 1.2-1.2 1.2H3.2C2.5 19 2 18.5 2 17.8V9.2C2 8.5 2.5 8 3.2 8zM11.5 10.6a2.9 2.9 0 1 0 0 5.8 2.9 2.9 0 0 0 0-5.8zM4.5 10.3v1.6h1.6v-1.6zM16.9 15.1v1.6h1.6v-1.6z"/>',
-    // двое в кожанках
-    men: '<circle cx="16.5" cy="6.6" r="3" opacity=".5"/><path d="M11 19.5c.3-4 2.6-6.6 5.5-6.6s5.5 2.6 5.5 6.6z" opacity=".5"/><circle cx="9" cy="7.6" r="3.6"/><path d="M1.6 21.5c.3-5 3.4-8.3 7.4-8.3s7.1 3.3 7.4 8.3zM9 13.2l-1.5 2.6L9 21l1.5-5.2z"/>',
-    // пистолет Макарова
-    gun: '<path fill-rule="evenodd" d="M2.2 6.2h18.6c.6 0 1 .4 1 1v3.3c0 .5-.4.9-.9.9H12.6l-.7 1.8c-.3.7-.9 1.1-1.6 1.1H9.2l-1.4 5.8c-.1.5-.6.9-1.1.9H3.9c-.7 0-1.2-.7-1-1.4l1.7-6.2-2.5-.9c-.5-.2-.8-.6-.8-1.1V7.2c0-.6.4-1 .9-1zM9.9 11.4H8.5l-.3 1.6h1c.4 0 .7-.2.8-.6z"/><rect x="2.6" y="5" width="2.4" height="1.6" rx=".4"/>',
-    // седан сбоку
-    car: '<path fill-rule="evenodd" d="M1.5 15.6v-2.2c0-.8.5-1.4 1.3-1.6l3.3-.8 3-3.6c.4-.5 1-.8 1.6-.8h5.1c.6 0 1.2.3 1.6.8l2.9 3.6 1.4.3c.8.2 1.3.8 1.3 1.6v2.7zM10.4 8.2l-2.4 3h4.3v-3zM13.9 8.2v3h4.1l-2.4-3z"/><path fill-rule="evenodd" d="M6.3 14.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm0 1.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM17.5 14.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm0 1.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>',
-    // воровская восьмиконечная звезда
-    rep: '<path fill-rule="evenodd" d="' + STAR + 'M12 9.4a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2z"/>',
-    // телефон-вертушка: нужный звонок нужному человеку
-    conn: '<path d="M2.2 9.6C2.2 6.4 6.6 4 12 4s9.8 2.4 9.8 5.6v1.2c0 .5-.4.9-.9.9h-3c-.5 0-.9-.4-.9-.9V8.9A11 11 0 0 0 12 8a11 11 0 0 0-5 .9v1.9c0 .5-.4.9-.9.9h-3c-.5 0-.9-.4-.9-.9z"/><path fill-rule="evenodd" d="M8 10.4h8l3.6 8.3c.3.7-.2 1.3-.9 1.3H5.3c-.7 0-1.2-.6-.9-1.3zM12 12.2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><circle cx="12" cy="15.2" r="1"/>',
-    // мигалка
-    heat: '<path d="M7 17.2v-5a5 5 0 0 1 10 0v5z"/><rect x="5" y="17.6" width="14" height="3.4" rx=".8"/><path d="M12 1.6v3M3.4 5.4l2.1 2.1M20.6 5.4l-2.1 2.1M1.4 12.6h2.8M19.8 12.6h2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>',
-    // нижнее меню на телефоне
-    map: '<path d="M2 5.5l6-2.5 8 3 6-2.5v15L16 21l-8-3-6 2.5zM8 3v15M16 6v15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M2 5.5l6-2.5v15l-6 2.5z" opacity=".35"/>',
-    deal: '<path fill-rule="evenodd" d="M9 3h6c1 0 1.8.8 1.8 1.8V6H21c.6 0 1 .4 1 1v12c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h4.2V4.8C7.2 3.8 8 3 9 3zm.2 3h5.6V5H9.2zM2 11.5h20v1.6H2zM10.5 11h3v3.5h-3z"/>',
-    law: '<path d="M12 2l10 5v2H2V7zM4 10h3v8H4zM10.5 10h3v8h-3zM17 10h3v8h-3zM2 19h20v3H2z"/>',
-    clans: '<path d="M4 2h1.8v20H4zM5.8 3h7l-1.6 3 1.6 3h-7zM18.2 2H20v20h-1.8zM18.2 3h-7l1.6 3-1.6 3h7z" opacity=".9"/>',
-    fx: '<path d="M4 8h12.5l-3-3L15 3.6 20.4 9 15 14.4 13.5 13l3-3H4zM20 16H7.5l3 3L9 20.4 3.6 15 9 9.6l1.5 1.4-3 3H20z"/>',
-    rub: '<path fill-rule="evenodd" d="M12 1.5a10.5 10.5 0 1 1 0 21 10.5 10.5 0 0 1 0-21zM9 6.5v5.3H7.3v1.8H9v1.3H7.3v1.8H9V19h2.1v-2.3h3.6v-1.8h-3.6v-1.3h2a3.6 3.6 0 0 0 0-7.1zm2.1 1.9h1.9a1.7 1.7 0 0 1 0 3.4h-1.9z"/>',
-    usd: '<path fill-rule="evenodd" d="M12 1.5a10.5 10.5 0 1 1 0 21 10.5 10.5 0 0 1 0-21zm-1 3.5v1.5c-1.9.3-3.2 1.6-3.2 3.3 0 2 1.6 2.8 3.2 3.2v3c-1-.2-1.8-.8-2-1.8l-1.7.5c.4 1.7 1.8 2.8 3.7 3V19h2v-1.3c2-.3 3.3-1.6 3.3-3.4 0-2.1-1.7-2.9-3.3-3.3V8.1c.8.2 1.4.7 1.6 1.5l1.7-.5c-.4-1.5-1.6-2.4-3.3-2.6V5zm0 3.2v2.6c-.9-.3-1.4-.7-1.4-1.3 0-.7.6-1.2 1.4-1.3zm2 5.4c1 .3 1.5.7 1.5 1.4 0 .8-.6 1.3-1.5 1.4z"/>',
-    home: '<path d="M12 2.5 1.5 11h3v10h6v-6h3v6h6V11h3zM16.5 5V3.5h2.5v3.8z"/>',
-    chat: '<path d="M4 3h16c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2h-9l-5 4.5V17H4c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2z"/><circle cx="8" cy="10" r="1.4" fill="#15121a"/><circle cx="12" cy="10" r="1.4" fill="#15121a"/><circle cx="16" cy="10" r="1.4" fill="#15121a"/>',
-    log: '<path fill-rule="evenodd" d="M5 2h11l4 4v15c0 .6-.4 1-1 1H5c-.6 0-1-.4-1-1V3c0-.6.4-1 1-1zm2 7v1.6h10V9zm0 4v1.6h10V13zm0 4v1.6h7V17zM15 2.5V7h4.5z"/>',
-    // нота и «следующий трек» для плеера
-    note: '<path d="M9 17.5V5.2l11-2.2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><ellipse cx="6.4" cy="17.6" rx="3.2" ry="2.5"/><ellipse cx="17.4" cy="15.2" rx="3.2" ry="2.5"/>',
-    next: '<path d="M3 5.5v13l9-6.5zM12 5.5v13l9-6.5z"/><rect x="20" y="5.5" width="2" height="13" rx=".5"/>'
+    money: '<rect x="2.5" y="8" width="19" height="12" rx="2"/><path d="M5 4h14M6 12h1m10 4h1"/><circle cx="12" cy="14" r="2.5"/>',
+    rub: '<circle cx="12" cy="12" r="10"/><path d="M9 18V6.5h4a3 3 0 0 1 0 6H7m0 3h7"/>',
+    usd: '<circle cx="12" cy="12" r="10"/><path d="M12 5.5v13m3-9.5c0-2.5-6-2.8-6 0 0 3 6 2 6 5 0 2.8-6 2.5-6 0"/>',
+    rep: '<path d="m12 2 2.2 5.5 5-2.7-2.7 5 5.5 2.2-5.5 2.2 2.7 5-5-2.7L12 22l-2.2-5.5-5 2.7 2.7-5L2 12l5.5-2.2-2.7-5 5 2.7Z"/><circle cx="12" cy="12" r="2"/>',
+    men: '<circle cx="9" cy="7" r="3"/><path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1zM16 4.5a3 3 0 0 1 0 6m1 2.5a5.5 5.5 0 0 1 4.5 5.5V20h-3"/>',
+    gun: '<path d="M3 6h18v5h-8l-1.5 3H9l-1 6H3l2-9H3zM7 8.5h10"/>',
+    car: '<path d="M3 16v-4l3-2 2-4h8l3 4 2 2v4h-3m-9 0h6M6 10h13"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="17.5" cy="16.5" r="2.5"/>',
+    home: '<path d="m2 11 10-8 10 8M5 9v12h14V9m-9 12v-6h4v6M9 10h6"/>',
+    conn: '<path d="M3 9c0-3 4-5 9-5s9 2 9 5v2h-5V8H8v3H3zM8 11l-3 6v3h14v-3l-3-6"/><circle cx="12" cy="16" r="2"/>',
+    heat: '<path d="M5 19h14v2H5zM7 19v-5a5 5 0 0 1 10 0v5M12 3v2m-7 0 2 2m12-2-2 2M3 12h1m16 0h1"/>',
+    map: '<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zm6-3v15m6-12v15"/>',
+    deal: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 12h18m-11 0v3h4v-3"/>',
+    law: '<path d="m2 8 10-5 10 5zM5 11v7m7-7v7m7-7v7M3 21h18"/>',
+    clans: '<path d="M5 21V3l7 2 7-2v14l-7 2-7-2m7-12v14"/>',
+    fx: '<path d="M3 8h17l-4-4m4 4-4 4m5 4H4l4-4m-4 4 4 4"/>',
+    chat: '<path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H10l-5 4v-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm3 5h10m-10 4h6"/>',
+    log: '<path d="M5 3h10l4 4v14H5zm10 0v5h4M8 11h8m-8 4h8m-8 3h5"/>',
+    note: '<path d="M9 17V6l11-2v11"/><ellipse cx="6.5" cy="17.5" rx="2.5" ry="2"/><ellipse cx="17.5" cy="15.5" rx="2.5" ry="2"/>',
+    next: '<path d="m4 6 9 6-9 6zm13 0v12"/>'
   };
-  const icon = k => '<svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + ICONS[k] + '</svg>';
+  const icon = k => '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[k] + '</svg>';
 
   // личные вещи главы (DATA.ELITE): машины рисуются корпусом нужной формы, стволы — в золоте
   function elite(k) {
