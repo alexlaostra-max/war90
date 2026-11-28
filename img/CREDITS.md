@@ -5,6 +5,7 @@
 - `menu-moscow.png`, `portrait-local.jpg`, `status-purchases.jpg` — иллюстрации ImageGen для меню, персонажа и покупок.
 - `b-chop2.jpg` — сгенерировано нейросетью Gemini 2.5 Flash Image.
 - `b-kiosk2-store.jpg`, `b-video2-dvd.jpg`, `b-video3-cinema.jpg` — иллюстрации ImageGen для магазина, DVD-магазина и кинотеатра.
+- `d-kidnap-illustration.jpg` — иллюстрация ImageGen для карточки «Похищение коммерсанта».
 
 ## Личные вещи главы
 
@@ -16,7 +17,7 @@
 
 ## Главари ОПГ и сцены дел
 
-Портреты главарей `boss-*.jpg` (вымышленные лица) и сцены `d-kidnap.jpg`, `d-raid.jpg` сгенерированы нейросетью Gemini 2.5 Flash Image через OpenRouter.
+Портреты главарей `boss-*.jpg` (вымышленные лица) и сцена `d-raid.jpg` сгенерированы нейросетью Gemini 2.5 Flash Image через OpenRouter.
 
 Также сгенерированы нейросетью уровни точек: `b-rest2.jpg`, `b-rest3.jpg`, `b-prem2.jpg`, `b-casino2.jpg`, `b-exchange2.jpg`, `b-club3.jpg`, `b-dorm3.jpg`.
 

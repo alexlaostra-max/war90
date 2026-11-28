@@ -201,13 +201,13 @@
     // показатель шапки: значок, подпись, число, пояснение
     // нажатие ведёт туда, где этим показателем управляют
     // рубли — настоящими рублями по курсу (68М, 2,4млрд), доллары — в тыс. $
-    const cc = E.cur(p), rubShort = v => { const r = Math.max(0, v) * 1000 * E.rubRate(S), f = (x, u) => (x >= 100 ? Math.round(x) : Math.round(x * 10) / 10).toLocaleString('ru-RU') + u; return v < 0 ? R(v) : r >= 1e9 ? f(r / 1e9, 'млрд') : r >= 1e6 ? f(r / 1e6, 'М') : r >= 1e3 ? f(r / 1e3, 'К') : String(Math.round(r)); };
-    const usdShort = v => v >= 1000 ? (Math.round(v / 100) / 10).toLocaleString('ru-RU') + 'М' : v + 'К';
+    const cc = E.cur(p), rubles = E.rubAmount(S, cc.rub);
+    const rubUnit = E.date(S.turn).year >= 1998 ? 'новых рублей' : 'старых рублей';
     const GO = { rub: 'cash', usd: 'fx', money: 'cash', men: 'gang:men', gun: 'gang:arms', car: 'gang:cars', rep: 'gang:boss', conn: 'law' };
-    const st = (k, l, v, x, cls) => '<button class="st s-' + k + ' ' + (cls || '') + '" data-go="' + GO[k] + '" title="' + l + '">' + A.icon(k) + '<div><span>' + l + '</span><b>' + v + '</b>' + (x ? '<i>' + x + '</i>' : '') + '</div></button>';
+    const st = (k, l, v, x, cls, title = l) => '<button class="st s-' + k + ' ' + (cls || '') + '" data-go="' + GO[k] + '" title="' + esc(title) + '">' + A.icon(k) + '<div><span>' + l + '</span><b>' + v + '</b>' + (x ? '<i>' + x + '</i>' : '') + '</div></button>';
     let pips = ''; for (let i = 0; i < E.apMax(S, me); i++) pips += '<u class="' + (i < p.ap ? 'on' : '') + '"></u>';
     $('#stats').innerHTML =
-      st('rub', 'Все рубли', kfmt(Math.max(0, cc.rub) * rk()), 'Чёрный и белый нал', p.money < 0 ? 'bad' : '') +
+      st('rub', 'Все рубли', E.fmR(rubles), rubUnit, rubles < 0 ? 'bad' : '', rubles.toLocaleString('ru-RU') + ' ' + rubUnit) +
       st('usd', 'Доллары', kfmt(cc.usd * 1000), (inc.usd ? plus(inc.usd, true) + '/мес · ' : '') + 'на крупные дела и статус') +
       st('men', 'Бойцы', p.men, 'из ' + cap + ', ждут ' + E.pool(S, me)) + st('gun', 'Стволы', p.guns) + st('car', 'Тачки', p.cars) +
       st('rep', 'Авторитет', R(p.rep)) + st('conn', 'Связи', E.conn(S, me)) +
@@ -231,10 +231,9 @@
   const kfmt = v => E.fmtK(v / 1000).replace(/^−/, '');
   const usdS = v => (v < 0 ? '−' : '') + kfmt(v * 1000) + ' $';
   // рубли честные: игровая сумма × курс месяца (в 90-е — миллионы, после деноминации 1998 — тысячи)
-  const rk = () => (S ? E.rubPerUsd(S) : 1) * 1000;
-  const rubS = v => (v < 0 ? '−' : '') + kfmt(Math.abs(v) * rk()) + ' ₽';
+  const rubS = (v, state = S) => E.fmR(E.rubAmount(state, v)) + ' ₽';
   const money = (v, usd) => usd ? usdS(v) : rubS(v);
-  const rubP = c => kfmt(Math.max(0, c) * rk()) + ' ₽', usdP = c => kfmt(Math.max(0, c) * 1000) + ' $';
+  const rubP = c => rubS(Math.max(0, c)), usdP = c => kfmt(Math.max(0, c) * 1000) + ' $';
   const plus = (v, usd) => (v > 0 ? '+' : '') + money(v, usd);
   // кнопка: lock-строка делает её неактивной, но нажать можно — сверху всплывёт, почему нельзя
   const offAttr = lock => ' aria-disabled="true" data-lock="' + esc(lock) + '"';
@@ -386,7 +385,6 @@
   }
   // ---------- обменник: рубли и доллары по курсу тех лет, сумма ползунком ----------
   let fxDir = 'buy';
-  const bigRub = v => E.fmtK(v / 1000);
   function fxCalc() {
     const r = $('#fxr'), box = $('#fxcalc'); if (!r || !box) return;
     const v = +r.value, q = E.fxQuote(S, me, fxDir, v), rub = x => rubP(x);
@@ -909,7 +907,7 @@
   function offersHTML() {
     const mine = (S.offers || []).filter(o => o.from === me);
     if (!net || !mine.length) return '';
-    return '<div class="box"><h3>Твои предложения</h3>' + mine.map(o => '<div class="row offrow"><span>' + who(o.to) + ': ' + esc(E.offerText(o)) + '</span>' + btn('Отозвать', 'ocancel', 'data-k="' + o.id + '"', false, 'sm ghost') + '</div>').join('') + '<p class="muted">Предложения сгорают в конце месяца.</p></div>';
+    return '<div class="box"><h3>Твои предложения</h3>' + mine.map(o => '<div class="row offrow"><span>' + who(o.to) + ': ' + esc(E.offerText(S, o)) + '</span>' + btn('Отозвать', 'ocancel', 'data-k="' + o.id + '"', false, 'sm ghost') + '</div>').join('') + '<p class="muted">Предложения сгорают в конце месяца.</p></div>';
   }
   function showDeal() {
     const x = S.f[dealWith]; if (!x || !x.alive || x.over) { dealWith = null; closeModal(); return; }
@@ -932,16 +930,18 @@
   const incoming = () => (S.offers || []).find(o => o.to === me);
   function showOffer() {
     const o = incoming(); if (!o) return;
-    const key = 'offer:' + o.id; if (modalKey === key) return;
+    const lock = E.offerCheck(S, o), key = 'offer:' + o.id + (lock ? ':expired' : ''); if (modalKey === key) return;
     if (!offersSeen[o.id]) { offersSeen[o.id] = 1; haptic('medium'); if (G.Sfx) G.Sfx.play('msg'); }
     const f = fd(o.from), x = S.f[o.from];
-    let h = '<div class="dhero"><span class="ava big">' + A.bossFace(f) + '</span><div><p class="eyebrow">Предложение</p><h2>' + esc(f.name) + '</h2><p class="sub">' + esc(x.nick || 'игрок') + '</p></div></div>';
-    h += '<p class="lead2">' + esc(f.boss) + ' ' + esc(E.offerText(o)) + '.</p>';
+    let h = '<div class="dhero"><span class="ava big">' + A.bossFace(f) + '</span><div><p class="eyebrow">Предложение</p><h2>' + esc(f.name) + '</h2><p class="sub">' + esc(x.human ? x.nick || 'Игрок' : f.boss) + '</p></div></div>';
+    h += '<p class="lead2">Лидер ' + esc(E.offerText(S, o)) + '.</p>';
     if (o.kind === 'sell') h += '<p class="muted">Ты платишь ' + rubP(o.x) + ' и получаешь ' + D.DISTRICTS[o.i].name + '.</p>';
     if (o.kind === 'buy') h += '<p class="muted">Ты получаешь ' + rubP(o.x) + ' и отдаёшь ' + D.DISTRICTS[o.i].name + '.</p>';
     if (o.kind === 'ask') h += '<p class="muted">У тебя ' + rubP(E.cur(P()).rub) + ' и ' + usdP(E.cur(P()).usd) + '</p>';
-    if (o.kind === 'truce') h += '<p class="muted">Ни ты, ни они не сможете нападать друг на друга до ' + E.date(S.turn + o.x).label + '.</p>';
-    h += '<div class="grid">' + btn('Принять', 'oyes', 'data-k="' + o.id + '"', false, 'primary') + btn('Отказаться', 'ono', 'data-k="' + o.id + '"', false, 'ghost') + '</div>';
+    if (o.kind === 'truce' || o.kind === 'peace') h += '<p class="muted">Нападения между бригадами прекращаются. Перемирие действует по ' + E.date(S.turn + o.x - 1).label + ' включительно.</p>';
+    if (o.kind === 'swap') h += '<dl class="kv"><dt>Получаешь</dt><dd>' + esc(D.DISTRICTS[o.i].name) + '</dd><dt>Отдаёшь</dt><dd>' + esc(D.DISTRICTS[o.j].name) + '</dd></dl><p class="muted">Точки и предприятия переходят вместе с районами. Без доплаты.</p>';
+    if (lock) h += '<p class="bad">' + esc(lock) + '</p>';
+    h += '<div class="grid">' + btn('Принять', 'oyes', 'data-k="' + o.id + '"', !!lock, 'primary') + btn(lock ? 'Закрыть' : 'Отказаться', 'ono', 'data-k="' + o.id + '"', false, 'ghost') + '</div>';
     openModal(h, '', key);
   }
 
@@ -1015,7 +1015,19 @@
       host.innerHTML = split ? fn() : '<div class="inner' + (section === 'big' ? ' wide' : '') + '">' + fn() + '</div>';
       host.dataset.key = pk; host.scrollTop = keep; chatBottom();
     }
-    if (P().over && (!spectating || S.done || overPeek)) showOver(); else if (P().over) { if (/^(over|heat):/.test(modalKey)) closeModal(); } else if (P().battle) showBattle(); else if ((P().assaults || []).length) showAssault(); else if (P().event) showEvent(); else if (heatWarn()) showHeat(); else if (atk) showAttack(); else if (net && incoming()) showOffer(); else if (dealWith) showDeal(); else if (parleyWith) showParley(); else if (/^(offer|deal):/.test(modalKey)) closeModal();
+    if (P().over && (!spectating || S.done || overPeek)) showOver();
+    else if (P().over) { if (/^(over|heat|hit|offer):/.test(modalKey)) closeModal(); }
+    else if (P().battle) showBattle();
+    else if (P().hitNotice) showHitNotice();
+    else if (incoming()?.kind === 'peace') showOffer();
+    else if ((P().assaults || []).length) showAssault();
+    else if (P().event) showEvent();
+    else if (heatWarn()) showHeat();
+    else if (atk) showAttack();
+    else if (incoming()) showOffer();
+    else if (dealWith) showDeal();
+    else if (parleyWith) showParley();
+    else if (/^(hit|offer|deal):/.test(modalKey)) closeModal();
     requestAnimationFrame(fitChoiceLabels);
   }
 
@@ -1029,7 +1041,7 @@
     if (r.event && r.ok) { save(); showResult(r); return; }
     if (r.battleEnd && r.ok) { if (G.Sfx) G.Sfx.play(r.win ? 'cash' : 'shot'); save(); showBattleEnd(r); if (!net) render(); return; }
     if (r.ok && (r.battle || r.round)) { haptic('heavy'); if (G.Sfx) G.Sfx.play('shot'); if (!net) { save(); render(); } return; }
-    if (msg) toast(msg, !r.ok || r.win === false);
+    if (msg) toast(msg, !r.ok || r.win === false || r.expired);
     if (r.ok && !net) { save(); render(); }
   }
   function atkDone(r) {
@@ -1131,6 +1143,7 @@
     else if (a === 'dclose') { dealWith = null; closeModal(); render(); }
     else if (a === 'dsend') { const x = +(($('#dx') || {}).value || 0), i = $('#di') ? +$('#di').value : null; const to = dealWith; dealWith = null; closeModal(); act('offer', [to, dealKind, x, i]); }
     else if (a === 'oyes' || a === 'ono') { closeModal(); act('answer', [+k, a === 'oyes' ? 1 : 0]); }
+    else if (a === 'hitseen') { closeModal(); act('acknowledgeHit', []); }
     else if (a === 'ocancel') act('answer', [+k, 0]);
     else if (a === 'tmr') netCall('timer', { min: +k });
     else if (a === 'recruit') act('recruit', [+b.dataset.n || 1]);
@@ -1403,7 +1416,9 @@
     let h = '<div class="event-copy"><div class="evscene">' + A.eventScene(kind, ev.id) + '</div><p class="eyebrow">' + E.date(S.turn).label + (ev.date ? ' · история' : ev.extra === 'law' ? ' · пришли из власти' : ev.extra === 'crew' ? ' · внутри семьи' : '') + '</p>';
     const rp = !ev.extra && p.report;
     if (rp) {
-      h += '<div class="report"><span>За прошлый месяц касса ' + plus(rp.money) + '</span>';
+      const change = rp.rub == null ? [plus(rp.money) + ' в рублёвом эквиваленте'] :
+        [rp.rub ? plus(rp.rub) : '', rp.usd ? plus(rp.usd, true) : ''].filter(Boolean);
+      h += '<div class="report"><span>Изменение кассы за месяц · ' + (change.join(' · ') || 'без изменений') + '</span>';
       if (rp.wash) h += '<span class="good">Отмыто ' + rubP(rp.wash) + '</span>';
       if (rp.law) h += '<span class="bad">' + esc(rp.law) + '</span>';
       if (rp.infl) h += '<span>Переоценка рублёвой кассы ' + plus(-rp.infl) + '</span>';
@@ -1479,6 +1494,15 @@
     $('#atkn').textContent = atk.men; $('#atkpow').textContent = 'сила отряда ' + R(q.power); $('#atkkit').textContent = 'со стволами ' + (q.men - q.bare) + ', без ствола ' + q.bare + ', в брониках ' + q.vests;
     const od = $('#atkodds'); od.textContent = o + '%'; od.className = o >= 60 ? 'good' : o < 35 ? 'bad' : '';
   });
+  function showHitNotice() {
+    const notice = P().hitNotice, key = 'hit:' + P().hitAt;
+    if (modalKey === key) return;
+    const from = fd(notice.from);
+    openModal('<p class="eyebrow">Сводка охраны</p><h2>Покушение на тебя</h2><div class="evwho"><span class="ava">' +
+      A.bossFace(from) + '</span><div><b>' + esc(from.name) + '</b><small>Заказчик · ' + esc(from.boss) +
+      '</small></div></div><p class="lead">' + esc(notice.details) + '</p>' +
+      btn('Понятно', 'hitseen', '', false, 'wide primary'), '', key);
+  }
   // наезд на район: вступить в бой, откупиться, сдать или положиться на своих
   function showAssault() {
     const p = P(), x = p.assaults[0]; if (!x) return;
@@ -1548,7 +1572,11 @@
     let h = '<p class="eyebrow">' + E.date(S.turn).label + '</p><h2>' + esc(o.title) + '</h2><p class="lead">' + esc(o.text) + '</p>';
     if (WHY[o.title]) h += '<div class="box why"><h3>Почему так вышло</h3><p>' + WHY[o.title] + '</p></div>';
     if (net && !S.done) h += btn('👁 Смотреть за игрой дальше', 'spectate', '', false, 'wide primary') + '<p class="muted">Карта, чат и бригады других игроков — до конца партии.</p>';
-    if (o.stats) h += '<dl class="kv"><dt>Счёт</dt><dd>' + o.score + '</dd><dt>Касса</dt><dd>' + rubP(o.stats.money) + '</dd><dt>Районы</dt><dd>' + o.stats.districts + '</dd><dt>Авторитет</dt><dd>' + o.stats.rep + '</dd><dt>Связи</dt><dd>' + o.stats.conn + '</dd><dt>Белый доход</dt><dd>' + o.stats.white + '%</dd></dl>';
+    if (o.stats) {
+      const total = o.stats.rub == null ? rubS(o.stats.money) + ' (эквивалент)' :
+        rubS(o.stats.rub, { ...S, turn: o.stats.turn, fxn: o.stats.fxn }) + ' · ' + usdP(o.stats.usd);
+      h += '<dl class="kv"><dt>Счёт</dt><dd>' + o.score + '</dd><dt>Касса</dt><dd>' + total + '</dd><dt>Районы</dt><dd>' + o.stats.districts + '</dd><dt>Авторитет</dt><dd>' + o.stats.rep + '</dd><dt>Связи</dt><dd>' + o.stats.conn + '</dd><dt>Белый доход</dt><dd>' + o.stats.white + '%</dd></dl>';
+    }
     if (net && S.humans.length > 1) {
       h += '<h3>Игроки</h3><table class="tbl">' + S.humans.map(f => { const x = S.f[f]; return '<tr><td><i class="dot" style="background:' + fd(f).color + '"></i>' + who(f) + '</td><td>' + (x.over ? esc(x.over.title) + (x.over.score ? ' · ' + x.over.score : '') : 'ещё играет') + '</td></tr>'; }).join('') + '</table>';
       if (!S.done) h += '<p class="muted">Остальные доигрывают. Итоги обновятся здесь.</p>';

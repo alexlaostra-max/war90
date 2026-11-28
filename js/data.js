@@ -543,7 +543,7 @@
     'el-holland': { src: 'img/el-holland.jpg' },
     vest: { src: 'img/vest-illustration.jpg' },
     // крупные дела и похищение: кадр 5:2
-    'd-kidnap': { src: 'img/d-kidnap.jpg' }, // сгенерировано нейросетью
+    'd-kidnap': { src: 'img/d-kidnap-illustration.jpg' }, // сгенерировано нейросетью
     'd-raid': { src: 'img/d-raid.jpg' }, // сгенерировано нейросетью
     // уровни II и III точек (если фото уровня нет — берётся фото I уровня)
     'b-bordel2': { src: 'img/b-bordel2-illustration.jpg' },
