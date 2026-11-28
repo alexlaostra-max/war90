@@ -1146,7 +1146,8 @@
     else if (a === 'proj') act('projStep', [k, b.dataset.h || null]);
     else if (a === 'cashout') act('cashOut', []);
     else if (a === 'opt') { hush(); act('choose', [+k]); }
-    else if (a === 'voice') { voiceOn = !voiceOn; try { localStorage.setItem(VOICE_KEY, voiceOn ? '1' : '0'); } catch (er) { /* ignore */ } b.textContent = voiceOn ? '🔊 Озвучка включена' : '🔇 Озвучка выключена'; if (voiceOn) { const ev = E.currentEvent(S, me); if (ev) speak(E.evText(S, me, ev.text)); } else hush(); }
+    else if (a === 'voice') setVoiceEnabled(!voiceOn);
+    else if (a === 'voiceplay') speakEvent();
     else if (a === 'force') netCall('force');
     else if (a === 'goto') { sel = +b.dataset.i; section = 'map'; sheet = true; showOnMap(sel); render(); }
     else if (a === 'person') { focus = { id: +b.dataset.id }; section = 'gang'; sheet = true; render(); }
@@ -1210,7 +1211,23 @@
     org.addEventListener('contextmenu', e => { if (e.target.closest('[draggable]')) e.preventDefault(); });
   })();
   document.addEventListener('input', e => { if (e.target && e.target.id === 'fxr') fxCalc(); });
-  document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.a === 'voicepick') { try { localStorage.setItem(VOICE_KEY + '.name', t.value); } catch (er) { /* ignore */ } voiceOn = true; const ev = S && E.currentEvent(S, me); if (ev) speak(E.evText(S, me, ev.text)); return; } if (t.dataset && t.dataset.a === 'watch') { watchFid = t.value; sel = null; section = 'map'; sheet = true; render(); return; } if (t.dataset && t.dataset.a === 'reassign' && t.value) { const v = t.value.split('|'); act('assign', [+t.dataset.id, v[0], v[1] || null]); } });
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.dataset?.a === 'voicepick') {
+      voiceName = t.value;
+      try { localStorage.setItem(VOICE_KEY + '.name', voiceName); } catch (e) { /* без сохранения */ }
+      speakEvent();
+    } else if (t.dataset?.a === 'watch') {
+      watchFid = t.value;
+      sel = null;
+      section = 'map';
+      sheet = true;
+      render();
+    } else if (t.dataset?.a === 'reassign' && t.value) {
+      const v = t.value.split('|');
+      act('assign', [+t.dataset.id, v[0], v[1] || null]);
+    }
+  });
   $('#end').addEventListener('click', () => {
     if (!S || P().over) return;
     if (net) { netCall('ready', { ready: !P().ready }); return; }
@@ -1224,6 +1241,7 @@
   // окна, которые можно просто закрыть: крестик справа сверху и свайп вниз
   const closable = key => /^(records|lawinfo|parley:|deal:|atk:)/.test(key || '');
   function openModal(html, cls, key) {
+    if (modalKey.startsWith('ev:')) hush();
     const x = closable(key) ? '<i class="grab mgrab" aria-hidden="true"></i><button class="xclose mclose" data-a="mclose" aria-label="Закрыть">×</button>' : '';
     modal.innerHTML = '<div class="sheet ' + (cls || '') + (x ? ' closable' : '') + '">' + x + html + '</div>'; modal.hidden = false; modalKey = key || ''; modal.dataset.screen = key || '';
     requestAnimationFrame(fitChoiceLabels);
@@ -1256,33 +1274,89 @@
     };
     modal.addEventListener('touchend', end); modal.addEventListener('touchcancel', end);
   })();
-  function closeModal() { modal.hidden = true; modal.innerHTML = ''; modalKey = ''; delete modal.dataset.screen; }
+  function closeModal() { if (modalKey.startsWith('ev:')) hush(); modal.hidden = true; modal.innerHTML = ''; modalKey = ''; delete modal.dataset.screen; }
 
-  // ---------- озвучка событий: строгий мужской голос (синтез речи в браузере) ----------
+  // Озвучка событий через системные голоса устройства.
   const VOICE_KEY = 'war90.voice';
-  let voiceOn = (() => { try { return localStorage.getItem(VOICE_KEY) !== '0'; } catch (e) { return true; } })();
-  const synth = window.speechSynthesis;
-  const ruVoices = () => synth ? synth.getVoices().filter(v => /^ru/i.test(v.lang)) : [];
-  function maleVoice() {
-    if (!synth) return null;
-    const vs = ruVoices(), pick = (() => { try { return localStorage.getItem(VOICE_KEY + '.name'); } catch (e) { return null; } })();
-    if (pick) { const v = vs.find(x => x.name === pick); if (v) return v; }
-    return vs.find(v => /yuri|юрий|dmitr|дмитр|pavel|павел|maxim|максим|ermil|filipp|алексей|aleksei|male|мужск/i.test(v.name)) || vs.find(v => !/milena|милена|katya|катя|irina|ирина|alena|алёна|alyona|female|женск|google/i.test(v.name)) || vs[0] || null;
+  let voiceOn = true, voiceName = '';
+  try {
+    voiceOn = localStorage.getItem(VOICE_KEY) !== '0';
+    voiceName = localStorage.getItem(VOICE_KEY + '.name') || '';
+  } catch (e) { /* без сохранения */ }
+  const synth = typeof window.SpeechSynthesisUtterance === 'function' ? window.speechSynthesis : null;
+  const maleName = /yuri|юрий|dmitr|дмитр|pavel|павел|maxim|максим|ermil|filipp|филипп|алексей|alekse[iy]|male|мужск/i;
+  const isMaleVoice = voice => maleName.test(voice.name.replace(/female/gi, ''));
+  const ruVoices = () => synth ? synth.getVoices().filter(v => /^ru(?:[-_]|$)/i.test(v.lang)) : [];
+  const preferredVoice = voices => voices.find(v => v.name === voiceName) || voices.find(isMaleVoice) || voices[0];
+  let utterance = null;
+
+  function updateVoiceOptions() {
+    const select = $('#modal .voicesel');
+    if (!select) return;
+    const voices = ruVoices(), selected = preferredVoice(voices);
+    select.replaceChildren(...voices.map(v => new Option(v.name, v.name)));
+    if (selected) select.value = selected.name;
+    select.hidden = voices.length < 2;
   }
-  if (synth && synth.onvoiceschanged !== undefined) synth.onvoiceschanged = () => {};
-  function speak(text) {
-    if (!synth || !voiceOn || !text) return;
-    try {
+  if (synth && synth.addEventListener) synth.addEventListener('voiceschanged', updateVoiceOptions);
+
+  function duckVoice(active) {
+    if (G.Music && G.Music.duck) G.Music.duck(active);
+  }
+  function hush() {
+    if (utterance) {
+      utterance = null;
       synth.cancel();
-      const u = new SpeechSynthesisUtterance(text.replace(/[«»]/g, '').replace(/\s+/g, ' '));
-      const v = maleVoice(); if (v) u.voice = v;
-      u.lang = 'ru-RU'; u.rate = 0.95; u.pitch = v && /yuri|юрий|dmitr|pavel|maxim|ermil|filipp|male|мужск/i.test(v.name) ? 0.85 : 0.55; // если голос женский — опускаем тон
-      const dk = v => { if (G.Music && G.Music.duck) G.Music.duck(v); };
-      u.onstart = () => dk(true); u.onend = u.onerror = () => dk(false);
-      synth.speak(u);
-    } catch (e) { /* озвучка не обязательна */ }
+    }
+    duckVoice(false);
   }
-  const hush = () => { try { if (synth) synth.cancel(); } catch (e) { /* ignore */ } if (G.Music && G.Music.duck) G.Music.duck(false); };
+  function setVoiceEnabled(enabled) {
+    voiceOn = enabled;
+    try { localStorage.setItem(VOICE_KEY, enabled ? '1' : '0'); } catch (e) { /* без сохранения */ }
+    const toggle = $('#modal [data-a="voice"]');
+    if (toggle) {
+      toggle.setAttribute('aria-pressed', String(enabled));
+      toggle.textContent = enabled ? 'Автоозвучка вкл.' : 'Автоозвучка выкл.';
+    }
+    if (!enabled) hush();
+  }
+  function speakEvent(manual = true) {
+    const ev = S && E.currentEvent(S, me);
+    if (!synth || (!manual && !voiceOn) || !ev) return;
+    const status = $('#modal .voice-status');
+    if (status) status.textContent = '';
+    const showError = error => {
+      if (!status || !status.isConnected) return;
+      if (error === 'not-allowed' && !manual) status.textContent = 'Нажми «Озвучить», чтобы включить звук.';
+      else if (error === 'voice-unavailable' || error === 'language-unavailable' || !ruVoices().length) {
+        status.textContent = 'Русский голос недоступен. Проверь настройки синтеза речи на устройстве.';
+      } else status.textContent = 'Озвучка не запустилась. Попробуй ещё раз или выбери другой голос.';
+    };
+    try {
+      hush();
+      if (synth.paused) synth.resume();
+      const text = E.evText(S, me, ev.text).replace(/[«»]/g, '').replace(/\s+/g, ' ').trim();
+      const next = new SpeechSynthesisUtterance(text);
+      const voice = preferredVoice(ruVoices());
+      if (voice) next.voice = voice;
+      next.lang = 'ru-RU';
+      next.rate = 0.9;
+      next.pitch = 0.78;
+      next.onstart = () => { if (utterance === next) duckVoice(true); };
+      next.onend = next.onerror = event => {
+        if (utterance !== next) return;
+        utterance = null;
+        duckVoice(false);
+        if (event.error && !['canceled', 'interrupted'].includes(event.error)) showError(event.error);
+      };
+      utterance = next;
+      synth.speak(next);
+    } catch (e) {
+      utterance = null;
+      duckVoice(false);
+      showError();
+    }
+  }
   function showEvent() {
     const p = P(), ev = E.currentEvent(S, me); if (!ev) return;
     const key = 'ev:' + S.turn + ':' + ev.id + ':' + R(p.money); if (modalKey === key) return;
@@ -1306,12 +1380,13 @@
     { const cc = E.cur(p), it = (ic, v, t) => '<span title="' + t + '">' + A.icon(ic) + '<b>' + v + '</b></span>'; h += '<div class="evcash">' + it('rub', rubP(cc.rub), 'Рубли') + it('usd', usdP(cc.usd), 'Доллары') + it('men', p.men, 'Бойцы') + it('gun', p.guns, 'Стволы') + it('car', p.cars, 'Тачки') + it('rep', R(p.rep), 'Авторитет') + it('heat', R(p.heat), 'Розыск') + '</div>'; }
     h += '</div><div class="event-actions"><div class="opts">';
     ev.opts.forEach((o, k) => { const os = E.optState(S, me, o); h += '<button class="opt" data-a="opt" data-k="' + k + '"' + (os.lock ? ' disabled' : '') + '><span>' + tx(o.t) + '</span>' + (os.cost ? '<em>−' + rubP(os.cost) + '</em>' : '') + (() => { const m = E.era(S), g = (o.$ > 0 ? Math.round(o.$ * m) : 0) + (o.get ? Math.round(o.get * m) : 0), l = o.later ? Math.round(o.later * m) : 0; return (g ? '<em class="gain">+' + rubP(g) + '</em>' : '') + (l ? '<em class="' + (l > 0 ? 'gain' : '') + '">' + (l > 0 ? '+' : '−') + rubP(Math.abs(l)) + ' потом</em>' : ''); })() + (os.lock ? '<small>' + esc(os.lock) + '</small>' : '') + '</button>'; });
-    const vs = ruVoices(), cur = maleVoice();
-    h += '</div>' + (synth ? '<div class="row voicerow"><button class="btn sm ghost voicebtn" data-a="voice">' + (voiceOn ? '🔊 Озвучка включена' : '🔇 Озвучка выключена') + '</button>' + (vs.length > 1 ? '<select class="voicesel" data-a="voicepick" aria-label="Голос">' + vs.map(v => '<option value="' + esc(v.name) + '"' + (cur && cur.name === v.name ? ' selected' : '') + '>' + esc(v.name.replace(/\s*\(.*\)/, '')) + '</option>').join('') + '</select>' : '') + '</div>' : '');
-    h += '</div>';
+    h += '</div>' + (synth
+      ? '<div class="row voicerow"><button class="btn sm ghost voicebtn" data-a="voiceplay">Озвучить</button><button class="btn sm ghost" data-a="voice" aria-pressed="' + voiceOn + '">' + (voiceOn ? 'Автоозвучка вкл.' : 'Автоозвучка выкл.') + '</button><select class="voicesel" data-a="voicepick" aria-label="Голос" hidden></select></div><div class="voice-status muted" role="status"></div>'
+      : '<p class="muted">Озвучка недоступна в этом браузере.</p>') + '</div>';
     openModal(h, 'event event-choice', key);
-    const plain = x => String(E.evText(S, me, x) || '');
-    setTimeout(() => speak(plain(ev.text)), 350);
+    updateVoiceOptions();
+    // Синхронный запуск сохраняет пользовательский жест в мобильных браузерах.
+    speakEvent(false);
   }
   const relName = v => (v >= 50 ? 'дружба' : v >= 15 ? 'тепло' : v > -15 ? 'нейтрально' : v > -50 ? 'холодно' : 'вражда') + ' · ' + sign(v);
   const relCls = v => v >= 15 ? 'good' : v <= -15 ? 'bad' : 'muted';

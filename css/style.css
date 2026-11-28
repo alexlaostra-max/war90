@@ -1710,3 +1710,7 @@ summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
   .sheet.home .modebtn > span, .sheet.home .modebtn > em { display: none; }
   .sheet.home .home-actions > .btn.wide { padding: 5px 8px; font-size: 11px; }
 }
+
+.voicerow { flex-wrap: wrap; }
+.voicerow .voicesel { flex-basis: 100px; }
+.voice-status:not(:empty) { margin-top: 6px; }
